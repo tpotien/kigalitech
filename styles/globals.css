@@ -97,6 +97,10 @@ html {
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 100px; }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
+/* ── Hide scrollbar utility ── */
+.scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+
 /* ── Product image gallery touch ── */
 .gallery-scroll {
   scroll-snap-type: x mandatory;

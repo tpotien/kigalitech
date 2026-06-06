@@ -131,10 +131,15 @@ export default function TrustBadges() {
         <p className="mb-8 text-center text-xs font-semibold uppercase tracking-widest text-slate-400">
           {t('trustedBy')}
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          {BRANDS.map(brand => (
-            <BrandCard key={brand.name} brand={brand} />
-          ))}
+        <div className="overflow-x-auto -mx-4 sm:mx-0 scrollbar-none">
+          <div className="flex flex-col gap-3 w-fit mx-auto px-4 sm:px-0">
+            <div className="flex gap-3">
+              {BRANDS.slice(0, 8).map(brand => <BrandCard key={brand.name} brand={brand} />)}
+            </div>
+            <div className="flex gap-3">
+              {BRANDS.slice(8).map(brand => <BrandCard key={brand.name} brand={brand} />)}
+            </div>
+          </div>
         </div>
       </div>
     </section>
