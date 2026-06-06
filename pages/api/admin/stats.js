@@ -3,9 +3,21 @@ import prisma from '../../../lib/prisma';
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
 
-  const [totalOrders, pendingOrders, totalProducts, lowStockProducts, recentOrders, revenue] = await Promise.all([
+  const [
+    totalOrders,
+    pendingOrders,
+    confirmedOrders,
+    totalProducts,
+    lowStockProducts,
+    recentOrders,
+    revenue,
+    openRepairs,
+    pendingTradeIns,
+    pendingListings,
+  ] = await Promise.all([
     prisma.order.count(),
     prisma.order.count({ where: { status: 'pending' } }),
+    prisma.order.count({ where: { status: 'confirmed' } }),
     prisma.product.count({ where: { active: true } }),
     prisma.product.findMany({
       where: { active: true },
@@ -17,10 +29,24 @@ export default async function handler(req, res) {
       include: { items: true, user: { select: { name: true, email: true } } },
     }),
     prisma.order.aggregate({ _sum: { total: true } }),
+    prisma.repairTicket.count({ where: { status: { in: ['open', 'in_progress'] } } }),
+    prisma.tradeIn.count({ where: { status: 'pending' } }),
+    prisma.marketplaceListing.count({ where: { status: 'pending' } }),
   ]);
 
   const lowStock = lowStockProducts.filter((p) => p.stock <= p.lowStockThreshold);
   const totalRevenue = revenue._sum.total || 0;
 
-  res.json({ totalOrders, pendingOrders, totalProducts, lowStock, recentOrders, totalRevenue });
+  res.json({
+    totalOrders,
+    pendingOrders,
+    confirmedOrders,
+    totalProducts,
+    lowStock,
+    recentOrders,
+    totalRevenue,
+    openRepairs,
+    pendingTradeIns,
+    pendingListings,
+  });
 }

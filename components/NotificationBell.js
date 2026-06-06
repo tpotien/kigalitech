@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
 import { useNotifications } from '../context/NotificationContext';
 
 const TYPE_ICON = {
@@ -9,7 +8,7 @@ const TYPE_ICON = {
   low_stock: '⚠️',
 };
 
-function NotificationList({ notifications, markRead, markAllRead, unread, onClose }) {
+function NotificationList({ notifications, markRead, markAllRead, unread, onClose, isSheet }) {
   return (
     <>
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
@@ -25,15 +24,17 @@ function NotificationList({ notifications, markRead, markAllRead, unread, onClos
               Mark all read
             </button>
           )}
-          <button onClick={onClose} className="rounded-full p-1 hover:bg-slate-100 text-slate-400 sm:hidden">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          {isSheet && (
+            <button onClick={onClose} className="rounded-full p-1 hover:bg-slate-100 text-slate-400">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="overflow-y-auto divide-y divide-slate-50" style={{ maxHeight: 'min(24rem, 60vh)' }}>
+      <div className="overflow-y-auto divide-y divide-slate-50" style={{ maxHeight: isSheet ? '60vh' : '24rem' }}>
         {notifications.length === 0 ? (
           <div className="px-4 py-10 text-center">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
@@ -69,30 +70,35 @@ function NotificationList({ notifications, markRead, markAllRead, unread, onClos
 export default function NotificationBell() {
   const { notifications, unread, markRead, markAllRead } = useNotifications();
   const [open, setOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const ref = useRef(null);
 
-  // Close on outside click (desktop)
   useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    setIsMobile(mq.matches);
+    const fn = (e) => setIsMobile(e.matches);
+    mq.addEventListener('change', fn);
+    return () => mq.removeEventListener('change', fn);
+  }, []);
+
+  // Close desktop dropdown on outside click
+  useEffect(() => {
+    if (isMobile) return;
     function handler(e) {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     }
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  }, [isMobile]);
 
-  // Prevent body scroll when mobile sheet is open
+  // Lock scroll when mobile sheet is open
   useEffect(() => {
-    if (open && window.innerWidth < 640) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = (open && isMobile) ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
-  }, [open]);
+  }, [open, isMobile]);
 
   return (
     <div ref={ref} className="relative">
-      {/* Bell button */}
       <button
         onClick={() => setOpen(o => !o)}
         aria-label="Notifications"
@@ -108,9 +114,9 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {/* ── Desktop dropdown ── */}
-      {open && (
-        <div className="hidden sm:block absolute right-0 top-full mt-2 w-80 rounded-2xl border border-slate-100 bg-white shadow-2xl z-50 overflow-hidden animate-in">
+      {/* Desktop dropdown */}
+      {open && !isMobile && (
+        <div className="absolute right-0 top-full mt-2 w-80 rounded-2xl border border-slate-100 bg-white shadow-2xl z-50 overflow-hidden notif-anim">
           <NotificationList
             notifications={notifications}
             markRead={markRead}
@@ -121,17 +127,14 @@ export default function NotificationBell() {
         </div>
       )}
 
-      {/* ── Mobile bottom sheet + backdrop ── */}
-      {open && (
-        <div className="sm:hidden fixed inset-0 z-50 flex flex-col justify-end">
-          {/* Backdrop */}
+      {/* Mobile bottom sheet */}
+      {open && isMobile && (
+        <div className="fixed inset-0 z-[200] flex flex-col justify-end">
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setOpen(false)}
           />
-          {/* Sheet */}
-          <div className="relative bg-white rounded-t-3xl shadow-2xl pb-safe overflow-hidden slide-up">
-            {/* Drag handle */}
+          <div className="relative bg-white rounded-t-3xl shadow-2xl overflow-hidden slide-up pb-safe">
             <div className="flex justify-center pt-3 pb-1">
               <div className="h-1 w-10 rounded-full bg-slate-300" />
             </div>
@@ -141,6 +144,7 @@ export default function NotificationBell() {
               markAllRead={markAllRead}
               unread={unread}
               onClose={() => setOpen(false)}
+              isSheet
             />
             <div className="h-6" />
           </div>

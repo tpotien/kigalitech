@@ -21,12 +21,39 @@ const STATUS_COLOR = {
   cancelled: 'bg-red-100 text-red-700',
 };
 
+function PendingTask({ icon, label, count, href, urgent }) {
+  if (!count) return null;
+  return (
+    <Link
+      href={href}
+      className={`flex items-center justify-between rounded-xl px-4 py-3 no-underline transition-colors ${
+        urgent ? 'bg-red-50 hover:bg-red-100 border border-red-100' : 'bg-amber-50 hover:bg-amber-100 border border-amber-100'
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <span className="text-lg">{icon}</span>
+        <span className={`text-sm font-medium ${urgent ? 'text-red-800' : 'text-amber-800'}`}>{label}</span>
+      </div>
+      <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${urgent ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'}`}>
+        {count}
+      </span>
+    </Link>
+  );
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
     fetch('/api/admin/stats').then((r) => r.json()).then(setStats);
   }, []);
+
+  const totalPending =
+    (stats?.pendingOrders || 0) +
+    (stats?.openRepairs || 0) +
+    (stats?.pendingTradeIns || 0) +
+    (stats?.pendingListings || 0) +
+    (stats?.lowStock?.length || 0);
 
   return (
     <AdminLayout title="Dashboard">
@@ -42,6 +69,19 @@ export default function AdminDashboard() {
           color={stats?.lowStock?.length > 0 ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white'}
         />
       </div>
+
+      {/* Attention banner */}
+      {stats && totalPending > 0 && (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex items-center gap-3">
+          <span className="text-2xl">⚡</span>
+          <div>
+            <p className="font-bold text-amber-900">
+              {totalPending} action{totalPending !== 1 ? 's' : ''} need{totalPending === 1 ? 's' : ''} your attention
+            </p>
+            <p className="text-sm text-amber-700">Review the pending tasks in the panel below</p>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         {/* Recent Orders */}
@@ -73,9 +113,72 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Low stock + Quick links */}
+        {/* Right column */}
         <div className="space-y-6">
-          {/* Low stock alerts */}
+
+          {/* Pending tasks widget */}
+          <div className="rounded-2xl bg-white border border-slate-200 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+                Pending Tasks
+                {stats && totalPending > 0 && (
+                  <span className="inline-flex items-center justify-center h-5 min-w-[1.25rem] rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                    {totalPending > 9 ? '9+' : totalPending}
+                  </span>
+                )}
+              </h2>
+            </div>
+            <div className="p-4 space-y-2">
+              {stats ? (
+                <>
+                  <PendingTask
+                    icon="🛒"
+                    label="Orders awaiting confirmation"
+                    count={stats.pendingOrders}
+                    href="/admin/orders?status=pending"
+                    urgent
+                  />
+                  <PendingTask
+                    icon="🔧"
+                    label="Open repair tickets"
+                    count={stats.openRepairs}
+                    href="/admin/repairs"
+                    urgent={stats.openRepairs > 3}
+                  />
+                  <PendingTask
+                    icon="⚠️"
+                    label="Products low on stock"
+                    count={stats.lowStock?.length}
+                    href="/admin/products"
+                    urgent={stats.lowStock?.length > 5}
+                  />
+                  <PendingTask
+                    icon="🔄"
+                    label="Trade-in requests"
+                    count={stats.pendingTradeIns}
+                    href="/admin/trade-ins"
+                  />
+                  <PendingTask
+                    icon="🏪"
+                    label="Marketplace listings to approve"
+                    count={stats.pendingListings}
+                    href="/admin/marketplace"
+                  />
+                  {totalPending === 0 && (
+                    <div className="py-6 text-center">
+                      <div className="text-3xl mb-2">✅</div>
+                      <p className="text-sm font-semibold text-emerald-700">All caught up!</p>
+                      <p className="text-xs text-slate-400 mt-0.5">Nothing needs attention right now</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="py-6 text-center text-slate-400 text-sm">Loading…</div>
+              )}
+            </div>
+          </div>
+
+          {/* Low stock detail */}
           <div className="rounded-2xl bg-white border border-slate-200 overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <h2 className="font-semibold text-slate-900">⚠️ Low Stock</h2>
