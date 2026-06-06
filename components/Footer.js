@@ -3,23 +3,24 @@ import { useLang } from '../context/LanguageContext';
 
 const LINKS = {
   Shop: [
-    { label: 'Laptops', href: '/products?category=Laptops' },
     { label: 'Phones', href: '/products?category=Phones' },
-    { label: 'Headphones', href: '/products?category=Headphones' },
+    { label: 'Laptops', href: '/products?category=Laptops' },
+    { label: 'Audio & Headphones', href: '/products?category=Headphones' },
+    { label: 'Gaming', href: '/products?category=Gaming' },
     { label: 'Wearables', href: '/products?category=Wearables' },
     { label: 'Deals', href: '/deals' },
+    { label: 'Marketplace', href: '/marketplace' },
   ],
-  Support: [
-    { label: 'Track Order', href: '/orders' },
-    { label: 'Returns', href: '/returns' },
-    { label: 'Repair Center', href: '/repairs' },
-    { label: 'FAQ', href: '/faq' },
-    { label: 'Contact Us', href: '/contact' },
+  Account: [
+    { label: 'My Orders', href: '/account' },
+    { label: 'Track Order', href: '/account' },
+    { label: 'Repair Center', href: '/account' },
+    { label: 'Trade-In', href: '/trade-in' },
+    { label: 'Sign In', href: '/signin' },
   ],
   Company: [
-    { label: 'About', href: '/about' },
-    { label: 'Careers', href: '/careers' },
-    { label: 'Press', href: '/press' },
+    { label: 'About KigaliTech', href: '/about' },
+    { label: 'Contact Us', href: '/contact' },
     { label: 'Privacy Policy', href: '/privacy' },
     { label: 'Terms of Service', href: '/terms' },
   ],

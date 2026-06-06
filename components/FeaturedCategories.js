@@ -35,7 +35,7 @@ const CATEGORIES = [
   {
     key: 'others', name: 'Others', icon: '🔌', desc: 'Chargers, Mics & More',
     href: '/products?category=Others',
-    img: 'https://images.unsplash.com/photo-1588392382834-a891154bca4d?auto=format&fit=crop&w=600&q=80',
+    img: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=600&q=80',
   },
 ];
 

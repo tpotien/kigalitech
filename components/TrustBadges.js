@@ -8,7 +8,7 @@ const BRANDS = [
   { name: 'LG',      domain: 'lg.com',         bg: '#A50034', text: '#ffffff', font: "Arial,sans-serif",               dark: true },
   { name: 'ASUS',    domain: 'asus.com',       bg: '#0066CC', text: '#ffffff', font: "'Exo 2',sans-serif",             dark: true },
   { name: 'HP',      domain: 'hp.com',         bg: '#0096D6', text: '#ffffff', font: "Arial,sans-serif",               dark: true },
-  { name: 'Dell',    domain: 'dell.com',       bg: '#007DB8', text: '#ffffff', font: "Arial,sans-serif",               dark: true },
+  { name: 'OnePlus', domain: 'oneplus.com',    bg: '#F5010C', text: '#ffffff', font: "'Montserrat',sans-serif",        dark: true },
   { name: 'Lenovo',  domain: 'lenovo.com',     bg: '#E2231A', text: '#ffffff', font: "'Barlow',Arial,sans-serif",      dark: true },
   { name: 'Xiaomi',  domain: 'xiaomi.com',     bg: '#FF6900', text: '#ffffff', font: "'Barlow',sans-serif",            dark: true },
   { name: 'Huawei',  domain: 'huawei.com',     bg: '#CF0A2C', text: '#ffffff', font: "Arial,sans-serif",               dark: true },
@@ -18,7 +18,6 @@ const BRANDS = [
   { name: 'Anker',   domain: 'anker.com',      bg: '#0070F0', text: '#ffffff', font: "'Exo 2',sans-serif",             dark: true },
   { name: 'GoPro',   domain: 'gopro.com',      bg: '#00B4D8', text: '#000000', font: "'Barlow',sans-serif",            dark: false },
   { name: 'Canon',   domain: 'canon.com',      bg: '#CC0000', text: '#ffffff', font: "Arial,sans-serif",               dark: true },
-  { name: 'Nikon',   domain: 'nikon.com',      bg: '#FFE400', text: '#000000', font: "'Exo 2',sans-serif",             dark: false },
 ];
 
 function BrandLogo({ brand }) {
