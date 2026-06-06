@@ -62,8 +62,8 @@ export default function Layout({ children }) {
                   >
                     <Link
                       href={link.href}
-                      className={`px-3 py-2 rounded-full text-sm font-medium no-underline transition-colors flex items-center gap-1 ${
-                        link.red ? 'text-red-500 hover:bg-red-50' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                      className={`px-3 py-2 rounded-full text-base font-bold no-underline transition-colors flex items-center gap-1 ${
+                        link.red ? 'text-red-500 hover:bg-red-50' : 'text-slate-800 hover:bg-slate-100 hover:text-black'
                       }`}
                     >
                       {link.label}

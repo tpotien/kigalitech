@@ -3,23 +3,25 @@ import { useLang } from '../context/LanguageContext';
 
 // slug = SimpleIcons CDN slug  |  iconColor = hex without # for the logo fill
 // bg = brand's official background color  |  text = text/icon color over bg
+const PJS = "'Plus Jakarta Sans',sans-serif";
+
 const BRANDS = [
-  { name: 'Apple',    slug: 'apple',       bg: '#000000', text: '#ffffff', iconColor: 'ffffff', font: "system-ui,-apple-system,sans-serif" },
-  { name: 'Samsung',  slug: 'samsung',     bg: '#1428A0', text: '#ffffff', iconColor: 'ffffff', font: "'Montserrat',sans-serif" },
-  { name: 'Sony',     slug: 'sony',        bg: '#000000', text: '#ffffff', iconColor: 'ffffff', font: "'Barlow',Arial,sans-serif" },
-  { name: 'LG',       slug: 'lg',          bg: '#A50034', text: '#ffffff', iconColor: 'ffffff', font: "Arial,sans-serif" },
-  { name: 'ASUS',     slug: 'asus',        bg: '#0066CC', text: '#ffffff', iconColor: 'ffffff', font: "'Exo 2',sans-serif" },
-  { name: 'HP',       slug: 'hp',          bg: '#0096D6', text: '#ffffff', iconColor: 'ffffff', font: "Arial,sans-serif" },
-  { name: 'OnePlus',  slug: 'oneplus',     bg: '#F5010C', text: '#ffffff', iconColor: 'ffffff', font: "'Montserrat',sans-serif" },
-  { name: 'Lenovo',   slug: 'lenovo',      bg: '#E2231A', text: '#ffffff', iconColor: 'ffffff', font: "'Barlow',Arial,sans-serif" },
-  { name: 'Xiaomi',   slug: 'xiaomi',      bg: '#FF6900', text: '#ffffff', iconColor: 'ffffff', font: "'Barlow',sans-serif" },
-  { name: 'Huawei',   slug: 'huawei',      bg: '#CF0A2C', text: '#ffffff', iconColor: 'ffffff', font: "Arial,sans-serif" },
-  { name: 'JBL',      slug: 'jbl',         bg: '#F76C00', text: '#000000', iconColor: '000000', font: "'Bebas Neue',sans-serif" },
-  { name: 'Bose',     slug: 'bose',        bg: '#000000', text: '#ffffff', iconColor: 'ffffff', font: "'Montserrat',sans-serif" },
-  { name: 'Beats',    slug: 'beatsbydre',  bg: '#DD0000', text: '#ffffff', iconColor: 'ffffff', font: "'Montserrat',sans-serif" },
-  { name: 'Anker',    slug: 'anker',       bg: '#0070F0', text: '#ffffff', iconColor: 'ffffff', font: "'Exo 2',sans-serif" },
-  { name: 'GoPro',    slug: 'gopro',       bg: '#00B4D8', text: '#000000', iconColor: '000000', font: "'Barlow',sans-serif" },
-  { name: 'Canon',    slug: 'canon',       bg: '#CC0000', text: '#ffffff', iconColor: 'ffffff', font: "Arial,sans-serif" },
+  { name: 'Apple',    slug: 'apple',       bg: '#000000', text: '#ffffff', iconColor: 'ffffff', font: PJS },
+  { name: 'Samsung',  slug: 'samsung',     bg: '#1428A0', text: '#ffffff', iconColor: 'ffffff', font: PJS },
+  { name: 'Sony',     slug: 'sony',        bg: '#000000', text: '#ffffff', iconColor: 'ffffff', font: PJS },
+  { name: 'LG',       slug: 'lg',          bg: '#A50034', text: '#ffffff', iconColor: 'ffffff', font: PJS },
+  { name: 'ASUS',     slug: 'asus',        bg: '#0066CC', text: '#ffffff', iconColor: 'ffffff', font: PJS },
+  { name: 'HP',       slug: 'hp',          bg: '#0096D6', text: '#ffffff', iconColor: 'ffffff', font: PJS },
+  { name: 'OnePlus',  slug: 'oneplus',     bg: '#F5010C', text: '#ffffff', iconColor: 'ffffff', font: PJS },
+  { name: 'Lenovo',   slug: 'lenovo',      bg: '#E2231A', text: '#ffffff', iconColor: 'ffffff', font: PJS },
+  { name: 'Xiaomi',   slug: 'xiaomi',      bg: '#FF6900', text: '#ffffff', iconColor: 'ffffff', font: PJS },
+  { name: 'Huawei',   slug: 'huawei',      bg: '#CF0A2C', text: '#ffffff', iconColor: 'ffffff', font: PJS },
+  { name: 'JBL',      slug: 'jbl',         bg: '#F76C00', text: '#000000', iconColor: '000000', font: PJS },
+  { name: 'Bose',     slug: 'bose',        bg: '#000000', text: '#ffffff', iconColor: 'ffffff', font: PJS },
+  { name: 'Beats',    slug: 'beatsbydre',  bg: '#DD0000', text: '#ffffff', iconColor: 'ffffff', font: PJS },
+  { name: 'Anker',    slug: 'anker',       bg: '#0070F0', text: '#ffffff', iconColor: 'ffffff', font: PJS },
+  { name: 'GoPro',    slug: 'gopro',       bg: '#00B4D8', text: '#000000', iconColor: '000000', font: PJS },
+  { name: 'Canon',    slug: 'canon',       bg: '#CC0000', text: '#ffffff', iconColor: 'ffffff', font: PJS },
 ];
 
 function BrandCard({ brand }) {
