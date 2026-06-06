@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCompare } from '../context/CompareContext';
+import { useToast } from '../context/ToastContext';
 import { useSession } from 'next-auth/react';
 
 function getBadge(product) {
@@ -27,6 +28,7 @@ export default function ProductCard({ product, onQuickView }) {
   const { format } = useCurrency();
   const { ids: wishlistIds, toggle: toggleWishlist } = useWishlist();
   const { add: addCompare, remove: removeCompare, has: inCompare } = useCompare();
+  const { toast } = useToast();
   const { data: session } = useSession();
   const [added, setAdded] = useState(false);
   const [heartAnim, setHeartAnim] = useState(false);
@@ -42,6 +44,7 @@ export default function ProductCard({ product, onQuickView }) {
     e.preventDefault();
     addItem({ id: product.id, name: product.name, price: product.price, image: images[0], color: colors[0] || '', storage: storageOptions[0] || '', quantity: 1 });
     setAdded(true);
+    toast({ type: 'cart', title: 'Added to cart', message: product.name });
     setTimeout(() => setAdded(false), 1500);
   }
 
@@ -49,13 +52,19 @@ export default function ProductCard({ product, onQuickView }) {
     e.preventDefault();
     if (!session) { window.location.href = '/signin'; return; }
     setHeartAnim(true);
-    await toggleWishlist(product.id);
+    const saved = await toggleWishlist(product.id);
+    toast({ type: 'heart', title: saved ? 'Saved to wishlist' : 'Removed from wishlist', message: product.name });
     setTimeout(() => setHeartAnim(false), 600);
   }
 
   function handleCompare(e) {
     e.preventDefault();
-    isCompared ? removeCompare(product.id) : addCompare(product);
+    if (isCompared) {
+      removeCompare(product.id);
+    } else {
+      addCompare(product);
+      toast({ type: 'info', title: 'Added to compare', message: product.name });
+    }
   }
 
   return (

@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
 import Footer from '../../components/Footer';
 import ProductCard from '../../components/ProductCard';
+import ProductCardSkeleton from '../../components/ProductCardSkeleton';
 import { useLang } from '../../context/LanguageContext';
 
 const CATEGORIES = ['All', 'Phones', 'Laptops', 'Tablets', 'TVs', 'Audio', 'Headphones', 'Wearables', 'Cameras', 'Gaming', 'Accessories', 'Routers', 'Storage', 'Others'];
@@ -148,8 +149,8 @@ export default function ProductsPage() {
 
         {/* Grid */}
         {loading ? (
-          <div className="flex items-center justify-center py-24">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-sky-600 border-t-transparent" />
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-24 text-center">

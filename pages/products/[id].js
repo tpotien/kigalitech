@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import prisma from '../../lib/prisma';
 import Link from 'next/link';
@@ -11,6 +11,7 @@ import { useLang } from '../../context/LanguageContext';
 import { useCurrency } from '../../context/CurrencyContext';
 import { useWishlist } from '../../context/WishlistContext';
 import { useCompare } from '../../context/CompareContext';
+import { useToast } from '../../context/ToastContext';
 
 export async function getStaticPaths() {
   const products = await prisma.product.findMany({ where: { active: true } });
@@ -256,7 +257,9 @@ export default function ProductPage({ product, bundledProducts = [] }) {
   const { format } = useCurrency();
   const { ids: wishlistIds, toggle: toggleWishlist } = useWishlist();
   const { add: addCompare, remove: removeCompare, has: inCompare } = useCompare();
+  const { toast } = useToast();
   const { data: session } = useSession();
+  const galleryRef = useRef(null);
 
   const colors = parseField(product.colors);
   const storageOptions = parseField(product.storageOptions);
@@ -294,14 +297,33 @@ export default function ProductPage({ product, bundledProducts = [] }) {
   function handleAddToCart() {
     addItem({ id: product.id, name: product.name, price: product.price, image: images[0], color, storage, quantity });
     setAdded(true);
+    toast({ type: 'cart', title: 'Added to cart!', message: `${product.name}${color ? ` · ${color}` : ''}` });
     setTimeout(() => setAdded(false), 1500);
   }
 
   async function handleWishlist() {
     if (!session) { window.location.href = '/signin'; return; }
     setHeartAnim(true);
-    await toggleWishlist(product.id);
+    const saved = await toggleWishlist(product.id);
+    toast({ type: 'heart', title: saved ? 'Saved to wishlist ♥' : 'Removed from wishlist', message: product.name });
     setTimeout(() => setHeartAnim(false), 600);
+  }
+
+  // Sync gallery scroll with activeImg
+  function scrollToImg(idx) {
+    setActiveImg(idx);
+    if (galleryRef.current) {
+      const el = galleryRef.current.children[idx];
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+    }
+  }
+
+  function handleGalleryScroll() {
+    if (!galleryRef.current) return;
+    const scrollLeft = galleryRef.current.scrollLeft;
+    const width = galleryRef.current.offsetWidth;
+    const idx = Math.round(scrollLeft / width);
+    if (idx !== activeImg) setActiveImg(idx);
   }
 
   // SEO
@@ -343,31 +365,77 @@ export default function ProductPage({ product, bundledProducts = [] }) {
             <div className="grid gap-10 lg:grid-cols-[1.2fr_0.9fr]">
               {/* Images + Video */}
               <div>
-                <div className="overflow-hidden rounded-3xl bg-slate-100 relative">
+                {/* Mobile: swipeable scroll gallery */}
+                <div className="relative overflow-hidden rounded-3xl bg-slate-100">
                   {product.genuine !== false && (
                     <span className="absolute top-4 left-4 z-10 flex items-center gap-1 rounded-full bg-emerald-500/90 px-3 py-1 text-xs font-bold text-white backdrop-blur-sm">
                       <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
-                      Original / Genuine
+                      Original
                     </span>
                   )}
-                  <img
-                    src={images[activeImg]}
-                    alt={product.name}
-                    className="h-96 w-full object-cover transition-opacity duration-300"
-                  />
+
+                  {/* Swipeable on mobile, static on desktop */}
+                  <div
+                    ref={galleryRef}
+                    onScroll={handleGalleryScroll}
+                    className="gallery-scroll flex overflow-x-auto lg:overflow-x-hidden"
+                    style={{ scrollSnapType: 'x mandatory' }}
+                  >
+                    {images.map((src, i) => (
+                      <div key={i} className="flex-shrink-0 w-full" style={{ scrollSnapAlign: 'start' }}>
+                        <img
+                          src={src}
+                          alt={`${product.name} view ${i + 1}`}
+                          className={`h-80 sm:h-96 w-full object-cover transition-opacity duration-300 ${i === activeImg || true ? 'opacity-100' : 'opacity-0'}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Dot indicator (mobile only) */}
+                  {images.length > 1 && (
+                    <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 lg:hidden">
+                      {images.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => scrollToImg(i)}
+                          className={`h-2 rounded-full transition-all ${i === activeImg ? 'w-5 bg-white' : 'w-2 bg-white/50'}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Arrow buttons (desktop) */}
+                  {images.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => scrollToImg(Math.max(0, activeImg - 1))}
+                        className={`hidden lg:flex absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-md hover:bg-white transition ${activeImg === 0 ? 'opacity-30 cursor-default' : ''}`}
+                      >
+                        <svg className="h-4 w-4 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                      </button>
+                      <button
+                        onClick={() => scrollToImg(Math.min(images.length - 1, activeImg + 1))}
+                        className={`hidden lg:flex absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-md hover:bg-white transition ${activeImg === images.length - 1 ? 'opacity-30 cursor-default' : ''}`}
+                      >
+                        <svg className="h-4 w-4 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                      </button>
+                    </>
+                  )}
                 </div>
 
+                {/* Thumbnail strip (desktop) */}
                 {images.length > 1 && (
-                  <div className="mt-4 grid grid-cols-4 gap-3">
+                  <div className="mt-4 hidden lg:grid grid-cols-5 gap-2">
                     {images.map((src, i) => (
                       <button
                         key={i}
-                        onClick={() => setActiveImg(i)}
-                        className={`overflow-hidden rounded-2xl border-2 transition ${activeImg === i ? 'border-sky-500' : 'border-transparent'}`}
+                        onClick={() => scrollToImg(i)}
+                        className={`overflow-hidden rounded-xl border-2 transition-all ${activeImg === i ? 'border-sky-500 ring-2 ring-sky-200' : 'border-transparent hover:border-slate-300'}`}
                       >
-                        <img src={src} alt="" className="h-20 w-full object-cover" />
+                        <img src={src} alt="" className="h-16 w-full object-cover" />
                       </button>
                     ))}
                   </div>
@@ -637,6 +705,37 @@ export default function ProductPage({ product, bundledProducts = [] }) {
         </div>
       </div>
       <Footer />
+
+      {/* ── Sticky mobile Add to Cart bar ── */}
+      <div className="lg:hidden fixed bottom-16 inset-x-0 z-30 px-4 pb-2">
+        <div className="flex items-center gap-3 rounded-2xl bg-white/95 border border-slate-200 shadow-2xl backdrop-blur-md px-4 py-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-slate-500 truncate">{product.name}</p>
+            <p className="text-lg font-extrabold text-slate-900 leading-tight">{format(product.price)}</p>
+          </div>
+          <button
+            onClick={handleWishlist}
+            className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border transition-all ${
+              isWished ? 'border-red-200 bg-red-50 text-red-500' : 'border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-400'
+            } ${heartAnim ? 'scale-110' : ''}`}
+          >
+            <svg className="h-5 w-5" fill={isWished ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </button>
+          <button
+            onClick={handleAddToCart}
+            disabled={product.stock === 0}
+            className={`flex-shrink-0 rounded-xl px-6 py-2.5 font-bold text-white text-sm transition-all ${
+              product.stock === 0 ? 'bg-slate-300 cursor-not-allowed'
+              : added ? 'bg-emerald-500 scale-95'
+              : 'bg-sky-600 hover:bg-sky-700 active:scale-95 shadow-lg shadow-sky-200'
+            }`}
+          >
+            {product.stock === 0 ? 'Out of Stock' : added ? '✓ Added!' : 'Add to Cart'}
+          </button>
+        </div>
+      </div>
     </Layout>
   );
 }
