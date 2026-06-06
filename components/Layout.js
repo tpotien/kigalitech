@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../context/LanguageContext';
+import { useCurrency } from '../context/CurrencyContext';
 import CartDrawer from './CartDrawer';
 import SearchModal from './SearchModal';
 import NotificationBell from './NotificationBell';
@@ -14,18 +15,25 @@ export default function Layout({ children }) {
   const { itemCount, toggleDrawer } = useCart();
   const { data: session } = useSession();
   const { t } = useLang();
+  const { format } = useCurrency();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [megaActive, setMegaActive] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [navProducts, setNavProducts] = useState({});
+
+  useEffect(() => {
+    fetch('/api/nav-products').then(r => r.json()).then(setNavProducts).catch(() => {});
+  }, []);
 
   const NAV_LINKS = [
-    { label: t('phones'), href: '/products?category=Phones', mega: ['iPhone Series', 'Android Flagships', 'Budget Phones', 'Refurbished'] },
-    { label: t('laptops'), href: '/products?category=Laptops', mega: ['Gaming Laptops', 'MacBooks', 'Ultrabooks', 'Workstations'] },
-    { label: t('audio'), href: '/products?category=Headphones', mega: ['Headphones', 'Earbuds', 'Speakers', 'Microphones'] },
-    { label: t('tvs'), href: '/products?category=TVs', mega: ['Smart TVs', 'OLED TVs', '4K TVs', 'Mini LED'] },
-    { label: t('wearables'), href: '/products?category=Wearables', mega: ['Smart Watches', 'Fitness Bands', 'AR Glasses'] },
-    { label: t('others'), href: '/products?category=Others', mega: ['Chargers', 'Power Banks', 'Microphones', 'Accessories'] },
-    { label: t('deals'), href: '/deals', mega: null, red: true },
+    { label: t('phones'),    href: '/products?category=Phones',    cat: 'Phones' },
+    { label: t('laptops'),   href: '/products?category=Laptops',   cat: 'Laptops' },
+    { label: t('audio'),     href: '/products?category=Headphones',cat: 'Headphones' },
+    { label: t('tvs'),       href: '/products?category=TVs',       cat: 'TVs' },
+    { label: t('wearables'), href: '/products?category=Wearables', cat: 'Wearables' },
+    { label: 'Gaming',       href: '/products?category=Gaming',    cat: 'Gaming' },
+    { label: t('others'),    href: '/products?category=Others',    cat: 'Others' },
+    { label: t('deals'),     href: '/deals', cat: null, red: true },
   ];
 
   return (
@@ -46,51 +54,102 @@ export default function Layout({ children }) {
 
             {/* Desktop Nav */}
             <nav className="hidden xl:flex items-center gap-0.5">
-              {NAV_LINKS.map((link) => (
-                <div
-                  key={link.label}
-                  className="relative"
-                  onMouseEnter={() => link.mega && setMegaActive(link.label)}
-                  onMouseLeave={() => setMegaActive(null)}
-                >
-                  <Link
-                    href={link.href}
-                    className={`px-3 py-2 rounded-full text-sm font-medium no-underline transition-colors ${
-                      link.red ? 'text-red-500 hover:bg-red-50' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                    }`}
+              {NAV_LINKS.map((link) => {
+                const products = link.cat ? (navProducts[link.cat] || []) : [];
+                const hasMega = !!link.cat;
+                return (
+                  <div
+                    key={link.label}
+                    className="relative"
+                    onMouseEnter={() => hasMega && setMegaActive(link.label)}
+                    onMouseLeave={() => setMegaActive(null)}
                   >
-                    {link.label}
-                    {link.mega && (
-                      <svg className="inline-block ml-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+                    <Link
+                      href={link.href}
+                      className={`px-3 py-2 rounded-full text-sm font-medium no-underline transition-colors flex items-center gap-1 ${
+                        link.red ? 'text-red-500 hover:bg-red-50' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                      }`}
+                    >
+                      {link.label}
+                      {hasMega && (
+                        <svg className="h-3 w-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </Link>
+
+                    {/* Mega menu with product cards */}
+                    {hasMega && megaActive === link.label && (
+                      <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 z-50 w-[520px]">
+                        <div className="rounded-2xl border border-slate-100 bg-white shadow-2xl shadow-slate-200/60 overflow-hidden">
+                          {/* Header */}
+                          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-50">
+                            <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">{link.label}</span>
+                            <Link
+                              href={link.href}
+                              className="text-xs font-semibold text-sky-600 no-underline hover:text-sky-700"
+                            >
+                              View all →
+                            </Link>
+                          </div>
+
+                          {/* Product grid */}
+                          {products.length > 0 ? (
+                            <div className="grid grid-cols-4 gap-0 p-3">
+                              {products.map((p) => (
+                                <Link
+                                  key={p.id}
+                                  href={`/products/${p.id}`}
+                                  className="group flex flex-col items-center gap-2 rounded-xl p-2.5 no-underline hover:bg-sky-50 transition-colors"
+                                >
+                                  <div className="relative h-20 w-20 rounded-xl bg-slate-50 overflow-hidden flex items-center justify-center border border-slate-100">
+                                    {p.image ? (
+                                      <img
+                                        src={p.image}
+                                        alt={p.name}
+                                        className="h-full w-full object-cover"
+                                        onError={(e) => { e.target.style.display = 'none'; }}
+                                      />
+                                    ) : (
+                                      <span className="text-2xl">📦</span>
+                                    )}
+                                  </div>
+                                  <div className="text-center">
+                                    <p className="text-xs font-medium text-slate-800 leading-tight line-clamp-2 group-hover:text-sky-700">{p.name}</p>
+                                    <p className="mt-0.5 text-xs font-semibold text-sky-600">{format(p.price)}</p>
+                                  </div>
+                                </Link>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="px-5 py-8 text-center text-sm text-slate-400">Loading products...</div>
+                          )}
+
+                          {/* Footer CTA */}
+                          <div className="border-t border-slate-50 px-5 py-3 bg-slate-50/60">
+                            <Link
+                              href={link.href}
+                              className="flex items-center justify-center gap-1.5 rounded-xl bg-sky-600 py-2 text-xs font-semibold text-white no-underline hover:bg-sky-700 transition-colors"
+                            >
+                              Browse all {link.label}
+                              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
                     )}
-                  </Link>
-                  {link.mega && megaActive === link.label && (
-                    <div className="absolute left-0 top-full mt-1 w-52 rounded-2xl border border-slate-100 bg-white py-3 shadow-xl z-50">
-                      {link.mega.map((sub) => (
-                        <Link
-                          key={sub}
-                          href={`/products?category=${encodeURIComponent(link.href.split('=')[1])}&sub=${encodeURIComponent(sub)}`}
-                          className="block px-5 py-2 text-sm text-slate-600 no-underline hover:bg-sky-50 hover:text-sky-700"
-                        >
-                          {sub}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </nav>
 
             {/* Right icons */}
             <div className="flex items-center gap-1.5">
-              {/* Language */}
               <div className="hidden sm:block">
                 <LanguageSwitcher compact />
               </div>
-
-              {/* Currency */}
               <div className="hidden sm:block">
                 <CurrencySwitcher compact />
               </div>
@@ -105,7 +164,6 @@ export default function Layout({ children }) {
                 </svg>
               </button>
 
-              {/* Notification Bell (only when signed in) */}
               {session && <NotificationBell />}
 
               {/* Account / Avatar */}

@@ -27,6 +27,87 @@ const REPAIR_STATUS_COLORS = {
   closed: 'bg-slate-100 text-slate-500',
 };
 
+function StarRating({ value, onChange }) {
+  const [hover, setHover] = useState(0);
+  return (
+    <div className="flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => onChange(star)}
+          onMouseEnter={() => setHover(star)}
+          onMouseLeave={() => setHover(0)}
+          className="text-2xl transition-transform hover:scale-110 focus:outline-none"
+        >
+          <span className={(hover || value) >= star ? 'text-amber-400' : 'text-slate-200'}>★</span>
+        </button>
+      ))}
+      {value > 0 && (
+        <span className="ml-1.5 text-sm font-medium text-amber-500">
+          {['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent'][value]}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function ReviewForm({ item, orderId, onDone }) {
+  const [rating, setRating] = useState(0);
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  async function submit(e) {
+    e.preventDefault();
+    if (!rating) { setMsg('Please select a star rating.'); return; }
+    setSaving(true);
+    setMsg('');
+    const res = await fetch('/api/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId: item.productId, rating, title, body }),
+    });
+    const data = await res.json();
+    if (res.ok) { onDone(item.productId); }
+    else { setMsg(data.error || 'Failed to submit review'); }
+    setSaving(false);
+  }
+
+  return (
+    <form onSubmit={submit} className="mt-3 rounded-2xl border border-amber-100 bg-amber-50/50 p-4 space-y-3">
+      <p className="text-sm font-semibold text-slate-800">Rate <span className="text-sky-700">{item.name}</span></p>
+      <StarRating value={rating} onChange={setRating} />
+      <input
+        required
+        value={title}
+        onChange={e => setTitle(e.target.value)}
+        placeholder="Review title (e.g. Amazing product!)"
+        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
+      />
+      <textarea
+        required
+        rows={3}
+        value={body}
+        onChange={e => setBody(e.target.value)}
+        placeholder="Share your experience with this product..."
+        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm resize-none focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
+      />
+      {msg && <p className="text-xs text-red-500">{msg}</p>}
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-full bg-amber-500 px-5 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
+        >
+          {saving ? 'Submitting...' : 'Submit Review'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export default function AccountPage() {
   const { data: session, status } = useSession();
   const { t } = useLang();
@@ -44,6 +125,11 @@ export default function AccountPage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMsg, setProfileMsg] = useState({ text: '', ok: false });
   const photoRef = useRef();
+
+  // Delivery confirmation state
+  const [confirmingId, setConfirmingId] = useState(null);
+  const [reviewingOrderId, setReviewingOrderId] = useState(null);
+  const [reviewedProducts, setReviewedProducts] = useState(new Set());
 
   useEffect(() => {
     if (status !== 'authenticated') return;
@@ -91,6 +177,23 @@ export default function AccountPage() {
       setProfileMsg({ text: data.error || 'Failed to update', ok: false });
     }
     setSavingProfile(false);
+  }
+
+  async function confirmReceipt(orderId) {
+    setConfirmingId(orderId);
+    const res = await fetch(`/api/account/orders/${orderId}/confirm`, { method: 'POST' });
+    if (res.ok) {
+      setOrders(prev => prev.map(o => o.id === orderId
+        ? { ...o, customerConfirmed: true, status: o.status === 'shipped' ? 'delivered' : o.status }
+        : o
+      ));
+      setReviewingOrderId(orderId);
+    }
+    setConfirmingId(null);
+  }
+
+  function handleReviewDone(productId) {
+    setReviewedProducts(prev => new Set([...prev, productId]));
   }
 
   async function submitRepair(e) {
@@ -183,7 +286,7 @@ export default function AccountPage() {
             ))}
           </div>
 
-          {/* Orders Tab */}
+          {/* ── Orders Tab ── */}
           {tab === 'orders' && (
             <div className="space-y-4">
               {loadingOrders ? (
@@ -199,55 +302,136 @@ export default function AccountPage() {
                   <Link href="/products" className="mt-4 inline-block rounded-full bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-700">{t('shopNow')}</Link>
                 </div>
               ) : (
-                orders.map(order => (
-                  <div key={order.id} className="rounded-3xl bg-white p-5 shadow-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="font-bold text-slate-900">Order #{order.id}</p>
-                        <p className="text-xs text-slate-400">{new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                orders.map(order => {
+                  const canConfirm = !order.customerConfirmed && ['shipped', 'delivered'].includes(order.status);
+                  const showReview = order.customerConfirmed && reviewingOrderId === order.id;
+                  const unreviewedItems = (order.items || []).filter(it => !reviewedProducts.has(it.productId));
+
+                  return (
+                    <div key={order.id} className="rounded-3xl bg-white shadow-sm overflow-hidden">
+                      <div className="p-5">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="font-bold text-slate-900">Order #{order.id}</p>
+                            <p className="text-xs text-slate-400">{new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            {order.customerConfirmed && (
+                              <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                </svg>
+                                Received
+                              </span>
+                            )}
+                            <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${STATUS_COLORS[order.status] || 'bg-slate-100 text-slate-600'}`}>
+                              {order.status}
+                            </span>
+                            <p className="font-bold text-slate-900">${(order.total / 100).toFixed(2)}</p>
+                          </div>
+                        </div>
+
+                        {order.items?.length > 0 && (
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {order.items.map((item, i) => (
+                              <span key={i} className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
+                                {item.name} × {item.quantity}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="mt-4 flex flex-wrap gap-3">
+                          <Link
+                            href={`/orders/${order.id}`}
+                            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 no-underline"
+                          >
+                            {t('viewDetails')}
+                          </Link>
+                          <Link
+                            href={`/orders/${order.id}/receipt`}
+                            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 no-underline flex items-center gap-1.5"
+                          >
+                            <svg className="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            </svg>
+                            Receipt
+                          </Link>
+
+                          {/* Confirm Receipt button */}
+                          {canConfirm && (
+                            <button
+                              onClick={() => confirmReceipt(order.id)}
+                              disabled={confirmingId === order.id}
+                              className="rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5"
+                            >
+                              {confirmingId === order.id ? (
+                                <><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" /> Confirming...</>
+                              ) : (
+                                <><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> I Received This Order</>
+                              )}
+                            </button>
+                          )}
+
+                          {/* Write a review trigger */}
+                          {order.customerConfirmed && !showReview && unreviewedItems.length > 0 && (
+                            <button
+                              onClick={() => setReviewingOrderId(order.id)}
+                              className="rounded-full border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 flex items-center gap-1.5"
+                            >
+                              <span>★</span> Write a Review
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${STATUS_COLORS[order.status] || 'bg-slate-100 text-slate-600'}`}>
-                          {order.status}
-                        </span>
-                        <p className="font-bold text-slate-900">${(order.total / 100).toFixed(2)}</p>
-                      </div>
-                    </div>
-                    {order.items?.length > 0 && (
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {order.items.map((item, i) => (
-                          <span key={i} className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
-                            {item.name} × {item.quantity}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <div className="mt-4 flex gap-3">
-                      <Link
-                        href={`/orders/${order.id}`}
-                        className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 no-underline"
-                      >
-                        {t('viewDetails')}
-                      </Link>
-                      {order.billPrintable && (
-                        <Link
-                          href={`/orders/${order.id}#print`}
-                          className="rounded-full bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 no-underline"
-                        >
-                          {t('printReceipt')}
-                        </Link>
+
+                      {/* Review section — expands after confirmation or clicking */}
+                      {showReview && unreviewedItems.length > 0 && (
+                        <div className="border-t border-amber-100 bg-amber-50/30 px-5 pb-5">
+                          <div className="pt-4 mb-3">
+                            <p className="font-semibold text-slate-800 flex items-center gap-2">
+                              <span className="text-amber-400 text-lg">★</span>
+                              How was your order? Share your experience
+                            </p>
+                            <p className="text-xs text-slate-400 mt-0.5">Your verified review helps other customers</p>
+                          </div>
+                          <div className="space-y-3">
+                            {unreviewedItems.map(item => (
+                              <ReviewForm
+                                key={item.productId}
+                                item={item}
+                                orderId={order.id}
+                                onDone={handleReviewDone}
+                              />
+                            ))}
+                          </div>
+                          {unreviewedItems.length === 0 && (
+                            <p className="py-4 text-sm text-emerald-700 font-medium">All products reviewed — thank you!</p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* All reviewed confirmation */}
+                      {showReview && unreviewedItems.length === 0 && (
+                        <div className="border-t border-emerald-100 bg-emerald-50/40 px-5 py-4">
+                          <p className="text-sm font-semibold text-emerald-700 flex items-center gap-2">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Thank you for your reviews!
+                          </p>
+                        </div>
                       )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}
 
-          {/* Profile Tab */}
+          {/* ── Profile Tab ── */}
           {tab === 'profile' && (
             <form onSubmit={saveProfile} className="space-y-5">
-              {/* Profile picture */}
               <div className="rounded-3xl bg-white p-6 shadow-sm">
                 <h2 className="mb-5 text-lg font-bold text-slate-900">Profile Picture</h2>
                 <div className="flex items-center gap-5">
@@ -267,18 +451,11 @@ export default function AccountPage() {
                       Change Photo
                     </button>
                     <p className="mt-1.5 text-xs text-slate-400">JPG, PNG or WebP — max 5 MB</p>
-                    <input
-                      ref={photoRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className="hidden"
-                      onChange={handlePhotoChange}
-                    />
+                    <input ref={photoRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhotoChange} />
                   </div>
                 </div>
               </div>
 
-              {/* Display name */}
               <div className="rounded-3xl bg-white p-6 shadow-sm">
                 <h2 className="mb-4 text-lg font-bold text-slate-900">Your Info</h2>
                 <div className="space-y-4">
@@ -308,63 +485,40 @@ export default function AccountPage() {
                 </p>
               )}
 
-              <button
-                type="submit"
-                disabled={savingProfile}
-                className="rounded-full bg-sky-600 px-7 py-3 font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
-              >
+              <button type="submit" disabled={savingProfile} className="rounded-full bg-sky-600 px-7 py-3 font-semibold text-white hover:bg-sky-700 disabled:opacity-50">
                 {savingProfile ? 'Saving…' : 'Save Profile'}
               </button>
             </form>
           )}
 
-          {/* Repair Tickets Tab */}
+          {/* ── Repair Tickets Tab ── */}
           {tab === 'repairs' && (
             <div className="space-y-6">
-              {/* Submit form */}
               <div className="rounded-3xl bg-white p-6 shadow-sm">
                 <h2 className="mb-5 text-lg font-bold text-slate-900">{t('submitRepair')}</h2>
                 <form onSubmit={submitRepair} className="space-y-4">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('productName')} *</label>
-                      <input
-                        required
-                        value={form.productName}
-                        onChange={e => setForm({ ...form, productName: e.target.value })}
-                        placeholder="e.g. iPhone 15 Pro"
-                        className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
-                      />
+                      <input required value={form.productName} onChange={e => setForm({ ...form, productName: e.target.value })} placeholder="e.g. iPhone 15 Pro"
+                        className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100" />
                     </div>
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-slate-700">Order ID (optional)</label>
-                      <input
-                        value={form.orderId}
-                        onChange={e => setForm({ ...form, orderId: e.target.value })}
-                        placeholder="e.g. 12"
-                        type="number"
-                        className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
-                      />
+                      <input value={form.orderId} onChange={e => setForm({ ...form, orderId: e.target.value })} placeholder="e.g. 12" type="number"
+                        className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100" />
                     </div>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('issue')} *</label>
-                      <input
-                        required
-                        value={form.issue}
-                        onChange={e => setForm({ ...form, issue: e.target.value })}
-                        placeholder="e.g. Screen not working"
-                        className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
-                      />
+                      <input required value={form.issue} onChange={e => setForm({ ...form, issue: e.target.value })} placeholder="e.g. Screen not working"
+                        className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100" />
                     </div>
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('priority')}</label>
-                      <select
-                        value={form.priority}
-                        onChange={e => setForm({ ...form, priority: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
-                      >
+                      <select value={form.priority} onChange={e => setForm({ ...form, priority: e.target.value })}
+                        className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100">
                         <option value="low">Low</option>
                         <option value="normal">Normal</option>
                         <option value="high">High</option>
@@ -374,30 +528,18 @@ export default function AccountPage() {
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('description')}</label>
-                    <textarea
-                      rows={3}
-                      value={form.description}
-                      onChange={e => setForm({ ...form, description: e.target.value })}
-                      placeholder="Describe the problem in detail..."
-                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
-                    />
+                    <textarea rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Describe the problem in detail..."
+                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100" />
                   </div>
                   {submitMsg && (
-                    <p className={`rounded-xl px-4 py-2.5 text-sm font-medium ${
-                      submitMsg.includes('success') ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
-                    }`}>{submitMsg}</p>
+                    <p className={`rounded-xl px-4 py-2.5 text-sm font-medium ${submitMsg.includes('success') ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>{submitMsg}</p>
                   )}
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="rounded-full bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
-                  >
+                  <button type="submit" disabled={submitting} className="rounded-full bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50">
                     {submitting ? t('loading') : t('submitRequest')}
                   </button>
                 </form>
               </div>
 
-              {/* Existing tickets */}
               {loadingTickets ? (
                 <div className="flex justify-center py-8">
                   <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />

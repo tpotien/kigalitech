@@ -14,6 +14,8 @@ export default function ProductForm({ initial }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiStatus, setAiStatus] = useState('');
   const fileRef = useRef();
 
   const [form, setForm] = useState({
@@ -40,6 +42,44 @@ export default function ProductForm({ initial }) {
   });
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  async function handleAiFill() {
+    if (!form.name.trim()) {
+      setError('Enter a product name first, then click AI Fill.');
+      return;
+    }
+    setAiLoading(true);
+    setAiStatus('Generating product details with AI...');
+    setError('');
+    try {
+      const res = await fetch('/api/admin/ai-fill-product', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: form.name.trim(), category: form.category }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'AI fill failed');
+
+      setForm((f) => ({
+        ...f,
+        description: data.description || f.description,
+        brand: data.brand || f.brand,
+        weight: data.weight || f.weight,
+        colors: Array.isArray(data.colors) ? data.colors.join(', ') : f.colors,
+        storageOptions: Array.isArray(data.storageOptions) ? data.storageOptions.join(', ') : f.storageOptions,
+        warrantyOptions: Array.isArray(data.warrantyOptions) ? data.warrantyOptions.join(', ') : f.warrantyOptions,
+        tags: Array.isArray(data.tags) ? data.tags.join(', ') : f.tags,
+        specs: data.specs ? JSON.stringify(data.specs, null, 2) : f.specs,
+        price: data.suggestedPrice && !f.price ? (data.suggestedPrice / 100).toFixed(2) : f.price,
+      }));
+      setAiStatus('AI filled successfully! Review and adjust as needed.');
+      setTimeout(() => setAiStatus(''), 4000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   async function handleImageUpload(e) {
     const file = e.target.files[0];
@@ -127,11 +167,48 @@ export default function ProductForm({ initial }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
       {error && <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">{error}</div>}
+      {aiStatus && (
+        <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700 flex items-center gap-2">
+          <span className="text-base">✨</span> {aiStatus}
+        </div>
+      )}
+
+      {/* AI Fill Banner */}
+      <div className="rounded-2xl bg-gradient-to-r from-violet-50 to-sky-50 border border-violet-100 p-5 flex items-center justify-between gap-4">
+        <div>
+          <p className="font-semibold text-slate-800 text-sm">AI Product Fill</p>
+          <p className="text-xs text-slate-500 mt-0.5">Enter the product name and category, then let AI auto-fill description, specs, colors, warranty, and suggested price.</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleAiFill}
+          disabled={aiLoading || !form.name.trim()}
+          className="flex-shrink-0 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-violet-200 transition-all"
+        >
+          {aiLoading ? (
+            <>
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <span>✨</span>
+              AI Fill
+            </>
+          )}
+        </button>
+      </div>
 
       <Section title="Basic Info">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Product Name *">
-            <input required value={form.name} onChange={(e) => set('name', e.target.value)} className={inp} placeholder="e.g. Sony WH-1000XM5" />
+            <input
+              required
+              value={form.name}
+              onChange={(e) => set('name', e.target.value)}
+              className={inp}
+              placeholder="e.g. iPhone 17 Pro Max"
+            />
           </Field>
           <Field label="Category *">
             <select required value={form.category} onChange={(e) => set('category', e.target.value)} className={inp}>
@@ -139,10 +216,10 @@ export default function ProductForm({ initial }) {
             </select>
           </Field>
           <Field label="Brand">
-            <input value={form.brand} onChange={(e) => set('brand', e.target.value)} className={inp} placeholder="e.g. Sony" />
+            <input value={form.brand} onChange={(e) => set('brand', e.target.value)} className={inp} placeholder="e.g. Apple" />
           </Field>
           <Field label="SKU">
-            <input value={form.sku} onChange={(e) => set('sku', e.target.value)} className={inp} placeholder="e.g. SONY-WH1000XM5" />
+            <input value={form.sku} onChange={(e) => set('sku', e.target.value)} className={inp} placeholder="e.g. APPLE-IP17PM" />
           </Field>
         </div>
         <div className="mt-4">
@@ -170,7 +247,6 @@ export default function ProductForm({ initial }) {
       </Section>
 
       <Section title="Images">
-        {/* Upload button */}
         <div className="mb-4 flex items-center gap-3">
           <button
             type="button"
@@ -196,7 +272,6 @@ export default function ProductForm({ initial }) {
             placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
           />
         </Field>
-        {/* Preview */}
         {form.images && (
           <div className="mt-3 flex flex-wrap gap-2">
             {form.images.split('\n').filter((u) => u.trim()).slice(0, 8).map((url, i) => (
@@ -208,13 +283,23 @@ export default function ProductForm({ initial }) {
 
       <Section title="Variants & Options">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Colors" help="Comma-separated. e.g. Black, White, Blue">
-            <input value={form.colors} onChange={(e) => set('colors', e.target.value)} className={inp} placeholder="Black, White, Silver" />
+          <Field label="Colors" help="Comma-separated — AI fills this automatically">
+            <input value={form.colors} onChange={(e) => set('colors', e.target.value)} className={inp} placeholder="Black, White, Silver, Blue" />
+            {form.colors && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {form.colors.split(',').map((c) => c.trim()).filter(Boolean).map((c) => (
+                  <span key={c} className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                    <span className="mr-1.5 h-2.5 w-2.5 rounded-full border border-slate-200" style={{ background: c.toLowerCase().replace(/\s/g, '') }} />
+                    {c}
+                  </span>
+                ))}
+              </div>
+            )}
           </Field>
           <Field label="Storage Options" help="Comma-separated. e.g. 128GB, 256GB, 512GB">
             <input value={form.storageOptions} onChange={(e) => set('storageOptions', e.target.value)} className={inp} placeholder="128GB, 256GB, 1TB" />
           </Field>
-          <Field label="Warranty Options" help="Comma-separated. e.g. 1 Year, 2 Years">
+          <Field label="Warranty Options" help="Comma-separated — AI fills this automatically">
             <input value={form.warrantyOptions} onChange={(e) => set('warrantyOptions', e.target.value)} className={inp} placeholder="1 Year, 2 Years, 3 Years" />
           </Field>
           <Field label="Serial Numbers" help="Comma-separated">
@@ -224,6 +309,21 @@ export default function ProductForm({ initial }) {
       </Section>
 
       <Section title="Specifications">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-xs text-slate-400">AI fills this with accurate specs. Edit freely.</p>
+          {form.specs && form.specs !== '{}' && (
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries((() => { try { return JSON.parse(form.specs); } catch { return {}; } })()).slice(0, 4).map(([k, v]) => (
+                <span key={k} className="rounded-lg bg-sky-50 border border-sky-100 px-2 py-0.5 text-xs text-sky-700">
+                  <span className="font-medium">{k}:</span> {v}
+                </span>
+              ))}
+              {Object.keys((() => { try { return JSON.parse(form.specs); } catch { return {}; } })()).length > 4 && (
+                <span className="text-xs text-slate-400">+{Object.keys((() => { try { return JSON.parse(form.specs); } catch { return {}; } })()).length - 4} more</span>
+              )}
+            </div>
+          )}
+        </div>
         <Field label="Specs (JSON)" help='Key-value pairs. e.g. {"RAM": "16GB", "Battery": "30 hours"}'>
           <textarea
             rows={8}
@@ -243,7 +343,7 @@ export default function ProductForm({ initial }) {
           <Field label="Dimensions">
             <input value={form.dimensions} onChange={(e) => set('dimensions', e.target.value)} className={inp} placeholder="e.g. 163 × 58 × 40mm" />
           </Field>
-          <Field label="Tags" help="Comma-separated for search/filter">
+          <Field label="Tags" help="Comma-separated for search/filter — AI fills this automatically">
             <input value={form.tags} onChange={(e) => set('tags', e.target.value)} className={inp} placeholder="laptop, gaming, sale" />
           </Field>
         </div>

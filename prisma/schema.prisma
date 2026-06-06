@@ -122,6 +122,8 @@ model Order {
   deliveryTracking     String        @default("")
   currency             String        @default("USD")
   tradeInId            Int?
+  customerConfirmed    Boolean       @default(false)
+  customerConfirmedAt  DateTime?
   items                OrderItem[]
   repairTickets        RepairTicket[]
 }
