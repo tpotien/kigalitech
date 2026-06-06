@@ -221,9 +221,12 @@ model TradeIn {
   images       String   @default("[]")
   askingPrice  Int      @default(0)
   offeredPrice Int      @default(0)
+  counterPrice Int      @default(0)
   finalPrice   Int      @default(0)
   status       String   @default("pending")
   adminNotes   String   @default("")
+  userNotes    String   @default("")
+  couponCode   String   @default("")
   orderId      Int?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @default(now())
