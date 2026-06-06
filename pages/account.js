@@ -3,6 +3,8 @@ import { useSession, signIn } from 'next-auth/react';
 import Link from 'next/link';
 import Layout from '../components/Layout';
 import { useLang } from '../context/LanguageContext';
+import { useCurrency } from '../context/CurrencyContext';
+import { useWishlist } from '../context/WishlistContext';
 
 const STATUS_COLORS = {
   pending: 'bg-amber-100 text-amber-700',
@@ -111,7 +113,11 @@ function ReviewForm({ item, orderId, onDone }) {
 export default function AccountPage() {
   const { data: session, status } = useSession();
   const { t } = useLang();
+  const { format } = useCurrency();
+  const { ids: wishlistIds, toggle: toggleWishlist } = useWishlist();
   const [tab, setTab] = useState('orders');
+  const [wishlistItems, setWishlistItems] = useState([]);
+  const [loadingWishlist, setLoadingWishlist] = useState(false);
   const [orders, setOrders] = useState([]);
   const [tickets, setTickets] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
@@ -143,6 +149,12 @@ export default function AccountPage() {
     if (status !== 'authenticated' || tab !== 'repairs') return;
     setLoadingTickets(true);
     fetch('/api/repairs').then(r => r.json()).then(data => { setTickets(data); setLoadingTickets(false); });
+  }, [status, tab]);
+
+  useEffect(() => {
+    if (status !== 'authenticated' || tab !== 'wishlist') return;
+    setLoadingWishlist(true);
+    fetch('/api/account/wishlist').then(r => r.json()).then(data => { setWishlistItems(data); setLoadingWishlist(false); });
   }, [status, tab]);
 
   function handlePhotoChange(e) {
@@ -268,16 +280,17 @@ export default function AccountPage() {
           </div>
 
           {/* Tabs */}
-          <div className="mb-6 flex gap-2 rounded-2xl bg-white p-1.5 shadow-sm">
+          <div className="mb-6 flex gap-2 rounded-2xl bg-white p-1.5 shadow-sm overflow-x-auto">
             {[
               { id: 'orders', label: t('myOrders') },
+              { id: 'wishlist', label: `Wishlist${wishlistIds.size > 0 ? ` (${wishlistIds.size})` : ''}` },
               { id: 'repairs', label: t('repairTickets') },
               { id: 'profile', label: 'Profile' },
             ].map(tab_ => (
               <button
                 key={tab_.id}
                 onClick={() => setTab(tab_.id)}
-                className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
+                className={`flex-1 whitespace-nowrap rounded-xl py-2.5 text-sm font-semibold transition ${
                   tab === tab_.id ? 'bg-sky-600 text-white shadow' : 'text-slate-600 hover:bg-slate-50'
                 }`}
               >
@@ -285,6 +298,76 @@ export default function AccountPage() {
               </button>
             ))}
           </div>
+
+          {/* ── Wishlist Tab ── */}
+          {tab === 'wishlist' && (
+            <div>
+              {loadingWishlist ? (
+                <div className="flex justify-center py-16">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
+                </div>
+              ) : wishlistItems.length === 0 ? (
+                <div className="rounded-3xl bg-white p-16 text-center shadow-sm">
+                  <svg className="mx-auto h-12 w-12 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                  <p className="mt-4 text-slate-500">Your wishlist is empty</p>
+                  <Link href="/products" className="mt-4 inline-block rounded-full bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-700">Browse Products</Link>
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {wishlistItems.map(item => {
+                    const product = item.product;
+                    const images = (() => { try { return JSON.parse(product.images); } catch { return []; } })();
+                    const discount = product.comparePrice && product.comparePrice > product.price
+                      ? Math.round((1 - product.price / product.comparePrice) * 100)
+                      : null;
+                    return (
+                      <div key={item.id} className="flex gap-4 rounded-2xl bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
+                        <Link href={`/products/${product.id}`} className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100 block">
+                          {images[0] && <img src={images[0]} alt={product.name} className="h-full w-full object-cover" />}
+                        </Link>
+                        <div className="flex flex-1 flex-col justify-between min-w-0">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-sky-600">{product.category}</p>
+                            <Link href={`/products/${product.id}`} className="font-semibold text-slate-900 no-underline hover:text-sky-700 line-clamp-2 text-sm mt-0.5 block">
+                              {product.name}
+                            </Link>
+                          </div>
+                          <div className="flex items-center justify-between mt-2 gap-2">
+                            <div>
+                              <span className="font-bold text-slate-900">{format(product.price)}</span>
+                              {discount && <span className="ml-1.5 text-[10px] font-bold text-red-500">-{discount}%</span>}
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={async () => {
+                                  await toggleWishlist(product.id);
+                                  setWishlistItems(prev => prev.filter(i => i.product.id !== product.id));
+                                }}
+                                className="flex h-8 w-8 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                                title="Remove from wishlist"
+                              >
+                                <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                              </button>
+                              <Link
+                                href={`/products/${product.id}`}
+                                className="rounded-full bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white no-underline hover:bg-sky-700"
+                              >
+                                View
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* ── Orders Tab ── */}
           {tab === 'orders' && (

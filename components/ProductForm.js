@@ -39,6 +39,7 @@ export default function ProductForm({ initial }) {
     specs: typeof initial?.specs === 'string' ? initial.specs : JSON.stringify(parse(initial?.specs, {}), null, 2),
     serialNumbers: parse(initial?.serialNumbers, []).join(', '),
     tags: parse(initial?.tags, []).join(', '),
+    bundledWith: parse(initial?.bundledWith, []).join(', '),
   });
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -132,6 +133,7 @@ export default function ProductForm({ initial }) {
         warrantyOptions: form.warrantyOptions.split(',').map((s) => s.trim()).filter(Boolean),
         serialNumbers: form.serialNumbers.split(',').map((s) => s.trim()).filter(Boolean),
         tags: form.tags.split(',').map((s) => s.trim()).filter(Boolean),
+        bundledWith: form.bundledWith.split(',').map((s) => s.trim()).filter(Boolean),
         specs: (() => { try { return JSON.parse(form.specs); } catch { return {}; } })(),
       };
 
@@ -304,6 +306,24 @@ export default function ProductForm({ initial }) {
           </Field>
           <Field label="Serial Numbers" help="Comma-separated">
             <input value={form.serialNumbers} onChange={(e) => set('serialNumbers', e.target.value)} className={inp} placeholder="SN-001, SN-002, SN-003" />
+          </Field>
+          <Field label="Frequently Bought Together" help="Comma-separated product IDs for bundle suggestions">
+            <input
+              value={form.bundledWith}
+              onChange={(e) => set('bundledWith', e.target.value)}
+              className={inp}
+              placeholder="e.g. 12, 34, 56"
+            />
+            {form.bundledWith && (
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {form.bundledWith.split(',').map(s => s.trim()).filter(Boolean).map(id => (
+                  <span key={id} className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700">
+                    Product #{id}
+                    <button type="button" onClick={() => set('bundledWith', form.bundledWith.split(',').filter(s => s.trim() !== id).join(', '))} className="text-violet-400 hover:text-violet-700 ml-0.5 leading-none">×</button>
+                  </span>
+                ))}
+              </div>
+            )}
           </Field>
         </div>
       </Section>

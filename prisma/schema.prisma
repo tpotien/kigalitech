@@ -27,6 +27,7 @@ model User {
   notifications         Notification[]
   tradeIns              TradeIn[]
   marketplaceListings   MarketplaceListing[]
+  wishlist              Wishlist[]
 }
 
 model Account {
@@ -90,8 +91,10 @@ model Product {
   videoUrl          String      @default("")
   hasTvInstall      Boolean     @default(false)
   condition         String      @default("new")
+  bundledWith       String      @default("[]")
   items             OrderItem[]
   reviews           Review[]
+  wishlistItems     Wishlist[]
 }
 
 model Order {
@@ -244,4 +247,14 @@ model MarketplaceListing {
   location    String   @default("")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now())
+}
+
+model Wishlist {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
+  createdAt DateTime @default(now())
+  @@unique([userId, productId])
 }

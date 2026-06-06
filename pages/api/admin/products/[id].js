@@ -1,4 +1,5 @@
 import prisma from '../../../../lib/prisma';
+import { sendLowStockAlert } from '../../../../lib/email';
 
 function serialize(p) {
   const result = { ...p };
@@ -24,6 +25,11 @@ export default async function handler(req, res) {
     const data = serialize(req.body);
     delete data.id;
     const product = await prisma.product.update({ where: { id }, data });
+    // Fire low-stock alert asynchronously (don't block response)
+    const threshold = product.lowStockThreshold ?? 5;
+    if (product.stock <= threshold && product.stock >= 0) {
+      sendLowStockAlert({ product }).catch(() => {});
+    }
     return res.json(product);
   }
 

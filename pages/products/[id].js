@@ -1,21 +1,45 @@
 import { useState, useEffect } from 'react';
+import Head from 'next/head';
 import prisma from '../../lib/prisma';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
 import Footer from '../../components/Footer';
+import ProductCard from '../../components/ProductCard';
 import { useCart } from '../../context/CartContext';
 import { useSession } from 'next-auth/react';
 import { useLang } from '../../context/LanguageContext';
 import { useCurrency } from '../../context/CurrencyContext';
+import { useWishlist } from '../../context/WishlistContext';
+import { useCompare } from '../../context/CompareContext';
 
 export async function getStaticPaths() {
   const products = await prisma.product.findMany({ where: { active: true } });
-  return { paths: products.map((p) => ({ params: { id: String(p.id) } })), fallback: false };
+  return { paths: products.map((p) => ({ params: { id: String(p.id) } })), fallback: 'blocking' };
 }
 
 export async function getStaticProps({ params }) {
   const product = await prisma.product.findUnique({ where: { id: Number(params.id) } });
-  return { props: { product: JSON.parse(JSON.stringify(product)) } };
+  if (!product) return { notFound: true };
+
+  // Fetch bundled products
+  let bundledProducts = [];
+  try {
+    const bundledIds = JSON.parse(product.bundledWith || '[]');
+    if (bundledIds.length) {
+      bundledProducts = await prisma.product.findMany({
+        where: { id: { in: bundledIds.map(Number) }, active: true },
+        select: { id: true, name: true, price: true, comparePrice: true, images: true, category: true, brand: true, stock: true, featured: true, description: true, colors: true, storageOptions: true, genuine: true, lowStockThreshold: true },
+      });
+    }
+  } catch {}
+
+  return {
+    props: {
+      product: JSON.parse(JSON.stringify(product)),
+      bundledProducts: JSON.parse(JSON.stringify(bundledProducts)),
+    },
+    revalidate: 60,
+  };
 }
 
 function parseField(val) {
@@ -226,10 +250,14 @@ function ReviewsSection({ productId }) {
   );
 }
 
-export default function ProductPage({ product }) {
+export default function ProductPage({ product, bundledProducts = [] }) {
   const { addItem } = useCart();
   const { t } = useLang();
   const { format } = useCurrency();
+  const { ids: wishlistIds, toggle: toggleWishlist } = useWishlist();
+  const { add: addCompare, remove: removeCompare, has: inCompare } = useCompare();
+  const { data: session } = useSession();
+
   const colors = parseField(product.colors);
   const storageOptions = parseField(product.storageOptions);
   const warrantyOptions = parseField(product.warrantyOptions);
@@ -245,6 +273,8 @@ export default function ProductPage({ product }) {
   const [quantity, setQuantity] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
   const [added, setAdded] = useState(false);
+  const [heartAnim, setHeartAnim] = useState(false);
+  const [recs, setRecs] = useState([]);
 
   const colorAvailable = (c) => colorStock[c] === undefined || colorStock[c] > 0;
   const storageAvailable = (s) => storageStock[s] === undefined || storageStock[s] > 0;
@@ -253,6 +283,13 @@ export default function ProductPage({ product }) {
 
   const images = Array.isArray(product.images) ? product.images : JSON.parse(product.images || '[]');
   const isTV = product.category === 'TVs' || product.hasTvInstall;
+  const isWished = wishlistIds.has(product.id);
+  const isCompared = inCompare(product.id);
+
+  useEffect(() => {
+    fetch(`/api/recommendations?productId=${product.id}&category=${encodeURIComponent(product.category)}&priceMin=${product.price * 0.5}&priceMax=${product.price * 1.5}`)
+      .then(r => r.json()).then(setRecs).catch(() => {});
+  }, [product.id]);
 
   function handleAddToCart() {
     addItem({ id: product.id, name: product.name, price: product.price, image: images[0], color, storage, quantity });
@@ -260,8 +297,37 @@ export default function ProductPage({ product }) {
     setTimeout(() => setAdded(false), 1500);
   }
 
+  async function handleWishlist() {
+    if (!session) { window.location.href = '/signin'; return; }
+    setHeartAnim(true);
+    await toggleWishlist(product.id);
+    setTimeout(() => setHeartAnim(false), 600);
+  }
+
+  // SEO
+  const metaTitle = `${product.name} — KigaliTech`;
+  const metaDesc = product.description?.slice(0, 155) || `Buy ${product.name} at KigaliTech Rwanda. ${product.category} products at the best prices.`;
+  const metaImage = images[0] || '';
+  const canonicalUrl = `${process.env.NEXTAUTH_URL || 'https://kigalitech.com'}/products/${product.id}`;
+
   return (
     <Layout>
+      <Head>
+        <title>{metaTitle}</title>
+        <meta name="description" content={metaDesc} />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:title" content={metaTitle} />
+        <meta property="og:description" content={metaDesc} />
+        <meta property="og:image" content={metaImage} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:type" content="product" />
+        <meta property="og:price:amount" content={(product.price / 100).toFixed(2)} />
+        <meta property="og:price:currency" content="USD" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={metaTitle} />
+        <meta name="twitter:description" content={metaDesc} />
+        <meta name="twitter:image" content={metaImage} />
+      </Head>
       <div className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
           {/* Breadcrumb */}
@@ -482,12 +548,92 @@ export default function ProductPage({ product }) {
                     {product.stock === 0 ? 'Out of Stock' : added ? '✓ Added to Cart' : 'Add to Cart'}
                   </button>
                 </div>
+
+                {/* Wishlist + Compare row */}
+                <div className="flex items-center gap-3 pt-1">
+                  <button
+                    onClick={handleWishlist}
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-full border py-3 text-sm font-semibold transition-all ${
+                      isWished
+                        ? 'border-red-200 bg-red-50 text-red-500 hover:bg-red-100'
+                        : 'border-slate-200 text-slate-600 hover:border-red-300 hover:text-red-500 hover:bg-red-50'
+                    } ${heartAnim ? 'scale-105' : ''}`}
+                  >
+                    <svg className="h-4 w-4" fill={isWished ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    {isWished ? 'Saved' : 'Save'}
+                  </button>
+                  <button
+                    onClick={() => isCompared ? removeCompare(product.id) : addCompare(product)}
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-full border py-3 text-sm font-semibold transition-all ${
+                      isCompared
+                        ? 'border-violet-300 bg-violet-50 text-violet-700'
+                        : 'border-slate-200 text-slate-600 hover:border-violet-300 hover:text-violet-600 hover:bg-violet-50'
+                    }`}
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    {isCompared ? '✓ Comparing' : 'Compare'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
+          {/* Bundled / Frequently Bought Together */}
+          {bundledProducts.length > 0 && (
+            <div className="mt-8 rounded-3xl bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-5">
+                <span className="text-xl">🛍️</span>
+                <div>
+                  <h2 className="font-bold text-slate-900">Frequently Bought Together</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Customers who buy this also pick these</p>
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {bundledProducts.map(bp => {
+                  const bImgs = (() => { try { return JSON.parse(bp.images); } catch { return []; } })();
+                  return (
+                    <Link key={bp.id} href={`/products/${bp.id}`} className="group flex items-center gap-4 rounded-2xl border border-slate-100 p-3 no-underline hover:border-sky-200 hover:bg-sky-50 transition-all">
+                      <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100">
+                        {bImgs[0] && <img src={bImgs[0]} alt={bp.name} className="h-full w-full object-cover" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 line-clamp-1 group-hover:text-sky-700">{bp.name}</p>
+                        <p className="text-sm font-bold text-sky-600 mt-0.5">{format(bp.price)}</p>
+                      </div>
+                      <span className="text-slate-300 group-hover:text-sky-400">→</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Reviews */}
           <ReviewsSection productId={product.id} />
+
+          {/* AI Recommendations */}
+          {recs.length > 0 && (
+            <div className="mt-8">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">You Might Also Like</p>
+                  <h2 className="mt-1 text-2xl font-extrabold text-slate-900">Similar Products</h2>
+                </div>
+                <Link href={`/products?category=${product.category}`} className="text-sm font-medium text-sky-600 hover:text-sky-800 no-underline">
+                  View all {product.category} →
+                </Link>
+              </div>
+              <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                {recs.slice(0, 6).map(rec => (
+                  <ProductCard key={rec.id} product={rec} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <Footer />
