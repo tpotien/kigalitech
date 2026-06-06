@@ -1,83 +1,120 @@
 import { useState } from 'react';
 import { useLang } from '../context/LanguageContext';
 
+// slug = SimpleIcons CDN slug  |  iconColor = hex without # for the logo fill
+// bg = brand's official background color  |  text = text/icon color over bg
 const BRANDS = [
-  { name: 'Apple',   domain: 'apple.com',     bg: '#000000', text: '#ffffff', font: "system-ui,-apple-system,'SF Pro Display',sans-serif", dark: true },
-  { name: 'Samsung', domain: 'samsung.com',    bg: '#1428A0', text: '#ffffff', font: "'Montserrat',sans-serif",        dark: true },
-  { name: 'Sony',    domain: 'sony.com',       bg: '#000000', text: '#ffffff', font: "'Barlow',Arial,sans-serif",      dark: true },
-  { name: 'LG',      domain: 'lg.com',         bg: '#A50034', text: '#ffffff', font: "Arial,sans-serif",               dark: true },
-  { name: 'ASUS',    domain: 'asus.com',       bg: '#0066CC', text: '#ffffff', font: "'Exo 2',sans-serif",             dark: true },
-  { name: 'HP',      domain: 'hp.com',         bg: '#0096D6', text: '#ffffff', font: "Arial,sans-serif",               dark: true },
-  { name: 'OnePlus', domain: 'oneplus.com',    bg: '#F5010C', text: '#ffffff', font: "'Montserrat',sans-serif",        dark: true },
-  { name: 'Lenovo',  domain: 'lenovo.com',     bg: '#E2231A', text: '#ffffff', font: "'Barlow',Arial,sans-serif",      dark: true },
-  { name: 'Xiaomi',  domain: 'xiaomi.com',     bg: '#FF6900', text: '#ffffff', font: "'Barlow',sans-serif",            dark: true },
-  { name: 'Huawei',  domain: 'huawei.com',     bg: '#CF0A2C', text: '#ffffff', font: "Arial,sans-serif",               dark: true },
-  { name: 'JBL',     domain: 'jbl.com',        bg: '#F76C00', text: '#000000', font: "'Bebas Neue',sans-serif",        dark: false },
-  { name: 'Bose',    domain: 'bose.com',       bg: '#000000', text: '#ffffff', font: "'Montserrat',sans-serif",        dark: true },
-  { name: 'Beats',   domain: 'beatsbydre.com', bg: '#DD0000', text: '#ffffff', font: "'Montserrat',sans-serif",        dark: true },
-  { name: 'Anker',   domain: 'anker.com',      bg: '#0070F0', text: '#ffffff', font: "'Exo 2',sans-serif",             dark: true },
-  { name: 'GoPro',   domain: 'gopro.com',      bg: '#00B4D8', text: '#000000', font: "'Barlow',sans-serif",            dark: false },
-  { name: 'Canon',   domain: 'canon.com',      bg: '#CC0000', text: '#ffffff', font: "Arial,sans-serif",               dark: true },
+  { name: 'Apple',    slug: 'apple',       bg: '#000000', text: '#ffffff', iconColor: 'ffffff', font: "system-ui,-apple-system,sans-serif" },
+  { name: 'Samsung',  slug: 'samsung',     bg: '#1428A0', text: '#ffffff', iconColor: 'ffffff', font: "'Montserrat',sans-serif" },
+  { name: 'Sony',     slug: 'sony',        bg: '#000000', text: '#ffffff', iconColor: 'ffffff', font: "'Barlow',Arial,sans-serif" },
+  { name: 'LG',       slug: 'lg',          bg: '#A50034', text: '#ffffff', iconColor: 'ffffff', font: "Arial,sans-serif" },
+  { name: 'ASUS',     slug: 'asus',        bg: '#0066CC', text: '#ffffff', iconColor: 'ffffff', font: "'Exo 2',sans-serif" },
+  { name: 'HP',       slug: 'hp',          bg: '#0096D6', text: '#ffffff', iconColor: 'ffffff', font: "Arial,sans-serif" },
+  { name: 'OnePlus',  slug: 'oneplus',     bg: '#F5010C', text: '#ffffff', iconColor: 'ffffff', font: "'Montserrat',sans-serif" },
+  { name: 'Lenovo',   slug: 'lenovo',      bg: '#E2231A', text: '#ffffff', iconColor: 'ffffff', font: "'Barlow',Arial,sans-serif" },
+  { name: 'Xiaomi',   slug: 'xiaomi',      bg: '#FF6900', text: '#ffffff', iconColor: 'ffffff', font: "'Barlow',sans-serif" },
+  { name: 'Huawei',   slug: 'huawei',      bg: '#CF0A2C', text: '#ffffff', iconColor: 'ffffff', font: "Arial,sans-serif" },
+  { name: 'JBL',      slug: 'jbl',         bg: '#F76C00', text: '#000000', iconColor: '000000', font: "'Bebas Neue',sans-serif" },
+  { name: 'Bose',     slug: 'bose',        bg: '#000000', text: '#ffffff', iconColor: 'ffffff', font: "'Montserrat',sans-serif" },
+  { name: 'Beats',    slug: 'beatsbydre',  bg: '#DD0000', text: '#ffffff', iconColor: 'ffffff', font: "'Montserrat',sans-serif" },
+  { name: 'Anker',    slug: 'anker',       bg: '#0070F0', text: '#ffffff', iconColor: 'ffffff', font: "'Exo 2',sans-serif" },
+  { name: 'GoPro',    slug: 'gopro',       bg: '#00B4D8', text: '#000000', iconColor: '000000', font: "'Barlow',sans-serif" },
+  { name: 'Canon',    slug: 'canon',       bg: '#CC0000', text: '#ffffff', iconColor: 'ffffff', font: "Arial,sans-serif" },
 ];
 
-function BrandLogo({ brand }) {
+function BrandCard({ brand }) {
   const [hovered, setHovered] = useState(false);
-  const [logoFailed, setLogoFailed] = useState(false);
-  const logoUrl = `https://logo.clearbit.com/${brand.domain}`;
+  const [imgFailed, setImgFailed] = useState(false);
 
-  const logoFilter = hovered
-    ? (brand.dark ? 'brightness(0) invert(1)' : 'brightness(0)')
-    : 'grayscale(100%) opacity(45%)';
+  // SimpleIcons CDN returns a clean SVG in the exact color requested
+  const logoSrc = `https://cdn.simpleicons.org/${brand.slug}/${brand.iconColor}`;
 
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={hovered ? {
-        backgroundColor: brand.bg,
-        boxShadow: `0 10px 40px ${brand.bg}55`,
-        transform: 'translateY(-4px) scale(1.06)',
-      } : {}}
-      className="relative flex flex-col items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-5 w-32 h-24 cursor-default transition-all duration-300"
-      title={brand.name}
+      className="relative flex flex-col items-center justify-center rounded-2xl border overflow-hidden cursor-default"
+      style={{
+        width: '9rem',
+        height: '6rem',
+        backgroundColor: hovered ? brand.bg : '#ffffff',
+        borderColor: hovered ? brand.bg : '#e2e8f0',
+        transform: hovered ? 'translateY(-6px) scale(1.07)' : 'translateY(0) scale(1)',
+        boxShadow: hovered ? `0 18px 45px ${brand.bg}50` : '0 1px 3px rgba(0,0,0,0.05)',
+        transition: 'all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1)',
+      }}
     >
-      {/* Logo */}
-      {!logoFailed ? (
+      {/* DEFAULT: brand name text */}
+      <span
+        style={{
+          fontFamily: brand.font,
+          color: '#64748b',
+          fontWeight: 800,
+          fontSize: brand.name.length > 6 ? '13px' : '16px',
+          letterSpacing: '0.02em',
+          position: 'absolute',
+          opacity: hovered ? 0 : 1,
+          transform: hovered ? 'translateY(6px) scale(0.85)' : 'translateY(0) scale(1)',
+          transition: 'all 0.22s ease',
+          pointerEvents: 'none',
+          userSelect: 'none',
+          textAlign: 'center',
+          padding: '0 8px',
+        }}
+      >
+        {brand.name}
+      </span>
+
+      {/* HOVER: official brand logo */}
+      {!imgFailed ? (
         <img
-          src={logoUrl}
+          src={logoSrc}
           alt={brand.name}
-          style={{ filter: logoFilter, transition: 'filter 0.3s ease' }}
-          className="h-8 w-auto max-w-[76px] object-contain"
+          style={{
+            opacity: hovered ? 1 : 0,
+            transform: hovered ? 'translateY(0) scale(1)' : 'translateY(-6px) scale(0.82)',
+            transition: 'all 0.28s ease',
+            pointerEvents: 'none',
+          }}
+          className="absolute h-10 w-auto max-w-[80%] object-contain"
           loading="lazy"
-          onError={() => setLogoFailed(true)}
+          onError={() => setImgFailed(true)}
         />
       ) : (
+        /* Fallback: brand name in brand color/style */
         <span
-          style={hovered ? {
-            color: brand.text,
+          style={{
             fontFamily: brand.font,
-            fontSize: brand.name.length > 5 ? '15px' : '18px',
-            fontWeight: 700,
-            letterSpacing: '0.02em',
-          } : { color: '#94a3b8', fontWeight: 700 }}
-          className="text-sm transition-all duration-300"
+            color: hovered ? brand.text : 'transparent',
+            fontWeight: 800,
+            fontSize: brand.name.length > 6 ? '14px' : '18px',
+            letterSpacing: brand.slug === 'jbl' ? '0.12em' : '0.04em',
+            position: 'absolute',
+            opacity: hovered ? 1 : 0,
+            transform: hovered ? 'translateY(0)' : 'translateY(-6px)',
+            transition: 'all 0.28s ease',
+            userSelect: 'none',
+          }}
         >
           {brand.name}
         </span>
       )}
 
-      {/* Brand name on hover */}
+      {/* Brand name label at bottom on hover */}
       <span
         style={{
           fontFamily: brand.font,
-          color: hovered ? brand.text : 'transparent',
-          fontSize: brand.font.includes('Bebas') ? '13px' : '9px',
-          fontWeight: brand.font.includes('Bebas') ? 400 : 700,
-          letterSpacing: brand.font.includes('Bebas') ? '0.12em' : '0.08em',
-          transition: 'color 0.3s ease',
-          lineHeight: 1,
+          color: hovered ? (brand.text === '#ffffff' ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.45)') : 'transparent',
+          fontSize: '8px',
+          fontWeight: 700,
+          letterSpacing: '0.1em',
+          position: 'absolute',
+          bottom: '8px',
+          opacity: hovered ? 1 : 0,
+          transition: 'opacity 0.25s ease 0.05s',
+          userSelect: 'none',
+          textTransform: 'uppercase',
         }}
-        className="absolute bottom-2.5 uppercase"
       >
         {brand.name}
       </span>
@@ -96,7 +133,7 @@ export default function TrustBadges() {
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4">
           {BRANDS.map(brand => (
-            <BrandLogo key={brand.name} brand={brand} />
+            <BrandCard key={brand.name} brand={brand} />
           ))}
         </div>
       </div>
