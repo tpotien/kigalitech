@@ -1,0 +1,163 @@
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useCart } from '../context/CartContext';
+
+export default function QuickViewModal({ product, onClose }) {
+  const { addItem } = useCart();
+  const [color, setColor] = useState('');
+  const [storage, setStorage] = useState('');
+  const [qty, setQty] = useState(1);
+  const [added, setAdded] = useState(false);
+  const [imgIndex, setImgIndex] = useState(0);
+
+  const images = Array.isArray(product?.images) ? product.images : JSON.parse(product?.images || '[]');
+  const colors = Array.isArray(product?.colors) ? product.colors : JSON.parse(product?.colors || '[]');
+  const storageOptions = Array.isArray(product?.storageOptions) ? product.storageOptions : JSON.parse(product?.storageOptions || '[]');
+
+  useEffect(() => {
+    if (product) {
+      setColor(colors[0] || '');
+      setStorage(storageOptions[0] || '');
+      setQty(1);
+      setAdded(false);
+      setImgIndex(0);
+    }
+  }, [product?.id]);
+
+  useEffect(() => {
+    const handler = (e) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  if (!product) return null;
+
+  function handleAdd() {
+    addItem({ id: product.id, name: product.name, price: product.price, image: images[0], color, storage, quantity: qty });
+    setAdded(true);
+    setTimeout(() => { setAdded(false); onClose(); }, 1200);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Modal */}
+      <div className="relative w-full max-w-3xl rounded-3xl bg-white shadow-2xl overflow-hidden">
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 z-10 rounded-full bg-slate-100 p-2 text-slate-500 hover:bg-slate-200"
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <div className="grid sm:grid-cols-2">
+          {/* Images */}
+          <div className="bg-slate-100 p-6">
+            <div className="overflow-hidden rounded-2xl">
+              <img
+                src={images[imgIndex]}
+                alt={product.name}
+                className="h-64 w-full object-cover"
+              />
+            </div>
+            {images.length > 1 && (
+              <div className="mt-3 flex gap-2">
+                {images.map((src, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setImgIndex(i)}
+                    className={`h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl border-2 transition ${
+                      imgIndex === i ? 'border-sky-500' : 'border-transparent'
+                    }`}
+                  >
+                    <img src={src} alt="" className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Info */}
+          <div className="flex flex-col gap-4 p-6 overflow-y-auto max-h-[80vh]">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">{product.category}</p>
+              <h2 className="mt-1 text-xl font-bold text-slate-900">{product.name}</h2>
+              <p className="mt-2 text-2xl font-extrabold text-slate-900">${(product.price / 100).toFixed(2)}</p>
+            </div>
+
+            {/* Color */}
+            {colors.length > 0 && (
+              <div>
+                <p className="text-sm text-slate-500 mb-2">Color: <span className="font-semibold text-slate-700">{color}</span></p>
+                <div className="flex flex-wrap gap-2">
+                  {colors.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setColor(c)}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                        color === c ? 'border-sky-500 bg-sky-50 text-sky-700' : 'border-slate-200 text-slate-600 hover:border-slate-400'
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Storage */}
+            {storageOptions.length > 1 && (
+              <div>
+                <p className="text-sm text-slate-500 mb-2">Storage</p>
+                <div className="flex flex-wrap gap-2">
+                  {storageOptions.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setStorage(s)}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                        storage === s ? 'border-sky-500 bg-sky-50 text-sky-700' : 'border-slate-200 text-slate-600 hover:border-slate-400'
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Qty */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center rounded-full border border-slate-200">
+                <button onClick={() => setQty(Math.max(1, qty - 1))} className="px-3 py-2 text-slate-500 hover:text-slate-900">−</button>
+                <span className="min-w-[2rem] text-center text-sm font-semibold">{qty}</span>
+                <button onClick={() => setQty(qty + 1)} className="px-3 py-2 text-slate-500 hover:text-slate-900">+</button>
+              </div>
+              <p className="text-xs text-slate-400">{product.stock} in stock</p>
+            </div>
+
+            <button
+              onClick={handleAdd}
+              className={`w-full rounded-full py-3.5 font-semibold text-white transition-all ${
+                added ? 'bg-emerald-500' : 'bg-sky-600 hover:bg-sky-700 active:scale-[0.98]'
+              }`}
+            >
+              {added ? '✓ Added to Cart' : 'Add to Cart'}
+            </button>
+
+            <Link
+              href={`/products/${product.id}`}
+              onClick={onClose}
+              className="text-center text-sm text-sky-600 hover:text-sky-800"
+            >
+              View full details →
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,245 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    Int                  @id @default(autoincrement())
+  name                  String?
+  email                 String               @unique
+  emailVerified         DateTime?
+  image                 String?
+  role                  String               @default("user")
+  phoneNumber           String?
+  phoneVerified         Boolean              @default(false)
+  password              String?
+  language              String               @default("en")
+  notificationPrefs     String               @default("{\"email\":true,\"sms\":false,\"whatsapp\":false}")
+  orders                Order[]
+  repairTickets         RepairTicket[]
+  reviews               Review[]
+  accounts              Account[]
+  sessions              Session[]
+  notifications         Notification[]
+  tradeIns              TradeIn[]
+  marketplaceListings   MarketplaceListing[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            Int
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       Int
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  @@unique([identifier, token])
+}
+
+model Product {
+  id                Int         @id @default(autoincrement())
+  name              String
+  category          String
+  description       String
+  price             Int
+  comparePrice      Int?
+  images            String      @default("[]")
+  colors            String      @default("[]")
+  storageOptions    String      @default("[]")
+  warrantyOptions   String      @default("[]")
+  specs             String      @default("{}")
+  stock             Int
+  lowStockThreshold Int         @default(5)
+  serialNumbers     String      @default("[]")
+  colorStock        String      @default("{}")
+  storageStock      String      @default("{}")
+  subcategory       String?
+  active            Boolean     @default(true)
+  featured          Boolean     @default(false)
+  brand             String?
+  sku               String?
+  weight            String?
+  dimensions        String?
+  tags              String      @default("[]")
+  genuine           Boolean     @default(true)
+  videoUrl          String      @default("")
+  hasTvInstall      Boolean     @default(false)
+  condition         String      @default("new")
+  items             OrderItem[]
+  reviews           Review[]
+}
+
+model Order {
+  id               Int           @id @default(autoincrement())
+  createdAt        DateTime      @default(now())
+  total            Int
+  discountAmount   Int           @default(0)
+  couponCode       String?
+  status           String        @default("pending")
+  receiptUrl       String?
+  adminConfirmed   Boolean       @default(false)
+  paymentConfirmed Boolean       @default(false)
+  billPrintable    Boolean       @default(false)
+  paymentMethod    String?
+  shippingName     String?
+  shippingEmail    String?
+  shippingPhone    String?
+  shippingAddress  String?
+  notes            String?
+  user             User?         @relation(fields: [userId], references: [id])
+  userId               Int?
+  installmentPlan      String        @default("")
+  installmentMonths    Int           @default(0)
+  tvInstallation       Boolean       @default(false)
+  tvInstallAddress     String        @default("")
+  mpostAddress         String        @default("")
+  deliveryStatus       String        @default("")
+  deliveryTracking     String        @default("")
+  currency             String        @default("USD")
+  tradeInId            Int?
+  items                OrderItem[]
+  repairTickets        RepairTicket[]
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  order     Order   @relation(fields: [orderId], references: [id])
+  orderId   Int
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+  name      String
+  price     Int
+  quantity  Int
+  color     String
+  storage   String
+  warranty  String
+  serial    String
+}
+
+model Coupon {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique
+  type        String   @default("percent")
+  value       Int
+  minOrder    Int      @default(0)
+  maxUses     Int      @default(0)
+  usedCount   Int      @default(0)
+  active      Boolean  @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  rating    Int
+  title     String
+  body      String
+  verified  Boolean  @default(false)
+  approved  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model RepairTicket {
+  id              Int      @id @default(autoincrement())
+  user            User     @relation(fields: [userId], references: [id])
+  userId          Int
+  order           Order?   @relation(fields: [orderId], references: [id])
+  orderId         Int?
+  productName     String
+  issue           String
+  description     String   @default("")
+  status          String   @default("open")
+  priority        String   @default("normal")
+  adminNotes      String   @default("")
+  contactMethod   String   @default("whatsapp")
+  preferredTime   String   @default("")
+  techPhone       String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now())
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    Int?
+  type      String
+  title     String
+  body      String
+  link      String   @default("")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model SiteConfig {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}
+
+model TradeIn {
+  id           Int      @id @default(autoincrement())
+  user         User     @relation(fields: [userId], references: [id])
+  userId       Int
+  productName  String
+  brand        String   @default("")
+  condition    String   @default("good")
+  description  String   @default("")
+  images       String   @default("[]")
+  askingPrice  Int      @default(0)
+  offeredPrice Int      @default(0)
+  finalPrice   Int      @default(0)
+  status       String   @default("pending")
+  adminNotes   String   @default("")
+  orderId      Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now())
+}
+
+model MarketplaceListing {
+  id          Int      @id @default(autoincrement())
+  seller      User     @relation(fields: [sellerId], references: [id])
+  sellerId    Int
+  title       String
+  description String
+  price       Int
+  category    String
+  condition   String   @default("good")
+  images      String   @default("[]")
+  status      String   @default("pending")
+  adminNotes  String   @default("")
+  verified    Boolean  @default(false)
+  views       Int      @default(0)
+  phone       String   @default("")
+  location    String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+}
