@@ -89,11 +89,7 @@ export default function SignIn() {
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-600 mb-4 shadow-lg shadow-sky-900/50">
-            <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
+          <img src="/logo.png" alt="KigaliTech" className="h-20 w-20 rounded-full object-cover border-2 border-orange-400/40 shadow-xl mb-4" />
           <h1 className="text-2xl font-extrabold text-white">KigaliTech</h1>
           <p className="text-slate-400 text-sm mt-1">
             {mode === 'login' ? t('signIn') : t('createAccount')}

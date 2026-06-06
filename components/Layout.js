@@ -44,11 +44,7 @@ export default function Layout({ children }) {
           <div className="flex h-16 items-center justify-between gap-3">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 no-underline flex-shrink-0">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600">
-                <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
+              <img src="/logo.png" alt="KigaliTech" className="h-10 w-10 rounded-full object-cover shadow-sm" />
               <span className="text-lg font-bold text-slate-900 hidden sm:block">KigaliTech</span>
             </Link>
 

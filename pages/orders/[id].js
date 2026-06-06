@@ -238,14 +238,10 @@ export default function OrderPage() {
           <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-sky-900 px-8 py-7 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500">
-                  <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
+                <img src="/logo.png" alt="KigaliTech" className="h-14 w-14 rounded-full object-cover border-2 border-orange-400/50 shadow-lg" />
                 <div>
                   <p className="font-extrabold text-lg leading-none">KigaliTech</p>
-                  <p className="text-sky-300 text-xs mt-0.5">Official Receipt</p>
+                  <p className="text-orange-300 text-xs mt-0.5 font-semibold tracking-wide">Official Receipt</p>
                 </div>
               </div>
               <div className="text-right">

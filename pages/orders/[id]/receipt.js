@@ -62,14 +62,10 @@ export default function ReceiptPage({ order, items }) {
         <div className="receipt-card mx-auto max-w-2xl rounded-3xl bg-white shadow-xl shadow-slate-200/60 overflow-hidden">
 
           {/* Dark header */}
-          <div className="bg-slate-900 px-10 py-10 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500">
-              <svg className="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
+          <div className="bg-slate-900 px-10 py-8 text-center">
+            <img src="/logo.png" alt="KigaliTech" className="mx-auto mb-3 h-20 w-20 rounded-full object-cover border-2 border-orange-400/50 shadow-lg" />
             <h1 className="text-2xl font-bold tracking-tight text-white">KigaliTech</h1>
-            <p className="mt-1 text-sm text-slate-400">Official Purchase Receipt</p>
+            <p className="mt-1 text-sm text-orange-300 font-semibold tracking-wide">Official Purchase Receipt</p>
           </div>
 
           {/* Thank you banner */}

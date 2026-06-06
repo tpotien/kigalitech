@@ -27,11 +27,7 @@ export default function AdminLayout({ children, title }) {
       <aside className="hidden lg:flex lg:flex-col w-64 bg-slate-900 min-h-screen">
         {/* Logo */}
         <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-800">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600">
-            <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
+          <img src="/logo.png" alt="KigaliTech" className="h-11 w-11 rounded-full object-cover border-2 border-orange-400/40 flex-shrink-0" />
           <div>
             <p className="font-bold text-white text-sm">KigaliTech</p>
             <p className="text-xs text-slate-400">Admin Panel</p>
