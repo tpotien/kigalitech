@@ -270,10 +270,11 @@ export default function ReceiptPage({ order, items }) {
         {/* Footer */}
         <div className="r-footer border-t border-dashed border-slate-200 px-8 py-5 text-center space-y-1.5">
           <p className="r-footer-main text-sm font-semibold text-slate-700">We hope you love your new device!</p>
-          <p className="r-footer-sub text-xs text-slate-400">Need help? <a href="https://wa.me/250786276555" className="text-green-600 font-medium">WhatsApp us: +250 786 276 555</a></p>
+          <p className="r-footer-sub text-xs text-slate-400">Need help? <a href="https://wa.me/250786276555" className="text-green-600 font-medium">WhatsApp: +250 786 276 555</a></p>
           <p className="r-footer-tiny text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-1">KigaliTech — Premium Electronics</p>
           <p className="r-footer-tiny text-[10px] text-slate-400">KN 74St, infront of Al madina mosque, Kigali Rwanda</p>
-          <p className="r-footer-tiny text-[10px] text-slate-400">+250 786 276 555 · kigalitech.com</p>
+          <p className="r-footer-tiny text-[10px] text-slate-400">Email: kigalitechservices@gmail.com</p>
+          <p className="r-footer-tiny text-[10px] text-slate-400">Phone: +250 786 276 555</p>
           <p className="r-footer-tiny text-[10px] text-slate-300 pt-1">Order #{order.id} · {dateStr} · {timeStr}</p>
         </div>
       </div>
