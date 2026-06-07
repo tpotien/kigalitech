@@ -15,6 +15,58 @@ body {
   @apply bg-slate-950 text-slate-100;
 }
 
+/* ── Admin panel: auto dark mode for all pages ──────────────────────────────
+   Scoped to `main` so it only affects admin content area, not the sidebar.
+   This avoids manually updating every admin page file. */
+.dark main .bg-white {
+  background-color: rgb(30 41 59) !important; /* slate-800 */
+}
+.dark main .border-slate-200 {
+  border-color: rgb(51 65 85) !important; /* slate-700 */
+}
+.dark main .border-slate-100 {
+  border-color: rgb(51 65 85) !important; /* slate-700 */
+}
+.dark main .bg-slate-50 {
+  background-color: rgb(15 23 42) !important; /* slate-900 */
+}
+.dark main .text-slate-900 {
+  color: rgb(241 245 249) !important; /* slate-100 */
+}
+.dark main .text-slate-700 {
+  color: rgb(203 213 225) !important; /* slate-300 */
+}
+.dark main .text-slate-600 {
+  color: rgb(148 163 184) !important; /* slate-400 */
+}
+.dark main .text-slate-500 {
+  color: rgb(148 163 184) !important; /* slate-400 */
+}
+.dark main .divide-slate-50 > * + *,
+.dark main .divide-slate-100 > * + * {
+  border-color: rgb(51 65 85) !important; /* slate-700 */
+}
+.dark main input:not([type=checkbox]):not([type=radio]),
+.dark main select,
+.dark main textarea {
+  background-color: rgb(30 41 59) !important; /* slate-800 */
+  border-color: rgb(71 85 105) !important;    /* slate-600 */
+  color: rgb(241 245 249) !important;          /* slate-100 */
+}
+.dark main input::placeholder,
+.dark main textarea::placeholder {
+  color: rgb(100 116 139) !important; /* slate-500 */
+}
+.dark main tr:hover td {
+  background-color: rgb(30 41 59) !important; /* slate-800 */
+}
+.dark main thead tr {
+  background-color: rgb(15 23 42) !important; /* slate-900 */
+}
+.dark main .hover\:bg-slate-50:hover {
+  background-color: rgb(30 41 59) !important; /* slate-800 */
+}
+
 /* Smooth color transitions everywhere for dark mode toggle */
 *, *::before, *::after {
   transition-property: background-color, border-color, color, fill, stroke;

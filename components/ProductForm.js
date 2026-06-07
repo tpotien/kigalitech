@@ -216,23 +216,36 @@ export default function ProductForm({ initial }) {
     if (!file) return;
     setUploading(true);
     setError('');
+    e.target.value = '';
+
     const reader = new FileReader();
-    reader.onload = async (ev) => {
-      try {
-        const res = await fetch('/api/admin/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageDataUrl: ev.target.result }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Upload failed');
-        set('images', form.images ? `${form.images}\n${data.url}` : data.url);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setUploading(false);
-        e.target.value = '';
-      }
+    reader.onload = (ev) => {
+      const img = new window.Image();
+      img.onload = async () => {
+        // Resize to max 1000px to keep DB size manageable
+        const MAX = 1000;
+        const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        try {
+          const res = await fetch('/api/admin/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageDataUrl: dataUrl }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Upload failed');
+          set('images', form.images ? `${form.images}\n${data.url}` : data.url);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setUploading(false);
+        }
+      };
+      img.src = ev.target.result;
     };
     reader.readAsDataURL(file);
   }
