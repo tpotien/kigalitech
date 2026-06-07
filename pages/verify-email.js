@@ -137,7 +137,7 @@ export default function VerifyEmail() {
         {/* Card */}
         <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden">
           {/* Header gradient */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 pt-10 pb-8 text-center">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 pt-6 pb-6 sm:px-8 sm:pt-10 sm:pb-8 text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/20 backdrop-blur mb-4">
               <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
@@ -168,7 +168,7 @@ export default function VerifyEmail() {
                 </p>
 
                 {/* OTP Input */}
-                <div className="flex gap-2 sm:gap-3 justify-center mb-6" onPaste={handlePaste}>
+                <div className="flex gap-1.5 sm:gap-3 justify-center mb-6" onPaste={handlePaste}>
                   {digits.map((d, i) => (
                     <input
                       key={i}
@@ -179,12 +179,11 @@ export default function VerifyEmail() {
                       value={d}
                       onChange={e => handleDigit(i, e.target.value)}
                       onKeyDown={e => handleKeyDown(i, e)}
-                      className={`w-11 h-14 sm:w-13 sm:h-16 text-center text-xl font-bold rounded-xl border-2 outline-none transition-all duration-200
+                      className={`w-10 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold rounded-xl border-2 outline-none transition-all duration-200
                         ${d ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-white'}
                         focus:border-blue-500 focus:bg-blue-50 dark:focus:bg-blue-900/30 focus:shadow-lg focus:shadow-blue-100
                         ${error ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : ''}
                       `}
-                      style={{ width: '3rem', height: '3.75rem' }}
                     />
                   ))}
                 </div>

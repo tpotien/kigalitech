@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSession, signIn } from 'next-auth/react';
+import { useSession, signIn, getSession } from 'next-auth/react';
 import Link from 'next/link';
 import Layout from '../components/Layout';
 import { useLang } from '../context/LanguageContext';
@@ -301,7 +301,10 @@ export default function AccountPage() {
     if (res.ok) {
       setProfileImageDataUrl(null);
       if (data.image) setProfileImagePreview(data.image);
-      setProfileMsg({ text: 'Profile updated! Name and picture changes appear on next sign-in.', ok: true });
+      setProfileMsg({ text: 'Profile updated!', ok: true });
+      // Force session to refresh so navbar/avatar update immediately
+      await getSession();
+      window.location.reload();
     } else {
       setProfileMsg({ text: data.error || 'Failed to update', ok: false });
     }
@@ -899,7 +902,7 @@ export default function AccountPage() {
             <form onSubmit={saveProfile} className="space-y-5">
               <div className="rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm">
                 <h2 className="mb-5 text-lg font-bold text-slate-900 dark:text-slate-100">Profile Picture</h2>
-                <div className="flex items-center gap-5">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5">
                   <AvatarWithBadge
                     image={profileImagePreview}
                     name={session.user.name}
@@ -907,7 +910,7 @@ export default function AccountPage() {
                     emailVerified={session.user.emailVerified}
                     size="2xl"
                   />
-                  <div>
+                  <div className="text-center sm:text-left">
                     <button
                       type="button"
                       onClick={() => photoRef.current?.click()}
@@ -915,7 +918,7 @@ export default function AccountPage() {
                     >
                       Change Photo
                     </button>
-                    <p className="mt-1.5 text-xs text-slate-400">JPG, PNG or WebP — max 5 MB</p>
+                    <p className="mt-1.5 text-xs text-slate-400">JPG, PNG or WebP · auto-resized to 256px</p>
                     <input ref={photoRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhotoChange} />
                   </div>
                 </div>

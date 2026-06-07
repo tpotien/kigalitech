@@ -266,7 +266,7 @@ export default function SignIn() {
           ) : (
             <div className="mb-5">
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 text-center uppercase tracking-wide">Fastest — no password needed</p>
-              <form onSubmit={handleMagicLink} className="flex gap-2">
+              <form onSubmit={handleMagicLink} className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="email"
                   value={magicEmail}
@@ -277,9 +277,9 @@ export default function SignIn() {
                 <button
                   type="submit"
                   disabled={!!loading}
-                  className="flex-shrink-0 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:from-sky-600 hover:to-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-sky-200 whitespace-nowrap"
+                  className="rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:from-sky-600 hover:to-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-sky-200 whitespace-nowrap"
                 >
-                  {loading === 'magic-send' ? '…' : '✨ Send Link'}
+                  {loading === 'magic-send' ? 'Sending…' : '✨ Send Magic Link'}
                 </button>
               </form>
               <p className="text-[10px] text-slate-400 text-center mt-1.5">We'll email you a magic sign-in link · Works for new &amp; existing accounts</p>
@@ -294,11 +294,11 @@ export default function SignIn() {
           {/* Mode tabs */}
           <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden mb-5">
             <button onClick={() => { setMode('login'); setError(''); }}
-              className={`flex-1 py-2.5 text-sm font-semibold transition ${mode === 'login' ? 'bg-sky-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+              className={`flex-1 py-2.5 text-sm font-semibold whitespace-nowrap transition ${mode === 'login' ? 'bg-sky-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
               Sign In
             </button>
             <button onClick={() => { setMode('register'); setError(''); }}
-              className={`flex-1 py-2.5 text-sm font-semibold transition ${mode === 'register' ? 'bg-sky-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+              className={`flex-1 py-2.5 text-sm font-semibold whitespace-nowrap transition ${mode === 'register' ? 'bg-sky-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
               Create Account
             </button>
           </div>
