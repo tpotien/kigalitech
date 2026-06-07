@@ -39,8 +39,11 @@ export default function ProductForm({ initial }) {
   const [uploading, setUploading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiStatus, setAiStatus] = useState('');
+  const [scanning, setScanning] = useState(false);
+  const [scanPreview, setScanPreview] = useState(null);
   const [nameWarning, setNameWarning] = useState('');
   const fileRef = useRef();
+  const scanRef = useRef();
 
   const [form, setForm] = useState({
     name: initial?.name || '',
@@ -124,6 +127,64 @@ export default function ProductForm({ initial }) {
   }
 
   function handleAiFill() { runAiFill(form.name, form.category); }
+
+  function handleScanPhoto(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      // Resize to max 1024px before sending to keep API fast
+      const img = new window.Image();
+      img.onload = async () => {
+        const MAX = 1024;
+        const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        setScanPreview(dataUrl);
+        setScanning(true);
+        setAiStatus('Scanning product image…');
+        setError('');
+        try {
+          const res = await fetch('/api/admin/ai-scan-product', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageDataUrl: dataUrl }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Scan failed');
+          setForm((f) => ({
+            ...f,
+            name: data.name || f.name,
+            category: data.category || f.category,
+            description: data.description || f.description,
+            brand: data.brand || f.brand,
+            weight: data.weight || f.weight,
+            colors: Array.isArray(data.colors) ? data.colors.join(', ') : f.colors,
+            storageOptions: Array.isArray(data.storageOptions) ? data.storageOptions.join(', ') : f.storageOptions,
+            warrantyOptions: Array.isArray(data.warrantyOptions) ? data.warrantyOptions.join(', ') : f.warrantyOptions,
+            tags: Array.isArray(data.tags) ? data.tags.join(', ') : f.tags,
+            specs: data.specs ? JSON.stringify(data.specs, null, 2) : f.specs,
+            price: data.suggestedPrice && !f.price ? (data.suggestedPrice / 100).toFixed(2) : f.price,
+          }));
+          setAiStatus('📷 Product scanned — review all fields before saving.');
+          setTimeout(() => setAiStatus(''), 6000);
+        } catch (err) {
+          setError(err.message);
+          setAiStatus('');
+        } finally {
+          setScanning(false);
+        }
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+    // Reset so same file can be re-selected
+    e.target.value = '';
+  }
+
   function handleNameChange(e) {
     const raw = e.target.value;
     // Strip emojis and special characters in real-time
@@ -236,31 +297,88 @@ export default function ProductForm({ initial }) {
         </div>
       )}
 
-      {/* AI Fill Banner — optional feature */}
-      <div className="rounded-2xl bg-gradient-to-r from-violet-50 to-sky-50 border border-violet-100 p-5 flex items-center justify-between gap-4">
-        <div>
-          <p className="font-semibold text-slate-800 text-sm">Auto Fill {aiLoading && <span className="ml-1.5 inline-block h-3 w-3 align-middle animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />}</p>
-          <p className="text-xs text-slate-500 mt-0.5">Type the product name and tab away — description, specs, colors, warranty &amp; price fill automatically. Click the button to re-fill anytime.</p>
+      {/* AI Fill Banner */}
+      <div className="rounded-2xl bg-gradient-to-r from-violet-50 to-sky-50 border border-violet-100 p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-slate-800 text-sm flex items-center gap-2">
+              AI Product Assistant
+              {(aiLoading || scanning) && <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />}
+            </p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              <span className="font-medium text-violet-700">📷 Scan a photo</span> — AI reads the product and fills everything instantly.
+              Or type the name and click <span className="font-medium text-violet-700">AI Fill</span>. All fields can be edited manually.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Scan Photo button */}
+            <button
+              type="button"
+              onClick={() => scanRef.current?.click()}
+              disabled={scanning || aiLoading}
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all"
+            >
+              {scanning ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Scanning…
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Scan Photo
+                </>
+              )}
+            </button>
+            {/* Hidden file input — camera on mobile, file picker on desktop */}
+            <input
+              ref={scanRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleScanPhoto}
+            />
+            {/* AI Fill by name */}
+            <button
+              type="button"
+              onClick={handleAiFill}
+              disabled={aiLoading || scanning || !form.name.trim()}
+              className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-violet-200 transition-all"
+            >
+              {aiLoading ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Filling…
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  AI Fill
+                </>
+              )}
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={handleAiFill}
-          disabled={aiLoading || !form.name.trim()}
-          title="Requires ANTHROPIC_API_KEY — all fields can also be filled manually"
-          className="flex-shrink-0 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-violet-200 transition-all"
-        >
-          {aiLoading ? (
-            <>
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <span>✨</span>
-              AI Fill
-            </>
-          )}
-        </button>
+
+        {/* Scan preview thumbnail */}
+        {scanPreview && (
+          <div className="mt-3 flex items-center gap-3 bg-white rounded-xl border border-slate-200 px-3 py-2">
+            <img src={scanPreview} alt="Scanned product" className="h-12 w-12 rounded-lg object-contain border border-slate-100" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-slate-700 truncate">{scanning ? 'Analysing image with AI…' : 'Scan complete — review fields below'}</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">You can still edit any field manually</p>
+            </div>
+            <button type="button" onClick={() => setScanPreview(null)} className="text-slate-400 hover:text-slate-600 p-1">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        )}
       </div>
 
       <Section title="Basic Info">
