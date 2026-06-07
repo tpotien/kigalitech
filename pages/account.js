@@ -6,6 +6,7 @@ import { useLang } from '../context/LanguageContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useWishlist } from '../context/WishlistContext';
 import ReferralCard from '../components/ReferralCard';
+import VerifiedBadge from '../components/VerifiedBadge';
 
 const STATUS_COLORS = {
   pending: 'bg-amber-100 text-amber-700',
@@ -121,6 +122,61 @@ const TRADEIN_STATUS = {
   completed:   { label: 'Completed',          color: 'bg-slate-600 text-white',         icon: '✓' },
 };
 
+function LoyaltyTierCard({ points }) {
+  const tiers = [
+    { name: 'Bronze', icon: '🥉', min: 0,     max: 999,   color: 'from-amber-600 to-amber-700',   bg: 'bg-amber-50 dark:bg-amber-900/20',   border: 'border-amber-200 dark:border-amber-800', perks: ['1 point per $1 spent', 'Member discounts'] },
+    { name: 'Silver', icon: '🥈', min: 1000,  max: 4999,  color: 'from-slate-400 to-slate-500',   bg: 'bg-slate-50 dark:bg-slate-800/50',   border: 'border-slate-200 dark:border-slate-600', perks: ['1.5 points per $1', 'Free standard delivery', 'Early sale access'] },
+    { name: 'Gold',   icon: '🥇', min: 5000,  max: 14999, color: 'from-yellow-400 to-amber-500',  bg: 'bg-yellow-50 dark:bg-yellow-900/20', border: 'border-yellow-200 dark:border-yellow-700', perks: ['2 points per $1', 'Free delivery always', 'Priority support', 'Birthday bonus'] },
+    { name: 'Platinum',icon: '💎',min: 15000, max: Infinity,color:'from-violet-500 to-purple-600',bg:'bg-violet-50 dark:bg-violet-900/20',  border: 'border-violet-200 dark:border-violet-700', perks: ['3 points per $1', '5% extra discount', 'Dedicated account manager', 'VIP events'] },
+  ];
+
+  const current = tiers.find(t => points >= t.min && points <= t.max) || tiers[0];
+  const nextTier = tiers[tiers.indexOf(current) + 1];
+  const progress = nextTier ? Math.min(100, Math.round(((points - current.min) / (nextTier.min - current.min)) * 100)) : 100;
+
+  return (
+    <div className={`rounded-2xl border ${current.border} ${current.bg} p-5 mb-6`}>
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-1">Loyalty Status</p>
+          <div className="flex items-center gap-2">
+            <span className="text-3xl">{current.icon}</span>
+            <span className={`text-2xl font-extrabold bg-gradient-to-r ${current.color} bg-clip-text text-transparent`}>{current.name}</span>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">{points.toLocaleString()}</p>
+          <p className="text-xs text-slate-500">points</p>
+        </div>
+      </div>
+      {nextTier && (
+        <div className="mb-4">
+          <div className="flex justify-between text-xs text-slate-500 mb-1.5">
+            <span>{current.name}</span>
+            <span>{nextTier.min - points} pts to {nextTier.name} {nextTier.icon}</span>
+          </div>
+          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+            <div className={`h-full rounded-full bg-gradient-to-r ${current.color} transition-all duration-700`} style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+      )}
+      {!nextTier && (
+        <p className="text-sm font-semibold text-violet-700 dark:text-violet-300 mb-4">🎉 You&apos;ve reached the highest tier!</p>
+      )}
+      <div className="grid grid-cols-2 gap-2">
+        {current.perks.map(perk => (
+          <div key={perk} className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
+            <svg className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+            </svg>
+            {perk}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function CopyButton({ text }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -172,12 +228,20 @@ export default function AccountPage() {
   const [counterNotes, setCounterNotes] = useState({});
   const [tradeInMsg, setTradeInMsg] = useState({});
 
+  // Badge state
+  const [badgeInfo, setBadgeInfo] = useState({ verifiedBuyer: false, role: null });
+
+  // Loyalty points state
+  const [loyaltyPoints, setLoyaltyPoints] = useState(0);
+
   useEffect(() => {
     if (status !== 'authenticated') return;
     setLoadingOrders(true);
     fetch('/api/account/orders').then(r => r.json()).then(data => { setOrders(data); setLoadingOrders(false); });
     setProfileName(session?.user?.name || '');
     setProfileImagePreview(session?.user?.image || null);
+    fetch('/api/account/badge').then(r => r.ok ? r.json() : null).then(data => { if (data) setBadgeInfo(data); });
+    fetch('/api/loyalty/balance').then(r => r.ok ? r.json() : null).then(data => { if (data?.points !== undefined) setLoyaltyPoints(data.points); });
   }, [status]);
 
   useEffect(() => {
@@ -378,7 +442,10 @@ export default function AccountPage() {
               : <div className="flex h-16 w-16 items-center justify-center rounded-full bg-sky-600 text-2xl font-bold text-white">{(session.user.name || 'U')[0].toUpperCase()}</div>
             }
             <div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{session.user.name || 'Customer'}</h1>
+              <span className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{session.user.name || 'Customer'}</h1>
+                <VerifiedBadge role={badgeInfo.role || session.user.role} verifiedBuyer={badgeInfo.verifiedBuyer} size="md" />
+              </span>
               <p className="text-slate-500 dark:text-slate-400">{session.user.email}</p>
               <span className="mt-1 inline-block rounded-full bg-sky-100 px-3 py-0.5 text-xs font-semibold text-sky-700 capitalize">{session.user.role || 'customer'}</span>
             </div>
@@ -672,6 +739,7 @@ export default function AccountPage() {
           {/* ── Orders Tab ── */}
           {tab === 'orders' && (
             <div className="space-y-4">
+              <LoyaltyTierCard points={loyaltyPoints || session?.user?.loyaltyPoints || 0} />
               {loadingOrders ? (
                 <div className="flex justify-center py-16">
                   <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />

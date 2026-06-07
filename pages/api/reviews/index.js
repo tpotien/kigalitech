@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     const { productId } = req.query;
     const reviews = await prisma.review.findMany({
       where: { productId: Number(productId), approved: true },
-      include: { user: { select: { name: true, image: true } } },
+      include: { user: { select: { name: true, image: true, role: true, verifiedBuyer: true } } },
       orderBy: { createdAt: 'desc' },
     });
     const avg = reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
         images: JSON.stringify(imageUrls),
         verified: !!purchased,
       },
-      include: { user: { select: { name: true, image: true } } },
+      include: { user: { select: { name: true, image: true, role: true, verifiedBuyer: true } } },
     });
     return res.status(201).json(review);
   }

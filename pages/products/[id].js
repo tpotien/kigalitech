@@ -16,6 +16,9 @@ import { useWhatsAppCtx } from '../../context/WhatsAppContext';
 import TranslatedText from '../../components/TranslatedText';
 import StockAlertButton from '../../components/StockAlertButton';
 import ProductQA from '../../components/ProductQA';
+import VerifiedBadge from '../../components/VerifiedBadge';
+import PreOrderButton from '../../components/PreOrderButton';
+import BundleSection from '../../components/BundleSection';
 
 export async function getStaticPaths() {
   const products = await prisma.product.findMany({ where: { active: true } });
@@ -342,7 +345,10 @@ function ReviewsSection({ productId }) {
                       : <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-sky-600">{(review.user?.name || 'A')[0].toUpperCase()}</div>
                     }
                     <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{review.user?.name || 'Anonymous'}</p>
+                      <span className="flex items-center gap-1">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{review.user?.name || 'Anonymous'}</p>
+                        <VerifiedBadge role={review.user?.role} verifiedBuyer={review.user?.verifiedBuyer} />
+                      </span>
                       <div className="flex items-center gap-2">
                         <StarRating rating={review.rating} size={4} />
                         {review.verified && <span className="rounded-full bg-emerald-100 dark:bg-emerald-900/20 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">Verified Purchase</span>}
@@ -890,6 +896,14 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                   </span>
                 </div>
 
+                {/* Pre-Order button */}
+                {product.preOrder && (
+                  <div className="mb-3">
+                    <PreOrderButton product={product} />
+                    <p className="text-center text-xs text-amber-600 mt-1.5">🔔 Available for pre-order · Ships {product.preOrderDate ? new Date(product.preOrderDate).toLocaleDateString('en-US', {month:'short', day:'numeric'}) : 'soon'}</p>
+                  </div>
+                )}
+
                 {/* Qty + CTA */}
                 <div className="flex items-center gap-3">
                   <div className="flex items-center rounded-full border border-slate-200 dark:border-slate-700">
@@ -975,6 +989,13 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Bundle section */}
+          {(() => { try { return JSON.parse(product.bundledWith || '[]').length > 0; } catch { return false; } })() && (
+            <div className="mt-6">
+              <BundleSection product={product} />
             </div>
           )}
 

@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { items, userId } = req.body;
+  const { items, userId, deliverySlot, deliveryDate } = req.body;
   if (!items || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'Invalid order items' });
   }
@@ -16,6 +16,8 @@ export default async function handler(req, res) {
     data: {
       total,
       userId: userId || undefined,
+      deliverySlot: deliverySlot || '',
+      deliveryDate: deliveryDate || '',
       items: {
         create: items.map((item) => ({
           productId: item.productId,

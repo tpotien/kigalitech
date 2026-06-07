@@ -44,6 +44,14 @@ export default async function handler(req, res) {
       },
     });
 
+    // Grant verified buyer badge on first delivery
+    if (status && ['delivered', 'completed'].includes(status) && current.userId) {
+      const buyer = await prisma.user.findUnique({ where: { id: current.userId }, select: { verifiedBuyer: true } });
+      if (buyer && !buyer.verifiedBuyer) {
+        await prisma.user.update({ where: { id: current.userId }, data: { verifiedBuyer: true } });
+      }
+    }
+
     // Send email + in-app notification when status changes (non-blocking)
     if (status && status !== current.status) {
       const email = current.user?.email || current.shippingEmail;

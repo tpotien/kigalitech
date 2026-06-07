@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   try {
     const { items, userId, shippingName, shippingEmail, shippingPhone, shippingAddress, paymentMethod, notes, couponCode,
       installmentPlan, installmentMonths, tvInstallation, tvInstallAddress, mpostAddress, currency,
-      stripePaymentIntentId } = req.body;
+      stripePaymentIntentId, deliverySlot, deliveryDate } = req.body;
 
     if (!items?.length) return res.status(400).json({ error: 'No items in cart' });
     if (!shippingName) return res.status(400).json({ error: 'Full name is required' });
@@ -59,6 +59,8 @@ export default async function handler(req, res) {
         tvInstallation: Boolean(tvInstallation),
         tvInstallAddress: tvInstallAddress || '',
         currency: currency || 'USD',
+        deliverySlot: deliverySlot || '',
+        deliveryDate: deliveryDate || '',
         ...(validUserId ? { userId: validUserId } : {}),
         items: {
           create: items.map((item) => ({

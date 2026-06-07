@@ -63,7 +63,26 @@ export default function ProductForm({ initial }) {
     specs: typeof initial?.specs === 'string' ? initial.specs : JSON.stringify(parse(initial?.specs, {}), null, 2),
     serialNumbers: parse(initial?.serialNumbers, []).join(', '),
     tags: parse(initial?.tags, []).join(', '),
-    bundledWith: parse(initial?.bundledWith, []).join(', '),
+    bundledWith: (() => {
+      try {
+        const val = initial?.bundledWith;
+        if (!val) return '[]';
+        const parsed = typeof val === 'string' ? JSON.parse(val) : val;
+        // Normalise: if it's an array of numbers/strings, convert to object array
+        if (Array.isArray(parsed)) {
+          return JSON.stringify(parsed.map(b =>
+            typeof b === 'object' ? b : { productId: Number(b), discount: 10 }
+          ));
+        }
+        return '[]';
+      } catch { return '[]'; }
+    })(),
+    preOrder: initial?.preOrder ?? false,
+    preOrderDate: initial?.preOrderDate
+      ? new Date(initial.preOrderDate).toISOString().split('T')[0]
+      : '',
+    preOrderDeposit: initial?.preOrderDeposit ?? 0,
+    preOrderDepositRwf: initial?.preOrderDeposit ? (initial.preOrderDeposit / 100).toString() : '',
   });
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -181,7 +200,10 @@ export default function ProductForm({ initial }) {
         warrantyOptions: form.warrantyOptions.split(',').map((s) => s.trim()).filter(Boolean),
         serialNumbers: form.serialNumbers.split(',').map((s) => s.trim()).filter(Boolean),
         tags: form.tags.split(',').map((s) => s.trim()).filter(Boolean),
-        bundledWith: form.bundledWith.split(',').map((s) => s.trim()).filter(Boolean),
+        bundledWith: (() => { try { return JSON.stringify(JSON.parse(form.bundledWith || '[]')); } catch { return '[]'; } })(),
+        preOrder: form.preOrder,
+        preOrderDate: form.preOrderDate ? new Date(form.preOrderDate).toISOString() : null,
+        preOrderDeposit: form.preOrderDeposit || 0,
         specs: (() => { try { return JSON.parse(form.specs); } catch { return {}; } })(),
       };
 
@@ -356,23 +378,8 @@ export default function ProductForm({ initial }) {
           <Field label="Serial Numbers" help="Comma-separated">
             <input value={form.serialNumbers} onChange={(e) => set('serialNumbers', e.target.value)} className={inp} placeholder="SN-001, SN-002, SN-003" />
           </Field>
-          <Field label="Frequently Bought Together" help="Comma-separated product IDs for bundle suggestions">
-            <input
-              value={form.bundledWith}
-              onChange={(e) => set('bundledWith', e.target.value)}
-              className={inp}
-              placeholder="e.g. 12, 34, 56"
-            />
-            {form.bundledWith && (
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
-                {form.bundledWith.split(',').map(s => s.trim()).filter(Boolean).map(id => (
-                  <span key={id} className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700">
-                    Product #{id}
-                    <button type="button" onClick={() => set('bundledWith', form.bundledWith.split(',').filter(s => s.trim() !== id).join(', '))} className="text-violet-400 hover:text-violet-700 ml-0.5 leading-none">×</button>
-                  </span>
-                ))}
-              </div>
-            )}
+          <Field label="Frequently Bought Together" help="Configure bundle products in the Bundle Products section below">
+            <p className="text-xs text-slate-400 py-2">Use the Bundle Products section below to add products with discount percentages.</p>
           </Field>
         </div>
       </Section>
@@ -427,6 +434,62 @@ export default function ProductForm({ initial }) {
           </label>
         </div>
       </Section>
+
+      {/* Pre-Order Settings */}
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+        <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Pre-Order Settings</h3>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" checked={!!form.preOrder} onChange={e => setForm({...form, preOrder: e.target.checked})}
+            className="h-5 w-5 rounded text-sky-500" />
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Enable Pre-Order for this product</span>
+        </label>
+        {form.preOrder && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Release Date</label>
+              <input type="date" value={form.preOrderDate || ''} onChange={e => setForm({...form, preOrderDate: e.target.value})}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Deposit Amount (RWF)</label>
+              <input type="number" min="0" value={form.preOrderDepositRwf || ''} onChange={e => setForm({...form, preOrderDepositRwf: e.target.value, preOrderDeposit: Math.round(Number(e.target.value) * 100)})}
+                placeholder="0 = free to reserve"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bundle Products */}
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+        <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Bundle Products</h3>
+        <p className="text-xs text-slate-500">Add product IDs to bundle together (customers get a discount on bundled items)</p>
+        <div className="flex gap-2">
+          <input type="text" id="bundleInput" placeholder="Product ID : discount% (e.g. 42:15)"
+            className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+          <button type="button" onClick={() => {
+            const val = document.getElementById('bundleInput').value.trim();
+            if (!val) return;
+            const [pid, disc] = val.split(':');
+            if (!pid) return;
+            const current = (() => { try { return JSON.parse(form.bundledWith || '[]'); } catch { return []; } })();
+            const updated = [...current, { productId: Number(pid), discount: Number(disc) || 10 }];
+            setForm({ ...form, bundledWith: JSON.stringify(updated) });
+            document.getElementById('bundleInput').value = '';
+          }} className="rounded-xl bg-sky-600 text-white px-4 py-2 text-sm font-semibold hover:bg-sky-700 transition-colors">Add</button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {(() => { try { return JSON.parse(form.bundledWith || '[]'); } catch { return []; } })().map((b, i) => (
+            <span key={i} className="flex items-center gap-1.5 rounded-full bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 px-3 py-1 text-xs font-medium">
+              Product #{b.productId} · {b.discount}% off
+              <button type="button" onClick={() => {
+                const current = (() => { try { return JSON.parse(form.bundledWith || '[]'); } catch { return []; } })();
+                setForm({ ...form, bundledWith: JSON.stringify(current.filter((_, j) => j !== i)) });
+              }} className="text-sky-500 hover:text-red-500 transition-colors">×</button>
+            </span>
+          ))}
+        </div>
+      </div>
 
       <div className="flex items-center gap-4">
         <button type="submit" disabled={saving} className="rounded-xl bg-sky-600 px-8 py-3 font-semibold text-white hover:bg-sky-700 disabled:opacity-50">

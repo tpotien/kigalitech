@@ -5,6 +5,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import Layout from '../components/Layout';
 import Footer from '../components/Footer';
+import DeliverySlotPicker from '../components/DeliverySlotPicker';
 import { useCart } from '../context/CartContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useLang } from '../context/LanguageContext';
@@ -83,6 +84,7 @@ export default function Checkout() {
   const [selectedAddons, setSelectedAddons] = useState({}); // { productId: true }
   const [deliveryZones, setDeliveryZones] = useState([]);
   const [selectedZoneId, setSelectedZoneId] = useState(null);
+  const [deliverySlot, setDeliverySlot] = useState({ date: '', slot: '' });
 
   useEffect(() => {
     fetch('/api/products?category=Accessories&limit=8')
@@ -148,6 +150,8 @@ export default function Checkout() {
       tvInstallAddress: tvInstallation ? tvInstallAddress : '',
       couponCode: couponCode.trim() || undefined,
       currency: currency || 'USD',
+      deliverySlot: deliverySlot.slot ? `${deliverySlot.date} ${deliverySlot.slot}` : '',
+      deliveryDate: deliverySlot.date || '',
       ...overrides,
     };
   }
@@ -410,6 +414,9 @@ export default function Checkout() {
                   {form.useMpost && (
                     <input value={form.mpostPhone} onChange={e => set('mpostPhone', e.target.value)} placeholder="Your Mpost phone number (e.g. 0788 XXX XXX)" className={`${inp} mt-3`} />
                   )}
+                </div>
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <DeliverySlotPicker value={deliverySlot} onChange={setDeliverySlot} />
                 </div>
               </div>
 

@@ -16,6 +16,8 @@ const LINKS = {
     { label: 'Track Order', href: '/account' },
     { label: 'Repair Center', href: '/repairs' },
     { label: 'Trade-In', href: '/trade-in' },
+    { label: 'Bulk Orders', href: '/bulk-order' },
+    { label: 'Gift Cards', href: '/gift-cards' },
     { label: 'Sign In', href: '/signin' },
   ],
   Company: [
