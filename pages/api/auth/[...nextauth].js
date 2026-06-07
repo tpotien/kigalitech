@@ -1,10 +1,39 @@
 import NextAuth from 'next-auth';
+import GoogleProvider from 'next-auth/providers/google';
+import FacebookProvider from 'next-auth/providers/facebook';
+import AppleProvider from 'next-auth/providers/apple';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import prisma from '../../../lib/prisma';
 import bcrypt from 'bcryptjs';
 
+const ok = (val) => val && !val.includes('placeholder');
+
 const providers = [];
+
+if (ok(process.env.GOOGLE_CLIENT_ID) && ok(process.env.GOOGLE_CLIENT_SECRET)) {
+  providers.push(GoogleProvider({
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    allowDangerousEmailAccountLinking: true,
+  }));
+}
+
+if (ok(process.env.FACEBOOK_CLIENT_ID) && ok(process.env.FACEBOOK_CLIENT_SECRET)) {
+  providers.push(FacebookProvider({
+    clientId: process.env.FACEBOOK_CLIENT_ID,
+    clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
+    allowDangerousEmailAccountLinking: true,
+  }));
+}
+
+if (ok(process.env.APPLE_ID) && ok(process.env.APPLE_SECRET)) {
+  providers.push(AppleProvider({
+    clientId: process.env.APPLE_ID,
+    clientSecret: process.env.APPLE_SECRET,
+    allowDangerousEmailAccountLinking: true,
+  }));
+}
 
 providers.push(CredentialsProvider({
   name: 'Credentials',
@@ -17,7 +46,6 @@ providers.push(CredentialsProvider({
 
     const input = credentials.email.trim().toLowerCase();
 
-    // Check for env-configured admin (no hardcoded fallbacks)
     if (
       process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD &&
       input === process.env.ADMIN_EMAIL &&
@@ -32,7 +60,6 @@ providers.push(CredentialsProvider({
       return user;
     }
 
-    // Email or phone lookup
     const isPhone = /^\+?[\d\s\-()]{7,}$/.test(input);
     let user;
     if (isPhone) {
