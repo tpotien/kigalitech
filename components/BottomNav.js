@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../context/LanguageContext';
 import { useSession } from 'next-auth/react';
+import AvatarWithBadge from './AvatarWithBadge';
 
 export default function BottomNav() {
   const { pathname } = useRouter();
@@ -54,8 +55,8 @@ export default function BottomNav() {
         </Link>
 
         <Link href={session ? '/account' : '/signin'} className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium no-underline transition-colors ${active('/account') || active('/signin') ? 'text-sky-600' : 'text-slate-500'}`}>
-          {session?.user?.image
-            ? <img src={session.user.image} alt="" className="h-6 w-6 rounded-full object-cover" />
+          {session?.user
+            ? <AvatarWithBadge image={session.user.image} name={session.user.name} role={session.user.role} emailVerified={session.user.emailVerified} size="xs" />
             : <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>

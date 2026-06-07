@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useSession, signOut } from 'next-auth/react';
+import AvatarWithBadge from './AvatarWithBadge';
 
 const NAV = [
   { href: '/admin', label: 'Dashboard', icon: '📊' },
@@ -60,13 +61,7 @@ export default function AdminLayout({ children, title }) {
         <div className="border-t border-slate-800 px-4 py-4">
           {session?.user && (
             <div className="flex items-center gap-3 mb-3">
-              {session.user.image ? (
-                <img src={session.user.image} alt="" className="h-8 w-8 rounded-full" />
-              ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-700 text-sm font-bold text-white">
-                  {(session.user.name || session.user.email || 'A')[0].toUpperCase()}
-                </div>
-              )}
+              <AvatarWithBadge image={session.user.image} name={session.user.name || session.user.email} role={session.user.role} emailVerified={session.user.emailVerified} size="md" />
               <div className="min-w-0">
                 <p className="text-sm font-medium text-white truncate">{session.user.name || 'Admin'}</p>
                 <p className="text-xs text-slate-400 truncate">{session.user.role}</p>

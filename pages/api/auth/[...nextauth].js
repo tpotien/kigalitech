@@ -69,6 +69,7 @@ export default NextAuth({
         token.role = user.role;
         token.language = user.language;
         token.mustChangePassword = user.mustChangePassword || false;
+        token.emailVerified = user.emailVerified ? true : false;
       }
       return token;
     },
@@ -78,16 +79,18 @@ export default NextAuth({
         session.user.role = token.role;
         session.user.language = token.language;
         session.user.mustChangePassword = token.mustChangePassword || false;
+        session.user.emailVerified = token.emailVerified || false;
       }
       if (token?.id) {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: Number(token.id) },
-            select: { name: true, image: true },
+            select: { name: true, image: true, emailVerified: true },
           });
           if (dbUser) {
             if (dbUser.name) session.user.name = dbUser.name;
             if (dbUser.image) session.user.image = dbUser.image;
+            session.user.emailVerified = dbUser.emailVerified ? true : false;
           }
         } catch {}
       }

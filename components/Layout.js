@@ -12,6 +12,7 @@ import NotificationBell from './NotificationBell';
 import LanguageSwitcher from './LanguageSwitcher';
 import CurrencySwitcher from './CurrencySwitcher';
 import BottomNav from './BottomNav';
+import AvatarWithBadge from './AvatarWithBadge';
 
 const ANNOUNCEMENTS = [
   '🚚 Free delivery on orders over $50 — Rwanda-wide',
@@ -157,10 +158,7 @@ export default function Layout({ children }) {
               {session ? (
                 <div className="relative hidden sm:block group">
                   <button className="flex items-center gap-2 rounded-full px-3 py-2 text-slate-700 hover:bg-slate-100 transition-colors">
-                    {session.user.image
-                      ? <img src={session.user.image} alt="" className="h-7 w-7 rounded-full object-cover" />
-                      : <div className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-xs font-bold text-white">{(session.user.name || 'U')[0].toUpperCase()}</div>
-                    }
+                    <AvatarWithBadge image={session.user.image} name={session.user.name} role={session.user.role} emailVerified={session.user.emailVerified} size="sm" />
                     <span className="hidden xl:block text-sm font-semibold max-w-[80px] truncate">{session.user.name?.split(' ')[0] || 'Account'}</span>
                     <svg className="hidden xl:block h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

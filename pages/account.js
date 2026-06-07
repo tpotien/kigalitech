@@ -7,6 +7,7 @@ import { useCurrency } from '../context/CurrencyContext';
 import { useWishlist } from '../context/WishlistContext';
 import ReferralCard from '../components/ReferralCard';
 import VerifiedBadge from '../components/VerifiedBadge';
+import AvatarWithBadge from '../components/AvatarWithBadge';
 
 const STATUS_COLORS = {
   pending: 'bg-amber-100 text-amber-700',
@@ -267,8 +268,19 @@ export default function AccountPage() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      setProfileImageDataUrl(ev.target.result);
-      setProfileImagePreview(ev.target.result);
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 256;
+        const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        setProfileImageDataUrl(dataUrl);
+        setProfileImagePreview(dataUrl);
+      };
+      img.src = ev.target.result;
     };
     reader.readAsDataURL(file);
   }
@@ -888,13 +900,13 @@ export default function AccountPage() {
               <div className="rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm">
                 <h2 className="mb-5 text-lg font-bold text-slate-900 dark:text-slate-100">Profile Picture</h2>
                 <div className="flex items-center gap-5">
-                  {profileImagePreview ? (
-                    <img src={profileImagePreview} alt="Profile" className="h-20 w-20 rounded-full object-cover border-2 border-sky-200 shadow" />
-                  ) : (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-sky-600 text-2xl font-bold text-white">
-                      {(session.user.name || 'U')[0].toUpperCase()}
-                    </div>
-                  )}
+                  <AvatarWithBadge
+                    image={profileImagePreview}
+                    name={session.user.name}
+                    role={session.user.role}
+                    emailVerified={session.user.emailVerified}
+                    size="2xl"
+                  />
                   <div>
                     <button
                       type="button"
