@@ -42,7 +42,6 @@ export default function Home({ products, siteConfig = {} }) {
   const { t } = useLang();
   const router = useRouter();
   const [quickViewProduct, setQuickViewProduct] = useState(null);
-  const [activeCategory, setActiveCategory] = useState('All');
   const [activeColor, setActiveColor] = useState('All');
 
   // Capture referral code from ?ref= query param
@@ -52,6 +51,8 @@ export default function Home({ products, siteConfig = {} }) {
   }, [router.query]);
 
   const categories = ['All', ...Array.from(new Set(products.map((p) => p.category)))];
+  // Default to first real category; 'All' is an explicit opt-in
+  const [activeCategory, setActiveCategory] = useState(categories[1] || 'All');
 
   const allColors = useMemo(() => {
     const set = new Set();
@@ -105,19 +106,25 @@ export default function Home({ products, siteConfig = {} }) {
 
           {/* Category filter */}
           <div className="flex flex-wrap gap-2 mb-3">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                  activeCategory === cat
-                    ? 'bg-sky-600 text-white shadow-sm shadow-sky-200'
-                    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-sky-300 hover:text-sky-700'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+            {categories.map((cat) => {
+              const isAll = cat === 'All';
+              const active = activeCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                    active
+                      ? 'bg-sky-600 text-white shadow-sm shadow-sky-200'
+                      : isAll
+                        ? 'border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-sky-400 hover:text-sky-600 dark:hover:text-sky-400'
+                        : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-sky-300 hover:text-sky-700'
+                  }`}
+                >
+                  {isAll ? 'Show All' : cat}
+                </button>
+              );
+            })}
           </div>
 
           {/* Color filter */}
