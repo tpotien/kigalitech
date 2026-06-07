@@ -62,7 +62,7 @@ export default async function handler(req, res) {
         expires: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
       },
     });
-    sendVerificationEmail({ email: user.email, name: user.name, code }).catch(() => {});
+    try { await sendVerificationEmail({ email: user.email, name: user.name, code }); } catch (e) { console.error('[register] email failed:', e.message); }
     return res.status(201).json({ requiresVerification: true, email: user.email });
   }
 

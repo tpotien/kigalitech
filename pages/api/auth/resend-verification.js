@@ -13,12 +13,7 @@ export default async function handler(req, res) {
   if (!user) return res.status(400).json({ error: 'Account not found' });
   if (user.emailVerified) return res.status(400).json({ error: 'Email already verified' });
 
-  // Rate-limit: check if a token was created in the last 60 seconds
-  const recent = await prisma.verificationToken.findFirst({
-    where: { identifier: normalizedEmail, expires: { gt: new Date(Date.now() + 9 * 60 * 1000) } },
-  });
-  if (recent) return res.status(429).json({ error: 'Please wait before requesting another code' });
-
+  // Delete any old tokens and issue a fresh one immediately
   await prisma.verificationToken.deleteMany({ where: { identifier: normalizedEmail } });
 
   const code = String(Math.floor(100000 + Math.random() * 900000));
@@ -26,11 +21,15 @@ export default async function handler(req, res) {
     data: {
       identifier: normalizedEmail,
       token: code,
-      expires: new Date(Date.now() + 10 * 60 * 1000),
+      expires: new Date(Date.now() + 15 * 60 * 1000),
     },
   });
 
-  sendVerificationEmail({ email: normalizedEmail, name: user.name, code }).catch(() => {});
+  try {
+    await sendVerificationEmail({ email: normalizedEmail, name: user.name, code });
+  } catch (e) {
+    console.error('[resend-verification] email failed:', e.message);
+  }
 
   return res.status(200).json({ success: true });
 }

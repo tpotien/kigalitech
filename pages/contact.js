@@ -4,10 +4,23 @@ import Layout from '../components/Layout';
 export default function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    setSent(true);
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (res.ok) { setSent(true); } else { setError(data.error || 'Failed to send. Please try again.'); }
+    } catch { setError('Network error. Please try again.'); }
+    setLoading(false);
   }
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
@@ -30,7 +43,7 @@ export default function ContactPage() {
             {[
               { icon: '📍', title: 'Visit Us', lines: ['KN 74St, infront of Al madina mosque', 'Kigali, Rwanda'] },
               { icon: '📞', title: 'Call Us', lines: ['+250 786 276 555', 'Mon – Sat, 8am – 8pm'] },
-              { icon: '📧', title: 'Email Us', lines: ['hello@kigalitech.com', 'support@kigalitech.com'] },
+              { icon: '📧', title: 'Email Us', lines: ['kigalitechservices@gmail.com', 'tpotien1@gmail.com'] },
               { icon: '💬', title: 'WhatsApp', lines: ['+250 786 276 555', 'Quick replies via WhatsApp'] },
             ].map(item => (
               <div key={item.title} className="flex gap-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5">
@@ -88,8 +101,9 @@ export default function ContactPage() {
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Message *</label>
                   <textarea required rows={5} value={form.message} onChange={set('message')} className={`${inp} resize-none`} placeholder="How can we help you?" />
                 </div>
-                <button type="submit" className="w-full rounded-full bg-sky-600 py-3 font-semibold text-white hover:bg-sky-700">
-                  Send Message
+                {error && <p className="rounded-xl bg-red-50 border border-red-100 px-4 py-2.5 text-sm text-red-600">{error}</p>}
+                <button type="submit" disabled={loading} className="w-full rounded-full bg-sky-600 py-3 font-semibold text-white hover:bg-sky-700 disabled:opacity-60">
+                  {loading ? 'Sending…' : 'Send Message'}
                 </button>
               </form>
             )}
