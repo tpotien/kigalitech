@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
@@ -29,9 +29,34 @@ export default function TradeInPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [images, setImages] = useState([]); // [{dataUrl, url}]
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const imgRef = useRef(null);
 
   function handleChange(e) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  async function handleImageAdd(e) {
+    const file = e.target.files[0];
+    if (!file || images.length >= 5) return;
+    setUploadingImg(true);
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const dataUrl = ev.target.result;
+      try {
+        const res = await fetch('/api/repairs/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageDataUrl: dataUrl }),
+        });
+        const result = await res.json();
+        if (res.ok) setImages(prev => [...prev, { dataUrl, url: result.url }]);
+      } catch {}
+      setUploadingImg(false);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   }
 
   async function handleSubmit(e) {
@@ -44,7 +69,11 @@ export default function TradeInPage() {
       const res = await fetch('/api/trade-in', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, askingPrice: Math.round(Number(form.askingPrice) * 100) }),
+        body: JSON.stringify({
+          ...form,
+          askingPrice: Math.round(Number(form.askingPrice) * 100),
+          images: JSON.stringify(images.map(i => i.url)),
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Submission failed');
@@ -199,6 +228,43 @@ export default function TradeInPage() {
                   />
                 </div>
                 <p className="mt-1 text-xs text-slate-400">We'll make a final offer after verification. This is just your estimate.</p>
+              </div>
+
+              {/* Device photos */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Device Photos <span className="text-slate-400 font-normal">(up to 5 — helps us give a better offer)</span>
+                </label>
+                <div className="flex flex-wrap gap-3">
+                  {images.map((img, i) => (
+                    <div key={i} className="relative h-20 w-20 rounded-xl overflow-hidden border-2 border-slate-200 dark:border-slate-700 group">
+                      <img src={img.dataUrl} alt="" className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setImages(prev => prev.filter((_, j) => j !== i))}
+                        className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity text-white text-lg font-bold"
+                      >×</button>
+                    </div>
+                  ))}
+                  {images.length < 5 && (
+                    <button
+                      type="button"
+                      onClick={() => imgRef.current?.click()}
+                      disabled={uploadingImg}
+                      className="h-20 w-20 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center justify-center text-slate-400 hover:border-sky-400 hover:text-sky-500 transition-colors disabled:opacity-50"
+                    >
+                      {uploadingImg ? (
+                        <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                      ) : (
+                        <>
+                          <svg className="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4"/></svg>
+                          <span className="text-xs">Add photo</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                  <input ref={imgRef} type="file" accept="image/*" className="hidden" onChange={handleImageAdd} />
+                </div>
               </div>
 
               {error && (

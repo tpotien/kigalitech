@@ -8,7 +8,7 @@ function randomCode() {
 }
 
 export default async function handler(req, res) {
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getToken({ req });
   if (!token || !['admin', 'staff'].includes(token.role)) return res.status(403).json({ error: 'Forbidden' });
 
   const id = parseInt(req.query.id);

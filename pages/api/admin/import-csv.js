@@ -3,7 +3,7 @@ import { getToken } from 'next-auth/jwt';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getToken({ req });
   if (!token || token.role !== 'admin') return res.status(403).end();
 
   const { rows } = req.body; // array of objects parsed from CSV on frontend

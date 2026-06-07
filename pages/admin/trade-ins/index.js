@@ -22,7 +22,10 @@ export default function AdminTradeIns() {
   useEffect(() => {
     setLoading(true);
     const url = filter === 'all' ? '/api/admin/trade-ins' : `/api/admin/trade-ins?status=${filter}`;
-    fetch(url).then(r => r.json()).then(data => { setItems(data); setLoading(false); });
+    fetch(url).then(r => r.json()).then(data => {
+      setItems(Array.isArray(data) ? data : []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, [filter]);
 
   const tabs = [
