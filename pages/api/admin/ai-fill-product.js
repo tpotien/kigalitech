@@ -269,24 +269,12 @@ export default async function handler(req, res) {
   const { name, category } = req.body;
   if (!name) return res.status(400).json({ error: 'Product name required' });
 
-  // ── Try Claude API first ──────────────────────────────────────────────────
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (apiKey && apiKey !== 'placeholder') {
-    try {
-      const { Anthropic } = await import('@anthropic-ai/sdk');
-      const client = new Anthropic({ apiKey });
+  const prompt = `You are a product database assistant for KigaliTech, an electronics store in Kigali, Rwanda.
+Generate complete, accurate product details for: "${name}" (category: "${category || 'Electronics'}").
 
-      const message = await client.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        messages: [{
-          role: 'user',
-          content: `You are a product database assistant for KigaliTech, an electronics store in Rwanda.
-Generate complete product details for: "${name}" (category: "${category || 'Electronics'}").
-
-Return ONLY valid JSON — no markdown, no explanation:
+Return ONLY valid JSON — no markdown, no explanation, no code fences:
 {
-  "description": "2–3 sentence product description highlighting key benefits",
+  "description": "2-3 sentence product description highlighting key benefits and features",
   "brand": "Brand Name",
   "colors": ["Color1", "Color2", "Color3"],
   "storageOptions": ["128GB", "256GB"] or [] if not applicable,
@@ -294,20 +282,39 @@ Return ONLY valid JSON — no markdown, no explanation:
   "specs": { "Key1": "Value1", "Key2": "Value2" },
   "weight": "195g",
   "suggestedPrice": 99900,
-  "tags": ["tag1", "tag2"]
+  "tags": ["tag1", "tag2", "tag3"]
 }
-Rules: suggestedPrice in cents (USD×100). Include 6–8 relevant specs for this product category.`,
-        }],
-      });
+Rules:
+- suggestedPrice is in USD cents (e.g. $299 = 29900). Price for Rwanda market.
+- Include 6-8 real, accurate specs for this exact product model
+- Use real spec values if you know them, otherwise use realistic estimates
+- tags should be lowercase searchable keywords`;
 
-      const text = message.content[0].text.trim();
-      const match = text.match(/\{[\s\S]*\}/);
-      if (!match) throw new Error('No JSON in response');
-      const data = JSON.parse(match[0]);
-      return res.json({ ...data, _source: 'claude' });
+  // ── Try Groq first (free, fast) ───────────────────────────────────────────
+  const groqKey = process.env.GROQ_API_KEY;
+  if (groqKey) {
+    try {
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${groqKey}` },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          max_tokens: 1024,
+          temperature: 0.3,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+      if (groqRes.ok) {
+        const groqData = await groqRes.json();
+        const text = groqData.choices?.[0]?.message?.content?.trim() || '';
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) {
+          const data = JSON.parse(match[0]);
+          return res.json({ ...data, _source: 'groq' });
+        }
+      }
     } catch (err) {
-      console.warn('[ai-fill] Claude API failed, falling back to templates:', err.message);
-      // fall through to template
+      console.warn('[ai-fill] Groq failed, falling back to templates:', err.message);
     }
   }
 

@@ -116,7 +116,7 @@ export default function ProductForm({ initial }) {
         specs: data.specs ? JSON.stringify(data.specs, null, 2) : f.specs,
         price: data.suggestedPrice && !f.price ? (data.suggestedPrice / 100).toFixed(2) : f.price,
       }));
-      const src = data._source === 'claude' ? '✨ Claude AI' : '⚡ Smart Fill';
+      const src = data._source === 'groq' ? '✨ Groq AI' : data._source === 'claude' ? '✨ Claude AI' : '⚡ Smart Fill';
       setAiStatus(`${src} — filled! Review and adjust before saving.`);
       setTimeout(() => setAiStatus(''), 5000);
     } catch (err) {
