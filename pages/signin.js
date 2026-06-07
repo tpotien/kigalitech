@@ -68,8 +68,13 @@ export default function SignIn() {
     if (magic === 'ok' && queryEmail && otp) {
       setLoading('magic');
       signIn('credentials', { email: queryEmail, magicOtp: otp, redirect: false }).then(result => {
-        if (result?.error) setError('Magic link failed. Please try again.');
-        setLoading('');
+        if (result?.error) {
+          setError('Magic link failed — it may have expired. Please request a new one.');
+          setLoading('');
+        } else {
+          // Explicit redirect; do not rely on session effect timing
+          router.replace(callbackUrl || '/');
+        }
       });
     }
     if (magic === 'expired') setError('That magic link has expired. Please request a new one.');

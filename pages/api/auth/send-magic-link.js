@@ -52,6 +52,7 @@ export default async function handler(req, res) {
     await sendMagicLinkEmail({ email: normalizedEmail, name: user.name, token, isNew });
   } catch (e) {
     console.error('[magic-link] email failed:', e.message);
+    return res.status(500).json({ error: 'Could not send email. Please try again or contact support.' });
   }
 
   return res.status(200).json({ ok: true, isNew });

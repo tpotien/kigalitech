@@ -49,15 +49,19 @@ providers.push(CredentialsProvider({
 
     // Magic link OTP path — one-time code from /api/auth/magic-verify
     if (credentials.magicOtp) {
-      const record = await prisma.verificationToken.findUnique({
-        where: { identifier_token: { identifier: `otp:${input}`, token: credentials.magicOtp } },
+      const record = await prisma.verificationToken.findFirst({
+        where: { identifier: `otp:${input}`, token: credentials.magicOtp },
       });
-      if (!record || record.expires < new Date()) return null;
-      await prisma.verificationToken.delete({
-        where: { identifier_token: { identifier: `otp:${input}`, token: credentials.magicOtp } },
+      if (!record || record.expires < new Date()) {
+        console.error('[nextauth] magic OTP not found or expired for', input);
+        return null;
+      }
+      await prisma.verificationToken.deleteMany({
+        where: { identifier: `otp:${input}` },
       });
       const user = await prisma.user.findUnique({ where: { email: input } });
-      return user || null;
+      if (!user) { console.error('[nextauth] user not found for', input); return null; }
+      return user;
     }
 
     if (!credentials.password) return null;
