@@ -1,16 +1,12 @@
+import { getToken } from 'next-auth/jwt';
 import prisma from '../../../lib/prisma';
 import { createNotification, notifyRepairUpdate } from '../../../lib/notify';
 import { sendRepairQuoteEmail, sendRepairStatusEmail } from '../../../lib/email';
 
-const REPAIR_STATUS_MESSAGES = {
-  open: 'Your repair ticket has been opened and is awaiting review.',
-  in_progress: 'Great news! Your device is currently being repaired by our technician.',
-  waiting_parts: 'We are waiting for parts to arrive before continuing your repair.',
-  completed: 'Your repair is complete! Your device is ready for pickup or delivery. 🎉',
-  cancelled: 'Your repair ticket has been cancelled. Please contact us if you have questions.',
-};
-
 export default async function handler(req, res) {
+  const token = await getToken({ req });
+  if (!token || !['admin', 'staff'].includes(token.role)) return res.status(403).json({ error: 'Forbidden' });
+
   if (req.method === 'GET') {
     const tickets = await prisma.repairTicket.findMany({
       orderBy: { createdAt: 'desc' },

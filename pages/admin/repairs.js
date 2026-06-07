@@ -295,7 +295,10 @@ export default function AdminRepairs() {
   }, [status, session]);
 
   useEffect(() => {
-    fetch('/api/admin/repairs').then(r => r.json()).then(d => { setTickets(d); setLoading(false); });
+    fetch('/api/admin/repairs')
+      .then(r => r.json())
+      .then(d => { setTickets(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => { setTickets([]); setLoading(false); });
   }, []);
 
   function updateTicket(updated) {
