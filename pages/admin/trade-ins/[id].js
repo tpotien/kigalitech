@@ -31,29 +31,41 @@ export default function AdminTradeInDetail() {
 
   useEffect(() => {
     if (!id) return;
-    fetch(`/api/admin/trade-ins/${id}`).then(r => r.json()).then(data => {
-      setItem(data);
-      setLoading(false);
-    });
+    fetch(`/api/admin/trade-ins/${id}`)
+      .then(r => r.json())
+      .then(data => {
+        setItem(data && !data.error ? data : null);
+        setLoading(false);
+      })
+      .catch(() => {
+        setItem(null);
+        setLoading(false);
+      });
   }, [id]);
 
   async function doAction(action, extra = {}) {
     setActionLoading(true);
     setMsg({ text: '', ok: false });
-    const res = await fetch(`/api/admin/trade-ins/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...extra }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setItem(data);
-      setMsg({ text: 'Action completed successfully', ok: true });
-      setOfferAmount('');
-      setOfferNote('');
-      setRejectNote('');
-    } else {
-      setMsg({ text: data.error || 'Something went wrong', ok: false });
+    try {
+      const res = await fetch(`/api/admin/trade-ins/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ...extra }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // Re-fetch full item to include user relation
+        const full = await fetch(`/api/admin/trade-ins/${id}`).then(r => r.json()).catch(() => null);
+        setItem(full && !full.error ? full : data);
+        setMsg({ text: 'Action completed successfully', ok: true });
+        setOfferAmount('');
+        setOfferNote('');
+        setRejectNote('');
+      } else {
+        setMsg({ text: data.error || 'Something went wrong', ok: false });
+      }
+    } catch {
+      setMsg({ text: 'Network error — please try again', ok: false });
     }
     setActionLoading(false);
   }
@@ -81,7 +93,7 @@ export default function AdminTradeInDetail() {
   }
 
   const meta = STATUS_META[item.status] || STATUS_META.pending;
-  const images = (() => { try { return JSON.parse(item.images); } catch { return []; } })();
+  const images = (() => { try { const p = JSON.parse(item.images || '[]'); return Array.isArray(p) ? p : []; } catch { return []; } })();
 
   return (
     <AdminLayout title={`Trade-In #${item.id}`}>
