@@ -19,6 +19,7 @@ export default function SignIn() {
 
   useEffect(() => {
     if (!session) return;
+    if (session.user.mustChangePassword) { router.push('/set-password'); return; }
     const role = session.user.role;
     if (role === 'admin' || role === 'staff') router.push(callbackUrl || '/admin');
     else router.push(callbackUrl || '/');
@@ -249,7 +250,10 @@ export default function SignIn() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Password</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-medium text-slate-500">Password</label>
+                  <Link href="/forgot-password" className="text-xs font-medium text-sky-600 hover:text-sky-700 no-underline">Forgot password?</Link>
+                </div>
                 <input
                   required
                   type="password"

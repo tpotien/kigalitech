@@ -62,7 +62,7 @@ export default NextAuth({
         if (!valid) return null;
         // Require email verification for email accounts
         const isPhoneAccount = user.email?.endsWith('@phone.kigalitech.com');
-        if (!user.emailVerified && !isPhoneAccount) {
+        if (!user.emailVerified && !isPhoneAccount && !user.mustChangePassword) {
           throw new Error('VERIFY:' + user.email);
         }
         return user;
@@ -78,6 +78,7 @@ export default NextAuth({
         token.id = user.id;
         token.role = user.role;
         token.language = user.language;
+        token.mustChangePassword = user.mustChangePassword || false;
       }
       return token;
     },
@@ -86,6 +87,7 @@ export default NextAuth({
         session.user.id = token.id;
         session.user.role = token.role;
         session.user.language = token.language;
+        session.user.mustChangePassword = token.mustChangePassword || false;
       }
       // Re-read name and image from DB so profile updates reflect without re-login
       if (token?.id) {

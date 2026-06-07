@@ -39,6 +39,7 @@ model User {
   verifiedBuyer         Boolean              @default(false)
   preOrders             PreOrder[]
   createdAt             DateTime             @default(now())
+  mustChangePassword    Boolean              @default(false)
 }
 
 model Account {
