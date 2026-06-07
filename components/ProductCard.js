@@ -6,6 +6,7 @@ import { useWishlist } from '../context/WishlistContext';
 import { useCompare } from '../context/CompareContext';
 import { useToast } from '../context/ToastContext';
 import { useSession } from 'next-auth/react';
+import TranslatedText from './TranslatedText';
 
 function getBadge(product) {
   if (product.stock === 0) return { label: 'Sold Out', color: 'bg-slate-500' };
@@ -163,13 +164,13 @@ export default function ProductCard({ product, onQuickView }) {
       <div className="flex flex-1 flex-col p-4">
         {/* Category + brand */}
         <div className="flex items-center justify-between gap-1 mb-1.5">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-sky-600">{product.category}</p>
+          <TranslatedText text={product.category} className="text-[11px] font-bold uppercase tracking-widest text-sky-600" />
           {product.brand && <p className="text-[11px] text-slate-400 font-medium truncate max-w-[50%]">{product.brand}</p>}
         </div>
 
         <Link href={`/products/${product.id}`} className="no-underline">
           <h2 className="font-semibold text-slate-900 dark:text-slate-100 leading-snug hover:text-sky-700 transition-colors line-clamp-2 text-[15px]">
-            {product.name}
+            <TranslatedText text={product.name} as={null} />
           </h2>
         </Link>
 

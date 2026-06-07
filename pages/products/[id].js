@@ -13,6 +13,7 @@ import { useWishlist } from '../../context/WishlistContext';
 import { useCompare } from '../../context/CompareContext';
 import { useToast } from '../../context/ToastContext';
 import { useWhatsAppCtx } from '../../context/WhatsAppContext';
+import TranslatedText from '../../components/TranslatedText';
 
 export async function getStaticPaths() {
   const products = await prisma.product.findMany({ where: { active: true } });
@@ -646,7 +647,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                 <div>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <p className="text-xs font-bold uppercase tracking-widest text-sky-600">{product.category}</p>
+                      <TranslatedText text={product.category} as="p" className="text-xs font-bold uppercase tracking-widest text-sky-600" />
                       {product.subcategory && <span className="text-xs text-slate-400">· {product.subcategory}</span>}
                       {product.brand && <span className="rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-xs font-semibold text-slate-600 dark:text-slate-300">{product.brand}</span>}
                     </div>
@@ -661,8 +662,14 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                       Share
                     </button>
                   </div>
-                  <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 leading-tight">{product.name}</h1>
-                  <p className="mt-3 text-slate-600 dark:text-slate-400 leading-relaxed text-[15px]">{product.description}</p>
+                  <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 leading-tight">
+                    <TranslatedText text={product.name} as={null} />
+                  </h1>
+                  <TranslatedText
+                    text={product.description}
+                    as="p"
+                    className="mt-3 text-slate-600 dark:text-slate-400 leading-relaxed text-[15px]"
+                  />
                 </div>
 
                 {/* Price + stock */}

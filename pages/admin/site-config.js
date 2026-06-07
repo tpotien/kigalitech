@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import AdminLayout from '../../components/AdminLayout';
@@ -10,6 +10,8 @@ export default function SiteConfig() {
   const [products, setProducts] = useState([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [heroUploading, setHeroUploading] = useState(false);
+  const heroFileRef = useRef(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.replace('/signin');
@@ -43,6 +45,28 @@ export default function SiteConfig() {
   );
 
   const set = (k) => (e) => setConfig({ ...config, [k]: e.target.value });
+
+  async function handleHeroUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setHeroUploading(true);
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        const res = await fetch('/api/admin/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageDataUrl: ev.target.result }),
+        });
+        const data = await res.json();
+        if (data.url) setConfig(c => ({ ...c, heroImageUrl: data.url }));
+      } finally {
+        setHeroUploading(false);
+        if (heroFileRef.current) heroFileRef.current.value = '';
+      }
+    };
+    reader.readAsDataURL(file);
+  }
 
   return (
     <AdminLayout title="Site Settings">
@@ -241,7 +265,41 @@ export default function SiteConfig() {
               </div>
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">Product Image URL</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">Product Image</label>
+              {/* Upload from device */}
+              <div className="mb-2 flex items-center gap-3">
+                <input
+                  ref={heroFileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleHeroUpload}
+                />
+                <button
+                  type="button"
+                  onClick={() => heroFileRef.current?.click()}
+                  disabled={heroUploading}
+                  className="inline-flex items-center gap-2 rounded-xl border-2 border-dashed border-sky-300 bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-700 hover:bg-sky-100 disabled:opacity-50 transition"
+                >
+                  {heroUploading ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                      </svg>
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      Upload Image from Device
+                    </>
+                  )}
+                </button>
+                <span className="text-xs text-slate-400">or paste URL below</span>
+              </div>
               <input
                 value={config.heroImageUrl || ''}
                 onChange={set('heroImageUrl')}
@@ -249,12 +307,20 @@ export default function SiteConfig() {
                 placeholder="https://images.unsplash.com/... (leave blank for default)"
               />
               {config.heroImageUrl && (
-                <img
-                  src={config.heroImageUrl}
-                  alt="Hero preview"
-                  className="mt-2 h-24 w-40 rounded-xl object-cover border border-slate-100"
-                  onError={e => e.target.style.display = 'none'}
-                />
+                <div className="mt-3 relative w-fit">
+                  <img
+                    src={config.heroImageUrl}
+                    alt="Hero preview"
+                    className="h-32 w-56 rounded-xl object-cover border border-slate-200 shadow-sm"
+                    onError={e => e.target.style.display = 'none'}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setConfig(c => ({ ...c, heroImageUrl: '' }))}
+                    className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow hover:bg-red-600 text-xs"
+                    title="Remove image"
+                  >×</button>
+                </div>
               )}
             </div>
           </div>
