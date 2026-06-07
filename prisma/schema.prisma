@@ -38,6 +38,7 @@ model User {
   newsletterSub         Newsletter?
   verifiedBuyer         Boolean              @default(false)
   preOrders             PreOrder[]
+  createdAt             DateTime             @default(now())
 }
 
 model Account {

@@ -19,7 +19,10 @@ export default function AdminCustomers() {
   }, [status, session]);
 
   useEffect(() => {
-    fetch('/api/admin/customers').then(r => r.json()).then(data => { setCustomers(data); setLoading(false); });
+    fetch('/api/admin/customers')
+      .then(r => r.json())
+      .then(data => { setCustomers(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => { setCustomers([]); setLoading(false); });
   }, []);
 
   async function saveEdit() {
