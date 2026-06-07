@@ -40,11 +40,27 @@ providers.push(CredentialsProvider({
   credentials: {
     email: { label: 'Email or Phone', type: 'text' },
     password: { label: 'Password', type: 'password' },
+    magicOtp: { label: 'Magic OTP', type: 'text' },
   },
   async authorize(credentials) {
-    if (!credentials?.email || !credentials?.password) return null;
+    if (!credentials?.email) return null;
 
     const input = credentials.email.trim().toLowerCase();
+
+    // Magic link OTP path — one-time code from /api/auth/magic-verify
+    if (credentials.magicOtp) {
+      const record = await prisma.verificationToken.findUnique({
+        where: { identifier_token: { identifier: `otp:${input}`, token: credentials.magicOtp } },
+      });
+      if (!record || record.expires < new Date()) return null;
+      await prisma.verificationToken.delete({
+        where: { identifier_token: { identifier: `otp:${input}`, token: credentials.magicOtp } },
+      });
+      const user = await prisma.user.findUnique({ where: { email: input } });
+      return user || null;
+    }
+
+    if (!credentials.password) return null;
 
     if (
       process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD &&

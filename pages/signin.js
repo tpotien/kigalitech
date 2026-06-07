@@ -44,12 +44,14 @@ const SOCIAL = {
 export default function SignIn() {
   const { data: session } = useSession();
   const router = useRouter();
-  const { callbackUrl, verified } = router.query;
+  const { callbackUrl, verified, magic, email: queryEmail, otp } = router.query;
   const { t } = useLang();
   const [mode, setMode] = useState('login');
   const [loading, setLoading] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [magicSent, setMagicSent] = useState(false);
+  const [magicEmail, setMagicEmail] = useState('');
   const [socialProviders, setSocialProviders] = useState([]);
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
 
@@ -61,6 +63,19 @@ export default function SignIn() {
     });
   }, []);
 
+  // Auto-login after magic link click
+  useEffect(() => {
+    if (magic === 'ok' && queryEmail && otp) {
+      setLoading('magic');
+      signIn('credentials', { email: queryEmail, magicOtp: otp, redirect: false }).then(result => {
+        if (result?.error) setError('Magic link failed. Please try again.');
+        setLoading('');
+      });
+    }
+    if (magic === 'expired') setError('That magic link has expired. Please request a new one.');
+    if (magic === 'invalid') setError('Invalid magic link. Please try again.');
+  }, [magic, queryEmail, otp]);
+
   useEffect(() => {
     if (!session) return;
     if (session.user.mustChangePassword) { router.push('/set-password'); return; }
@@ -68,6 +83,29 @@ export default function SignIn() {
     if (role === 'admin' || role === 'staff') router.push(callbackUrl || '/admin');
     else router.push(callbackUrl || '/');
   }, [session]);
+
+  async function handleMagicLink(e) {
+    e.preventDefault();
+    const emailVal = magicEmail.trim().toLowerCase();
+    if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailVal)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    setLoading('magic-send');
+    setError('');
+    const res = await fetch('/api/auth/send-magic-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: emailVal }),
+    });
+    setLoading('');
+    if (res.ok) {
+      setMagicSent(true);
+    } else {
+      const d = await res.json();
+      setError(d.error || 'Failed to send link');
+    }
+  }
 
   async function handleSocial(provider) {
     setLoading(provider);
@@ -208,6 +246,50 @@ export default function SignIn() {
           {success && (
             <div className="mb-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 px-4 py-3 text-sm text-emerald-700">{success}</div>
           )}
+
+          {/* ── Magic Link — fastest option ── */}
+          {magic === 'ok' && loading === 'magic' ? (
+            <div className="mb-5 rounded-2xl bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 px-5 py-4 text-center">
+              <div className="flex items-center justify-center gap-2 text-sky-700 dark:text-sky-300 font-semibold text-sm">
+                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                Signing you in…
+              </div>
+            </div>
+          ) : magicSent ? (
+            <div className="mb-5 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-5 py-5 text-center">
+              <div className="text-3xl mb-2">📬</div>
+              <p className="font-bold text-emerald-800 dark:text-emerald-200 text-sm">Check your inbox!</p>
+              <p className="text-emerald-600 dark:text-emerald-400 text-xs mt-1">We sent a sign-in link to <strong>{magicEmail}</strong></p>
+              <p className="text-emerald-500 text-xs mt-1">Click the link in the email — you'll be logged in instantly.</p>
+              <button onClick={() => { setMagicSent(false); setMagicEmail(''); }} className="mt-3 text-xs text-emerald-600 underline">Use a different email</button>
+            </div>
+          ) : (
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 text-center uppercase tracking-wide">Fastest — no password needed</p>
+              <form onSubmit={handleMagicLink} className="flex gap-2">
+                <input
+                  type="email"
+                  value={magicEmail}
+                  onChange={e => setMagicEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800"
+                />
+                <button
+                  type="submit"
+                  disabled={!!loading}
+                  className="flex-shrink-0 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:from-sky-600 hover:to-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-sky-200 whitespace-nowrap"
+                >
+                  {loading === 'magic-send' ? '…' : '✨ Send Link'}
+                </button>
+              </form>
+              <p className="text-[10px] text-slate-400 text-center mt-1.5">We'll email you a magic sign-in link · Works for new &amp; existing accounts</p>
+            </div>
+          )}
+
+          <div className="relative mb-5">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200 dark:border-slate-700" /></div>
+            <div className="relative flex justify-center"><span className="bg-white dark:bg-slate-900 px-3 text-xs text-slate-400">or use email &amp; password</span></div>
+          </div>
 
           {/* Mode tabs */}
           <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden mb-5">
