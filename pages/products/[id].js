@@ -15,6 +15,7 @@ import { useToast } from '../../context/ToastContext';
 import { useWhatsAppCtx } from '../../context/WhatsAppContext';
 import TranslatedText from '../../components/TranslatedText';
 import StockAlertButton from '../../components/StockAlertButton';
+import ProductQA from '../../components/ProductQA';
 
 export async function getStaticPaths() {
   const products = await prisma.product.findMany({ where: { active: true } });
@@ -979,6 +980,11 @@ export default function ProductPage({ product, bundledProducts = [] }) {
 
           {/* Reviews */}
           <ReviewsSection productId={product.id} />
+
+          {/* AI Q&A */}
+          <div className="mt-8">
+            <ProductQA productId={product.id} />
+          </div>
 
           {/* AI Recommendations */}
           {recs.length > 0 && (

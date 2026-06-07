@@ -107,6 +107,7 @@ model Product {
   reviews           Review[]
   wishlistItems     Wishlist[]
   stockAlerts       StockAlert[]
+  qaItems           ProductQA[]
 }
 
 model Order {
@@ -369,5 +370,16 @@ model AbandonedCart {
   items     String   @default("[]")
   emailSent Boolean  @default(false)
   updatedAt DateTime @default(now())
+  createdAt DateTime @default(now())
+}
+
+model ProductQA {
+  id        Int      @id @default(autoincrement())
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  question  String
+  answer    String
+  askedBy   String   @default("Anonymous")
+  helpful   Int      @default(0)
   createdAt DateTime @default(now())
 }
