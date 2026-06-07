@@ -22,7 +22,7 @@ export default function DealsPage({ products }) {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
         {/* Hero */}
         <section className="bg-gradient-to-br from-slate-900 via-slate-800 to-red-950 py-20 px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
@@ -52,9 +52,9 @@ export default function DealsPage({ products }) {
           <div className="mb-8 flex items-end justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-widest text-red-600">Limited Offers</p>
-              <h2 className="mt-1 text-3xl font-extrabold text-slate-900">All Deals</h2>
+              <h2 className="mt-1 text-3xl font-extrabold text-slate-900 dark:text-slate-100">All Deals</h2>
             </div>
-            <span className="rounded-full bg-red-100 px-3 py-1 text-sm font-semibold text-red-700">
+            <span className="rounded-full bg-red-100 dark:bg-red-900/20 px-3 py-1 text-sm font-semibold text-red-700 dark:text-red-400">
               {saleProducts.length} deals available
             </span>
           </div>
@@ -66,10 +66,10 @@ export default function DealsPage({ products }) {
               ))}
             </div>
           ) : (
-            <div className="rounded-3xl bg-white p-16 text-center shadow-sm">
+            <div className="rounded-3xl bg-white dark:bg-slate-900 p-16 text-center shadow-sm">
               <div className="mx-auto mb-4 text-6xl">🏷️</div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">New deals coming soon!</h3>
-              <p className="text-slate-500 mb-6">Check back daily for flash sales and exclusive offers.</p>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">New deals coming soon!</h3>
+              <p className="text-slate-500 dark:text-slate-400 mb-6">Check back daily for flash sales and exclusive offers.</p>
               <Link
                 href="/products"
                 className="inline-flex rounded-full bg-sky-600 px-7 py-3 font-semibold text-white hover:bg-sky-700 no-underline"

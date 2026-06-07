@@ -4,12 +4,11 @@ import { t as translate } from '../lib/i18n';
 const LanguageContext = createContext({ lang: 'en', setLang: () => {}, t: (key) => key });
 
 export function LanguageProvider({ children }) {
-  const [lang, setLangState] = useState('en');
-
-  useEffect(() => {
+  const [lang, setLangState] = useState(() => {
+    if (typeof window === 'undefined') return 'en';
     const saved = localStorage.getItem('lang');
-    if (saved && ['en', 'fr', 'rw'].includes(saved)) setLangState(saved);
-  }, []);
+    return saved && ['en', 'fr', 'rw'].includes(saved) ? saved : 'en';
+  });
 
   function setLang(l) {
     setLangState(l);

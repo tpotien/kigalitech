@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { useLang } from '../context/LanguageContext';
 import prisma from '../lib/prisma';
 import Layout from '../components/Layout';
+import SEOMeta from '../components/SEOMeta';
+import FlashSaleBanner from '../components/FlashSaleBanner';
 import MarqueeBanner from '../components/MarqueeBanner';
 import HeroSection from '../components/HeroSection';
 import FeaturedCategories from '../components/FeaturedCategories';
@@ -64,6 +66,11 @@ export default function Home({ products, siteConfig = {} }) {
 
   return (
     <Layout>
+      <SEOMeta
+        title="KigaliTech — Premium Electronics in Rwanda"
+        url="https://electronics-shop-amber.vercel.app"
+      />
+      <FlashSaleBanner />
       <MarqueeBanner />
       <HeroSection config={siteConfig} />
       <TrustBadges />
@@ -82,7 +89,7 @@ export default function Home({ products, siteConfig = {} }) {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-4">
             <div>
               <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">{t('categories')}</p>
-              <h2 className="mt-1 text-3xl font-extrabold text-slate-900">{t('featuredProducts')}</h2>
+              <h2 className="mt-1 text-3xl font-extrabold text-slate-900 dark:text-slate-100">{t('featuredProducts')}</h2>
             </div>
             <p className="text-sm text-slate-500">{filtered.length} product{filtered.length !== 1 ? 's' : ''}</p>
           </div>
@@ -96,7 +103,7 @@ export default function Home({ products, siteConfig = {} }) {
                 className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                   activeCategory === cat
                     ? 'bg-sky-600 text-white shadow-sm shadow-sky-200'
-                    : 'bg-white border border-slate-200 text-slate-600 hover:border-sky-300 hover:text-sky-700'
+                    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-sky-300 hover:text-sky-700'
                 }`}
               >
                 {cat}
@@ -113,12 +120,12 @@ export default function Home({ products, siteConfig = {} }) {
                 onClick={() => setActiveColor(color)}
                 className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
                   activeColor === color
-                    ? 'border-sky-500 bg-sky-50 text-sky-700'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400'
+                    ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/30 text-sky-700'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-slate-400'
                 }`}
               >
                 {color !== 'All' && (
-                  <span className="h-3 w-3 rounded-full border border-slate-200 inline-block flex-shrink-0" style={{ backgroundColor: colorHex(color) }} />
+                  <span className="h-3 w-3 rounded-full border border-slate-200 dark:border-slate-700 inline-block flex-shrink-0" style={{ backgroundColor: colorHex(color) }} />
                 )}
                 {color}
               </button>
@@ -142,15 +149,15 @@ export default function Home({ products, siteConfig = {} }) {
       </section>
 
       {/* Reviews */}
-      <section className="bg-white py-12">
+      <section className="bg-white dark:bg-slate-900 py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">{t('reviews')}</p>
-            <h2 className="mt-1 text-3xl font-extrabold text-slate-900">{t('customersReviews')}</h2>
+            <h2 className="mt-1 text-3xl font-extrabold text-slate-900 dark:text-slate-100">{t('customersReviews')}</h2>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {REVIEWS.map((r) => (
-              <div key={r.name} className="rounded-3xl border border-slate-100 bg-slate-50 p-6">
+              <div key={r.name} className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 p-6">
                 <div className="flex text-amber-400">
                   {Array.from({ length: r.stars }).map((_, i) => (
                     <svg key={i} className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
@@ -158,14 +165,14 @@ export default function Home({ products, siteConfig = {} }) {
                     </svg>
                   ))}
                 </div>
-                <p className="mt-3 text-slate-700 leading-relaxed">"{r.text}"</p>
+                <p className="mt-3 text-slate-700 dark:text-slate-300 leading-relaxed">"{r.text}"</p>
                 <div className="mt-4 flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-sky-600">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/40 text-sm font-bold text-sky-600 dark:text-sky-400">
                     {r.name[0]}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">{r.name}</p>
-                    <p className="text-xs text-slate-500">{r.product}</p>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{r.name}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{r.product}</p>
                   </div>
                 </div>
               </div>

@@ -17,9 +17,16 @@ export default async function handler(req, res) {
     const token = await getToken({ req });
     if (!token) return res.status(401).json({ error: 'Sign in to leave a review' });
 
-    const { productId, rating, title, body } = req.body;
+    const { productId, rating, title, body, images } = req.body;
     if (!productId || !rating || !title || !body) return res.status(400).json({ error: 'All fields required' });
     if (rating < 1 || rating > 5) return res.status(400).json({ error: 'Rating must be 1-5' });
+
+    // Validate images: must be array of strings (URLs), max 3
+    let imageUrls = [];
+    if (images) {
+      if (!Array.isArray(images)) return res.status(400).json({ error: 'images must be an array' });
+      imageUrls = images.slice(0, 3).filter(u => typeof u === 'string' && u.trim() !== '');
+    }
 
     // Check if user purchased this product
     const purchased = await prisma.orderItem.findFirst({
@@ -30,7 +37,15 @@ export default async function handler(req, res) {
     if (existing) return res.status(400).json({ error: 'You already reviewed this product' });
 
     const review = await prisma.review.create({
-      data: { userId: Number(token.id), productId: Number(productId), rating: Number(rating), title, body, verified: !!purchased },
+      data: {
+        userId: Number(token.id),
+        productId: Number(productId),
+        rating: Number(rating),
+        title,
+        body,
+        images: JSON.stringify(imageUrls),
+        verified: !!purchased,
+      },
       include: { user: { select: { name: true, image: true } } },
     });
     return res.status(201).json(review);

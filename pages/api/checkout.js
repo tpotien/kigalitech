@@ -1,13 +1,16 @@
 import prisma from '../../lib/prisma';
-import { sendOrderConfirmation } from '../../lib/email';
+import { sendOrderConfirmation, sendLoyaltyPointsEmail } from '../../lib/email';
 import { notifyNewOrder } from '../../lib/notify';
+import { sendSms, SMS_TEMPLATES } from '../../lib/sms';
+import { awardLoyaltyPoints } from '../../lib/loyalty';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   try {
     const { items, userId, shippingName, shippingEmail, shippingPhone, shippingAddress, paymentMethod, notes, couponCode,
-      installmentPlan, installmentMonths, tvInstallation, tvInstallAddress, mpostAddress, currency } = req.body;
+      installmentPlan, installmentMonths, tvInstallation, tvInstallAddress, mpostAddress, currency,
+      stripePaymentIntentId } = req.body;
 
     if (!items?.length) return res.status(400).json({ error: 'No items in cart' });
     if (!shippingName) return res.status(400).json({ error: 'Full name is required' });
@@ -42,8 +45,9 @@ export default async function handler(req, res) {
         total,
         discountAmount,
         couponCode: validCoupon?.code || null,
-        status: 'pending',
+        status: stripePaymentIntentId ? 'confirmed' : 'pending',
         paymentMethod: paymentMethod || 'pending',
+        stripePaymentIntentId: stripePaymentIntentId || null,
         shippingName: shippingName || '',
         shippingEmail: shippingEmail || '',
         shippingPhone: shippingPhone || '',
@@ -101,6 +105,27 @@ export default async function handler(req, res) {
 
     if (shippingEmail) sendOrderConfirmation({ order, shippingName, shippingEmail, items }).catch(() => {});
     notifyNewOrder(order).catch(() => {});
+
+    // SMS confirmation
+    if (shippingPhone) {
+      const fmtTotal = `$${(total / 100).toFixed(2)}`;
+      sendSms(shippingPhone, SMS_TEMPLATES.orderConfirmed(shippingName, order.id, fmtTotal)).catch(() => {});
+    }
+
+    // Award loyalty points for logged-in users
+    if (validUserId) {
+      awardLoyaltyPoints(validUserId, order.id, total).then(result => {
+        if (result?.pointsAwarded > 0 && shippingEmail) {
+          sendLoyaltyPointsEmail({
+            email: shippingEmail,
+            name: shippingName,
+            pointsEarned: result.pointsAwarded,
+            newBalance: result.newBalance,
+            orderId: order.id,
+          }).catch(() => {});
+        }
+      }).catch(() => {});
+    }
 
     return res.status(201).json({ orderId: order.id });
 

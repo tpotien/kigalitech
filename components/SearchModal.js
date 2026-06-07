@@ -51,10 +51,10 @@ export default function SearchModal({ open, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 px-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden">
 
         {/* Input */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 dark:border-slate-800">
           <svg className="h-5 w-5 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
@@ -65,7 +65,7 @@ export default function SearchModal({ open, onClose }) {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search phones, laptops, headphones..."
-            className="flex-1 text-slate-900 placeholder-slate-400 outline-none text-base bg-transparent"
+            className="flex-1 text-slate-900 dark:text-slate-100 placeholder-slate-400 outline-none text-base bg-transparent"
           />
           {loading ? (
             <div className="h-4 w-4 rounded-full border-2 border-sky-500 border-t-transparent animate-spin flex-shrink-0" />
@@ -76,14 +76,14 @@ export default function SearchModal({ open, onClose }) {
               </svg>
             </button>
           ) : null}
-          <kbd onClick={onClose} className="hidden sm:inline-flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-400 hover:bg-slate-100">
+          <kbd onClick={onClose} className="hidden sm:inline-flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-1 text-xs text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
             ESC
           </kbd>
         </div>
 
         {/* Results */}
         {results.length > 0 && (
-          <ul className="max-h-96 overflow-y-auto divide-y divide-slate-50 py-1">
+          <ul className="max-h-96 overflow-y-auto divide-y divide-slate-50 dark:divide-slate-800 py-1">
             {results.map((p, i) => {
               const img = p.images?.[0] || '';
               const discount = p.comparePrice && p.comparePrice > p.price
@@ -95,22 +95,22 @@ export default function SearchModal({ open, onClose }) {
                     href={`/products/${p.id}`}
                     onClick={onClose}
                     className={`flex items-center gap-4 px-5 py-3 no-underline transition-colors ${
-                      i === activeIdx ? 'bg-sky-50' : 'hover:bg-slate-50'
+                      i === activeIdx ? 'bg-sky-50 dark:bg-sky-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
                     }`}
                   >
-                    <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100 border border-slate-100">
+                    <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
                       {img && <img src={img} alt={p.name} className="h-full w-full object-cover" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 truncate">{p.name}</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{p.name}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs text-slate-400">{p.brand || p.category}</span>
                         <span className="h-1 w-1 rounded-full bg-slate-300" />
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">{p.category}</span>
+                        <span className="rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400">{p.category}</span>
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold text-slate-900">{format(p.price)}</p>
+                      <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{format(p.price)}</p>
                       {discount && <p className="text-[10px] font-bold text-red-500">-{discount}%</p>}
                     </div>
                   </Link>
@@ -124,7 +124,7 @@ export default function SearchModal({ open, onClose }) {
         {query.length >= 2 && !loading && results.length === 0 && (
           <div className="px-5 py-12 text-center">
             <div className="text-3xl mb-3">🔍</div>
-            <p className="font-semibold text-slate-700">No results for "<span className="text-sky-600">{query}</span>"</p>
+            <p className="font-semibold text-slate-700 dark:text-slate-300">No results for "<span className="text-sky-600">{query}</span>"</p>
             <p className="text-sm text-slate-400 mt-1">Try a different term or browse categories</p>
           </div>
         )}
@@ -141,7 +141,7 @@ export default function SearchModal({ open, onClose }) {
                     key={cat}
                     href={`/products?category=${cat}`}
                     onClick={onClose}
-                    className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600 no-underline hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700 transition-colors"
+                    className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 no-underline hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700 transition-colors"
                   >
                     {cat}
                   </Link>
@@ -157,7 +157,7 @@ export default function SearchModal({ open, onClose }) {
                   <button
                     key={s}
                     onClick={() => setQuery(s)}
-                    className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 hover:border-sky-300 hover:text-sky-700 transition-colors"
+                    className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-300 hover:border-sky-300 hover:text-sky-700 transition-colors"
                   >
                     <svg className="h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -171,10 +171,10 @@ export default function SearchModal({ open, onClose }) {
         )}
 
         {/* Footer hint */}
-        <div className="border-t border-slate-50 px-5 py-2.5 flex items-center justify-between bg-slate-50/60">
+        <div className="border-t border-slate-50 dark:border-slate-800 px-5 py-2.5 flex items-center justify-between bg-slate-50/60 dark:bg-slate-800/60">
           <div className="flex items-center gap-3 text-xs text-slate-400">
-            <span className="flex items-center gap-1"><kbd className="rounded border border-slate-200 bg-white px-1.5 py-0.5">↑</kbd><kbd className="rounded border border-slate-200 bg-white px-1.5 py-0.5">↓</kbd> navigate</span>
-            <span className="flex items-center gap-1"><kbd className="rounded border border-slate-200 bg-white px-1.5 py-0.5">↵</kbd> open</span>
+            <span className="flex items-center gap-1"><kbd className="rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-1.5 py-0.5">↑</kbd><kbd className="rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-1.5 py-0.5">↓</kbd> navigate</span>
+            <span className="flex items-center gap-1"><kbd className="rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-1.5 py-0.5">↵</kbd> open</span>
           </div>
           {results.length > 0 && (
             <Link

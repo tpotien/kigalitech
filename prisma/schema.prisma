@@ -19,6 +19,7 @@ model User {
   password              String?
   language              String               @default("en")
   notificationPrefs     String               @default("{\"email\":true,\"sms\":false,\"whatsapp\":false}")
+  loyaltyPoints         Int                  @default(0)
   orders                Order[]
   repairTickets         RepairTicket[]
   reviews               Review[]
@@ -28,6 +29,8 @@ model User {
   tradeIns              TradeIn[]
   marketplaceListings   MarketplaceListing[]
   wishlist              Wishlist[]
+  loyaltyTransactions   LoyaltyTransaction[]
+  stockAlerts           StockAlert[]
 }
 
 model Account {
@@ -92,9 +95,13 @@ model Product {
   hasTvInstall      Boolean     @default(false)
   condition         String      @default("new")
   bundledWith       String      @default("[]")
+  storagePrice      String      @default("{}")
+  flashSalePrice    Int?
+  flashSaleEnd      DateTime?
   items             OrderItem[]
   reviews           Review[]
   wishlistItems     Wishlist[]
+  stockAlerts       StockAlert[]
 }
 
 model Order {
@@ -125,10 +132,11 @@ model Order {
   deliveryTracking     String        @default("")
   currency             String        @default("USD")
   tradeInId            Int?
-  customerConfirmed    Boolean       @default(false)
-  customerConfirmedAt  DateTime?
-  items                OrderItem[]
-  repairTickets        RepairTicket[]
+  customerConfirmed        Boolean       @default(false)
+  customerConfirmedAt      DateTime?
+  stripePaymentIntentId    String?
+  items                    OrderItem[]
+  repairTickets            RepairTicket[]
 }
 
 model OrderItem {
@@ -168,6 +176,7 @@ model Review {
   rating    Int
   title     String
   body      String
+  images    String   @default("[]")
   verified  Boolean  @default(false)
   approved  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -188,6 +197,10 @@ model RepairTicket {
   contactMethod   String   @default("whatsapp")
   preferredTime   String   @default("")
   techPhone       String   @default("")
+  deviceImages    String   @default("[]")
+  quotedCost      Int      @default(0)
+  quoteNotes      String   @default("")
+  quoteStatus     String   @default("pending")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @default(now())
 }
@@ -260,4 +273,45 @@ model Wishlist {
   productId Int
   createdAt DateTime @default(now())
   @@unique([userId, productId])
+}
+
+model LoyaltyTransaction {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  points    Int
+  action    String   // 'earn' | 'redeem' | 'expire'
+  reason    String   // 'purchase' | 'review' | 'referral' | 'manual'
+  orderId   Int?
+  createdAt DateTime @default(now())
+}
+
+model StockAlert {
+  id        Int      @id @default(autoincrement())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int?
+  email     String?
+  phone     String?
+  notified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model DeliveryZone {
+  id       Int     @id @default(autoincrement())
+  name     String
+  fee      Int     @default(0)
+  active   Boolean @default(true)
+  sortOrder Int    @default(0)
+}
+
+model SmsLog {
+  id        Int      @id @default(autoincrement())
+  to        String
+  message   String
+  status    String   @default("pending")
+  provider  String   @default("africastalking")
+  orderId   Int?
+  createdAt DateTime @default(now())
 }

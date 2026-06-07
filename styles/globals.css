@@ -10,6 +10,18 @@ body {
   font-feature-settings: 'cv01', 'cv02', 'cv03';
 }
 
+/* Dark mode body */
+.dark body {
+  @apply bg-slate-950 text-slate-100;
+}
+
+/* Smooth color transitions everywhere for dark mode toggle */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+}
+
 a {
   @apply text-sky-600 hover:text-sky-800;
 }
@@ -80,6 +92,11 @@ button {
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 0.5rem;
+}
+
+.dark .skeleton {
+  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background-size: 200% 100%;
 }
 
 /* ── Safe area bottom padding for iOS ── */

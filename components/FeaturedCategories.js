@@ -33,9 +33,24 @@ const CATEGORIES = [
     img: 'https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?auto=format&fit=crop&w=600&q=80',
   },
   {
-    key: 'others', name: 'Others', icon: '🔌', desc: 'Chargers, Mics & More',
-    href: '/products?category=Others',
+    key: 'tablets', name: 'Tablets', icon: '📱', desc: 'iPad, Galaxy Tab & More',
+    href: '/products?category=Tablets',
+    img: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=600&q=80',
+  },
+  {
+    key: 'cameras', name: 'Cameras', icon: '📷', desc: 'DSLR, Mirrorless & Action',
+    href: '/products?category=Cameras',
+    img: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80',
+  },
+  {
+    key: 'accessories', name: 'Accessories', icon: '🔋', desc: 'Cables, Cases & Power',
+    href: '/products?category=Accessories',
     img: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=600&q=80',
+  },
+  {
+    key: 'smarthome', name: 'Smart Home', icon: '🏠', desc: 'Speakers, Bulbs & Hubs',
+    href: '/products?category=Smart Home',
+    img: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=600&q=80',
   },
 ];
 
@@ -47,19 +62,19 @@ export default function FeaturedCategories() {
       <div className="mb-10 flex items-end justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">{t('categories')}</p>
-          <h2 className="mt-1 text-3xl font-extrabold text-slate-900">Browse by Category</h2>
+          <h2 className="mt-1 text-3xl font-extrabold text-slate-900 dark:text-white">Browse by Category</h2>
         </div>
         <Link href="/products" className="text-sm font-medium text-sky-600 hover:text-sky-800 no-underline">
           {t('viewAll')} →
         </Link>
       </div>
 
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {CATEGORIES.map((cat) => (
           <Link
             key={cat.name}
             href={cat.href}
-            className="group relative overflow-hidden rounded-3xl no-underline aspect-[3/4] sm:aspect-auto sm:h-52 xl:h-56"
+            className="group relative overflow-hidden rounded-3xl no-underline aspect-[3/4] sm:aspect-auto sm:h-48 xl:h-52"
           >
             {/* Product photo fills entire card */}
             <img

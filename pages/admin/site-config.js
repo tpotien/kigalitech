@@ -94,7 +94,7 @@ export default function SiteConfig() {
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-700">WhatsApp Number (with country code)</label>
-              <input value={config.whatsappNumber} onChange={set('whatsappNumber')} className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200" placeholder="250700000000" />
+              <input value={config.whatsappNumber} onChange={set('whatsappNumber')} className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200" placeholder="250786276555" />
               <p className="mt-1 text-xs text-slate-400">No + or spaces, e.g. 250788123456</p>
             </div>
           </div>
@@ -108,7 +108,7 @@ export default function SiteConfig() {
               <label className="mb-1.5 block text-sm font-medium text-slate-700">Currency Symbol</label>
               <select value={config.currency} onChange={set('currency')} className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200">
                 <option value="USD">USD ($)</option>
-                <option value="RWF">RWF (RF)</option>
+                <option value="RWF">RWF (Rwandan Franc)</option>
                 <option value="EUR">EUR (€)</option>
                 <option value="GBP">GBP (£)</option>
               </select>

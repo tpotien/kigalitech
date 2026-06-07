@@ -1,7 +1,30 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 
-const CATEGORIES = ['Phones', 'Laptops', 'Headphones', 'Audio', 'Wearables', 'Tablets', 'TVs', 'Cameras', 'Accessories', 'Gaming', 'Other'];
+const CATEGORIES = [
+  'Phones', 'Laptops', 'TVs', 'Audio', 'Wearables',
+  'Gaming', 'Tablets', 'Cameras', 'Accessories', 'Smart Home',
+];
+
+// Defined outside component so React never recreates them on re-render
+function Section({ title, children }) {
+  return (
+    <div className="rounded-2xl bg-white border border-slate-200 p-6">
+      <h3 className="font-semibold text-slate-900 mb-4">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function Field({ label, help, children }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
+      {help && <p className="text-xs text-slate-400 mb-1">{help}</p>}
+      {children}
+    </div>
+  );
+}
 
 function parse(val, fallback = []) {
   if (Array.isArray(val)) return val;
@@ -44,22 +67,19 @@ export default function ProductForm({ initial }) {
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  async function handleAiFill() {
-    if (!form.name.trim()) {
-      setError('Enter a product name first, then click AI Fill.');
-      return;
-    }
+  async function runAiFill(name, category) {
+    if (!name?.trim()) return;
     setAiLoading(true);
-    setAiStatus('Generating product details with AI...');
+    setAiStatus('Auto-filling product details…');
     setError('');
     try {
       const res = await fetch('/api/admin/ai-fill-product', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: form.name.trim(), category: form.category }),
+        body: JSON.stringify({ name: name.trim(), category }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'AI fill failed');
+      if (!res.ok) throw new Error(data.error || 'Fill failed');
 
       setForm((f) => ({
         ...f,
@@ -73,13 +93,23 @@ export default function ProductForm({ initial }) {
         specs: data.specs ? JSON.stringify(data.specs, null, 2) : f.specs,
         price: data.suggestedPrice && !f.price ? (data.suggestedPrice / 100).toFixed(2) : f.price,
       }));
-      setAiStatus('AI filled successfully! Review and adjust as needed.');
-      setTimeout(() => setAiStatus(''), 4000);
+      const src = data._source === 'claude' ? '✨ Claude AI' : '⚡ Smart Fill';
+      setAiStatus(`${src} — filled! Review and adjust before saving.`);
+      setTimeout(() => setAiStatus(''), 5000);
     } catch (err) {
       setError(err.message);
     } finally {
       setAiLoading(false);
     }
+  }
+
+  function handleAiFill() { runAiFill(form.name, form.category); }
+  function handleNameBlur(e) {
+    const name = e.target.value.trim();
+    if (!name) return;
+    // Only auto-fill if most fields are still empty
+    const isEmpty = !form.description && !form.brand && !form.colors && !form.specs;
+    if (isEmpty) runAiFill(name, form.category);
   }
 
   async function handleImageUpload(e) {
@@ -148,26 +178,17 @@ export default function ProductForm({ initial }) {
     }
   }
 
-  const Section = ({ title, children }) => (
-    <div className="rounded-2xl bg-white border border-slate-200 p-6">
-      <h3 className="font-semibold text-slate-900 mb-4">{title}</h3>
-      {children}
-    </div>
-  );
-
-  const Field = ({ label, help, children }) => (
-    <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
-      {help && <p className="text-xs text-slate-400 mb-1">{help}</p>}
-      {children}
-    </div>
-  );
-
   const inp = 'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100';
   const ta = `${inp} resize-none`;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
+    <form
+      onSubmit={handleSubmit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.preventDefault();
+      }}
+      className="space-y-6 max-w-4xl"
+    >
       {error && <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">{error}</div>}
       {aiStatus && (
         <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700 flex items-center gap-2">
@@ -175,16 +196,17 @@ export default function ProductForm({ initial }) {
         </div>
       )}
 
-      {/* AI Fill Banner */}
+      {/* AI Fill Banner — optional feature */}
       <div className="rounded-2xl bg-gradient-to-r from-violet-50 to-sky-50 border border-violet-100 p-5 flex items-center justify-between gap-4">
         <div>
-          <p className="font-semibold text-slate-800 text-sm">AI Product Fill</p>
-          <p className="text-xs text-slate-500 mt-0.5">Enter the product name and category, then let AI auto-fill description, specs, colors, warranty, and suggested price.</p>
+          <p className="font-semibold text-slate-800 text-sm">Auto Fill {aiLoading && <span className="ml-1.5 inline-block h-3 w-3 align-middle animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />}</p>
+          <p className="text-xs text-slate-500 mt-0.5">Type the product name and tab away — description, specs, colors, warranty &amp; price fill automatically. Click the button to re-fill anytime.</p>
         </div>
         <button
           type="button"
           onClick={handleAiFill}
           disabled={aiLoading || !form.name.trim()}
+          title="Requires ANTHROPIC_API_KEY — all fields can also be filled manually"
           className="flex-shrink-0 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-violet-200 transition-all"
         >
           {aiLoading ? (
@@ -208,6 +230,7 @@ export default function ProductForm({ initial }) {
               required
               value={form.name}
               onChange={(e) => set('name', e.target.value)}
+              onBlur={handleNameBlur}
               className={inp}
               placeholder="e.g. iPhone 17 Pro Max"
             />

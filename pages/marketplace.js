@@ -75,14 +75,14 @@ export default function MarketplacePage({ listings, query }) {
       </section>
 
       {/* Categories */}
-      <div className="sticky top-16 z-20 bg-white border-b border-slate-100 shadow-sm">
+      <div className="sticky top-16 z-20 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-3 overflow-x-auto">
           <div className="flex items-center gap-2 min-w-max">
             {CATEGORIES.map(cat => (
               <a
                 key={cat}
                 href={`/marketplace?category=${cat === 'All' ? '' : cat}${search ? `&search=${search}` : ''}`}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium no-underline whitespace-nowrap transition-colors ${activeCategory === cat ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium no-underline whitespace-nowrap transition-colors ${activeCategory === cat ? 'bg-violet-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
               >
                 {cat}
               </a>
@@ -105,9 +105,9 @@ export default function MarketplacePage({ listings, query }) {
       <section className="mx-auto max-w-7xl px-4 py-12">
         {listings.length === 0 ? (
           <div className="text-center py-20">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 text-4xl">📭</div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">{t('noResults')}</h3>
-            <p className="text-slate-500 mb-6">Be the first to list an item for sale!</p>
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-4xl">📭</div>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">{t('noResults')}</h3>
+            <p className="text-slate-500 dark:text-slate-400 mb-6">Be the first to list an item for sale!</p>
             <Link href="/marketplace/sell" className="no-underline">
               <button className="rounded-full bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-violet-700">{t('listYourItem')}</button>
             </Link>
@@ -117,9 +117,9 @@ export default function MarketplacePage({ listings, query }) {
             {listings.map(listing => {
               const images = JSON.parse(listing.images || '[]');
               return (
-                <article key={listing.id} className="group rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-lg transition-all hover:-translate-y-0.5">
+                <article key={listing.id} className="group rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden shadow-sm hover:shadow-lg transition-all hover:-translate-y-0.5">
                   {/* Image */}
-                  <div className="relative h-52 w-full bg-slate-100 overflow-hidden">
+                  <div className="relative h-52 w-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                     {images[0]
                       ? <img src={images[0]} alt={listing.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
                       : <div className="flex h-full items-center justify-center text-5xl">📦</div>
@@ -135,11 +135,11 @@ export default function MarketplacePage({ listings, query }) {
                   {/* Body */}
                   <div className="p-5">
                     <p className="text-xs font-semibold uppercase tracking-widest text-violet-600 mb-1">{listing.category}</p>
-                    <h3 className="font-semibold text-slate-900 leading-snug mb-2">{listing.title}</h3>
-                    <p className="text-sm text-slate-500 line-clamp-2 mb-4">{listing.description}</p>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100 leading-snug mb-2">{listing.title}</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mb-4">{listing.description}</p>
 
                     <div className="flex items-center justify-between">
-                      <p className="text-xl font-extrabold text-slate-900">{format(listing.price)}</p>
+                      <p className="text-xl font-extrabold text-slate-900 dark:text-slate-100">{format(listing.price)}</p>
                       <div className="flex items-center gap-1.5">
                         {listing.seller?.image
                           ? <img src={listing.seller.image} alt="" className="h-6 w-6 rounded-full object-cover" />

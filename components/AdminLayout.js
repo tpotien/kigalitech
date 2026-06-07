@@ -13,6 +13,8 @@ const NAV = [
   { href: '/admin/repairs', label: 'Repairs', icon: '🔧' },
   { href: '/admin/trade-ins', label: 'Trade-Ins', icon: '♻️' },
   { href: '/admin/marketplace', label: 'Marketplace', icon: '🏪' },
+  { href: '/admin/flash-sales', label: 'Flash Sales', icon: '⚡' },
+  { href: '/admin/delivery-zones', label: 'Delivery Zones', icon: '🚚' },
   { href: '/admin/site-config', label: 'Settings', icon: '⚙️' },
   { href: '/admin/profile', label: 'My Profile', icon: '🧑' },
 ];

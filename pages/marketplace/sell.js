@@ -64,10 +64,10 @@ export default function SellPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-3">Listing Submitted!</h1>
-          <p className="text-slate-500 mb-8">Your listing is pending review by our team. Once approved, it'll appear in the marketplace within 24 hours.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3">Listing Submitted!</h1>
+          <p className="text-slate-500 dark:text-slate-400 mb-8">Your listing is pending review by our team. Once approved, it'll appear in the marketplace within 24 hours.</p>
           <div className="flex gap-3 justify-center">
-            <a href="/marketplace" className="rounded-full border border-slate-200 px-6 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 no-underline">Browse Market</a>
+            <a href="/marketplace" className="rounded-full border border-slate-200 dark:border-slate-700 px-6 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 no-underline">Browse Market</a>
             <button onClick={() => { setSuccess(false); setForm({ title: '', description: '', price: '', category: '', condition: '', phone: '', location: '' }); }} className="rounded-full bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-violet-700">List Another</button>
           </div>
         </div>
@@ -84,9 +84,9 @@ export default function SellPage() {
         </div>
       </section>
 
-      <section className="py-12 bg-slate-50">
+      <section className="py-12 bg-slate-50 dark:bg-slate-950">
         <div className="mx-auto max-w-2xl px-4">
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 shadow-sm">
 
             {!session && (
               <div className="mb-6 rounded-2xl bg-amber-50 border border-amber-100 p-4">
@@ -97,21 +97,21 @@ export default function SellPage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Item Title *</label>
-                <input name="title" value={form.title} onChange={handleChange} required placeholder="e.g. iPhone 12 Pro — 128GB Blue" className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100" />
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Item Title *</label>
+                <input name="title" value={form.title} onChange={handleChange} required placeholder="e.g. iPhone 12 Pro — 128GB Blue" className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900" />
               </div>
 
               <div className="grid grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Category *</label>
-                  <select name="category" value={form.category} onChange={handleChange} required className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 bg-white">
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Category *</label>
+                  <select name="category" value={form.category} onChange={handleChange} required className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900">
                     <option value="">Select...</option>
                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Condition *</label>
-                  <select name="condition" value={form.condition} onChange={handleChange} required className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 bg-white">
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Condition *</label>
+                  <select name="condition" value={form.condition} onChange={handleChange} required className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900">
                     <option value="">Select...</option>
                     {CONDITIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                   </select>
@@ -119,27 +119,27 @@ export default function SellPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Description</label>
-                <textarea name="description" value={form.description} onChange={handleChange} rows={4} placeholder="Describe the item, include storage size, accessories, any defects..." className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 resize-none" />
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Description</label>
+                <textarea name="description" value={form.description} onChange={handleChange} rows={4} placeholder="Describe the item, include storage size, accessories, any defects..." className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 resize-none" />
               </div>
 
               <div className="grid grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Price (USD) *</label>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Price (USD) *</label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
-                    <input name="price" type="number" min="0" step="0.01" value={form.price} onChange={handleChange} required placeholder="0.00" className="w-full rounded-xl border border-slate-200 py-2.5 pl-8 pr-4 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100" />
+                    <input name="price" type="number" min="0" step="0.01" value={form.price} onChange={handleChange} required placeholder="0.00" className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 py-2.5 pl-8 pr-4 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Location</label>
-                  <input name="location" value={form.location} onChange={handleChange} placeholder="e.g. Kigali, Kimihurura" className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100" />
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Location</label>
+                  <input name="location" value={form.location} onChange={handleChange} placeholder="e.g. Kigali, Kimihurura" className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">WhatsApp / Phone</label>
-                <input name="phone" value={form.phone} onChange={handleChange} placeholder="+250 7XX XXX XXX" className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100" />
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">WhatsApp / Phone</label>
+                <input name="phone" value={form.phone} onChange={handleChange} placeholder="+250 7XX XXX XXX" className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900" />
                 <p className="mt-1 text-xs text-slate-400">Buyers will contact you directly via WhatsApp</p>
               </div>
 
@@ -150,7 +150,7 @@ export default function SellPage() {
               </button>
             </form>
           </div>
-          <p className="mt-4 text-center text-xs text-slate-400">All listings are reviewed by KigaliTech before appearing on the marketplace.</p>
+          <p className="mt-4 text-center text-xs text-slate-400 dark:text-slate-500">All listings are reviewed by KigaliTech before appearing on the marketplace.</p>
         </div>
       </section>
     </Layout>

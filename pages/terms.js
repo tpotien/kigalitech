@@ -50,23 +50,23 @@ export default function TermsPage() {
       <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="mb-10">
           <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">Legal</p>
-          <h1 className="mt-2 text-4xl font-extrabold text-slate-900">Terms of Service</h1>
-          <p className="mt-3 text-slate-500">Last updated: June 2026</p>
-          <p className="mt-4 text-slate-600 leading-relaxed">
+          <h1 className="mt-2 text-4xl font-extrabold text-slate-900 dark:text-slate-100">Terms of Service</h1>
+          <p className="mt-3 text-slate-500 dark:text-slate-400">Last updated: June 2026</p>
+          <p className="mt-4 text-slate-600 dark:text-slate-400 leading-relaxed">
             Please read these terms carefully before using KigaliTech's website and services. These terms constitute a legally binding agreement between you and KigaliTech Rwanda Ltd.
           </p>
         </div>
 
         <div className="space-y-8">
           {SECTIONS.map(s => (
-            <div key={s.title} className="rounded-2xl border border-slate-100 bg-white p-6">
-              <h2 className="text-base font-bold text-slate-900 mb-3">{s.title}</h2>
-              <p className="text-sm text-slate-600 leading-relaxed">{s.body}</p>
+            <div key={s.title} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6">
+              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-3">{s.title}</h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{s.body}</p>
             </div>
           ))}
         </div>
 
-        <div className="mt-10 rounded-2xl bg-slate-50 border border-slate-200 p-6 text-sm text-slate-600">
+        <div className="mt-10 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 text-sm text-slate-600 dark:text-slate-400">
           Questions about these terms? <Link href="/contact" className="font-semibold text-sky-600 underline hover:text-sky-700">Contact us</Link> or email legal@kigalitech.com.
         </div>
       </div>

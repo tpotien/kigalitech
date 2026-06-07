@@ -28,7 +28,7 @@ export default NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const input = credentials.email.trim();
+        const input = credentials.email.trim().toLowerCase();
 
         // Check for hardcoded admin
         if (
@@ -60,6 +60,11 @@ export default NextAuth({
         if (!user || !user.password) return null;
         const valid = await bcrypt.compare(credentials.password, user.password);
         if (!valid) return null;
+        // Require email verification for email accounts
+        const isPhoneAccount = user.email?.endsWith('@phone.kigalitech.com');
+        if (!user.emailVerified && !isPhoneAccount) {
+          throw new Error('VERIFY:' + user.email);
+        }
         return user;
       },
     }),

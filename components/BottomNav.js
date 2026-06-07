@@ -13,7 +13,7 @@ export default function BottomNav() {
   const active = (p) => pathname === p || pathname.startsWith(p + '/');
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-md xl:hidden safe-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md xl:hidden safe-bottom">
       <div className="grid grid-cols-5 h-16">
         <Link href="/" className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium no-underline transition-colors ${active('/') && pathname === '/' ? 'text-sky-600' : 'text-slate-500'}`}>
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active('/') && pathname === '/' ? 2.5 : 1.5}>

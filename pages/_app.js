@@ -7,15 +7,19 @@ import { CurrencyProvider } from '../context/CurrencyContext';
 import { WishlistProvider } from '../context/WishlistContext';
 import { CompareProvider } from '../context/CompareContext';
 import { ToastProvider } from '../context/ToastContext';
+import { ThemeProvider } from '../context/ThemeContext';
 import WhatsAppButton from '../components/WhatsAppButton';
 import CompareBar from '../components/CompareBar';
 import PageProgress from '../components/PageProgress';
 import BackToTop from '../components/BackToTop';
 import OfflineBanner from '../components/OfflineBanner';
+import { WhatsAppProvider } from '../context/WhatsAppContext';
 
 export default function App({ Component, pageProps: { session, ...pageProps } }) {
   return (
+    <ThemeProvider>
     <SessionProvider session={session}>
+      <WhatsAppProvider>
       <LanguageProvider>
         <CurrencyProvider>
           <CartProvider>
@@ -36,6 +40,8 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
           </CartProvider>
         </CurrencyProvider>
       </LanguageProvider>
+      </WhatsAppProvider>
     </SessionProvider>
+    </ThemeProvider>
   );
 }

@@ -35,12 +35,12 @@ function BrandCard({ brand }) {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="relative flex flex-col items-center justify-center rounded-2xl border overflow-hidden cursor-default"
+      className="relative flex flex-col items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden cursor-default"
       style={{
         width: '9rem',
         height: '6rem',
-        backgroundColor: hovered ? brand.bg : '#ffffff',
-        borderColor: hovered ? brand.bg : '#e2e8f0',
+        backgroundColor: hovered ? brand.bg : undefined,
+        borderColor: hovered ? brand.bg : undefined,
         transform: hovered ? 'translateY(-6px) scale(1.07)' : 'translateY(0) scale(1)',
         boxShadow: hovered ? `0 18px 45px ${brand.bg}50` : '0 1px 3px rgba(0,0,0,0.05)',
         transition: 'all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -128,7 +128,7 @@ export default function TrustBadges() {
   const { t } = useLang();
 
   return (
-    <section className="bg-slate-50 border-y border-slate-100 py-12">
+    <section className="bg-slate-50 dark:bg-slate-950 border-y border-slate-100 dark:border-slate-800 py-12">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <p className="mb-8 text-center text-xs font-semibold uppercase tracking-widest text-slate-400">
           {t('trustedBy')}

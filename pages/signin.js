@@ -8,7 +8,7 @@ import LanguageSwitcher from '../components/LanguageSwitcher';
 export default function SignIn() {
   const { data: session } = useSession();
   const router = useRouter();
-  const { callbackUrl } = router.query;
+  const { callbackUrl, verified } = router.query;
   const { t } = useLang();
   const [mode, setMode] = useState('login'); // login | register
   const [loading, setLoading] = useState('');
@@ -33,9 +33,25 @@ export default function SignIn() {
     e.preventDefault();
     setLoading('login');
     setError('');
+    if (form.email && !isValidEmail(form.email)) {
+      setError('Please enter a valid email address');
+      setLoading('');
+      return;
+    }
     const identifier = form.email || form.phone;
     const result = await signIn('credentials', { email: identifier, password: form.password, redirect: false });
     if (result?.error) {
+      if (result.error.startsWith('VERIFY:')) {
+        const unverifiedEmail = result.error.slice('VERIFY:'.length);
+        // Send a fresh OTP for this user and redirect to verify
+        fetch('/api/auth/resend-verification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: unverifiedEmail }),
+        }).catch(() => {});
+        router.push(`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`);
+        return;
+      }
       setError('Invalid credentials. Please check your email/phone and password.');
       setLoading('');
     }
@@ -45,13 +61,24 @@ export default function SignIn() {
     e.preventDefault();
     setLoading('register');
     setError('');
+    if (form.email && !isValidEmail(form.email)) {
+      setError('Please enter a valid email address');
+      setLoading('');
+      return;
+    }
     if (form.password !== form.confirmPassword) {
       setError('Passwords do not match');
       setLoading('');
       return;
     }
-    if (form.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (form.password.length < 8) {
+      setError('Password must be at least 8 characters');
+      setLoading('');
+      return;
+    }
+    const str = passwordStrength(form.password);
+    if (str.score < 3) {
+      setError('Password is too weak — add uppercase letters, numbers, or symbols');
       setLoading('');
       return;
     }
@@ -66,12 +93,38 @@ export default function SignIn() {
       setLoading('');
       return;
     }
-    // Auto sign in after register
-    const identifier = form.email || form.phone;
+    // Email accounts require verification; phone-only accounts auto sign in
+    if (data.requiresVerification) {
+      router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
+      return;
+    }
+    const identifier = form.phone;
     await signIn('credentials', { email: identifier, password: form.password, redirect: false });
   }
 
-  const setField = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  const setField = (k) => (e) => {
+    const val = k === 'email' ? e.target.value.toLowerCase() : e.target.value;
+    setForm({ ...form, [k]: val });
+  };
+
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+  }
+
+  function passwordStrength(pw) {
+    if (!pw) return { score: 0, label: '', color: '' };
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[a-z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    if (score <= 2) return { score, label: 'Weak', color: 'bg-red-500' };
+    if (score === 3) return { score, label: 'Fair', color: 'bg-amber-500' };
+    if (score === 4) return { score, label: 'Good', color: 'bg-sky-500' };
+    return { score, label: 'Strong', color: 'bg-emerald-500' };
+  }
+  const strength = mode === 'register' ? passwordStrength(form.password) : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-sky-900 flex items-center justify-center px-4 py-10">
@@ -96,25 +149,31 @@ export default function SignIn() {
           </p>
         </div>
 
-        <div className="rounded-3xl bg-white p-7 shadow-2xl">
+        <div className="rounded-3xl bg-white dark:bg-slate-900 p-7 shadow-2xl">
+          {verified && (
+            <div className="mb-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+              <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+              Email verified! You can now sign in.
+            </div>
+          )}
           {error && (
-            <div className="mb-4 rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600">{error}</div>
+            <div className="mb-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 px-4 py-3 text-sm text-red-600">{error}</div>
           )}
           {success && (
-            <div className="mb-4 rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-3 text-sm text-emerald-700">{success}</div>
+            <div className="mb-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 px-4 py-3 text-sm text-emerald-700">{success}</div>
           )}
 
           {/* Mode tabs */}
-          <div className="flex rounded-xl border border-slate-200 overflow-hidden mb-6">
+          <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden mb-6">
             <button
               onClick={() => { setMode('login'); setError(''); }}
-              className={`flex-1 py-2.5 text-sm font-semibold transition ${mode === 'login' ? 'bg-sky-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+              className={`flex-1 py-2.5 text-sm font-semibold transition ${mode === 'login' ? 'bg-sky-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
             >
               {t('signIn')}
             </button>
             <button
               onClick={() => { setMode('register'); setError(''); }}
-              className={`flex-1 py-2.5 text-sm font-semibold transition ${mode === 'register' ? 'bg-sky-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+              className={`flex-1 py-2.5 text-sm font-semibold transition ${mode === 'register' ? 'bg-sky-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
             >
               {t('createAccount')}
             </button>
@@ -125,7 +184,7 @@ export default function SignIn() {
             <button
               onClick={() => handleSocial('google')}
               disabled={!!loading}
-              className="w-full flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-all"
+              className="w-full flex items-center justify-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-all"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -138,7 +197,7 @@ export default function SignIn() {
             <button
               onClick={() => handleSocial('github')}
               disabled={!!loading}
-              className="w-full flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-all"
+              className="w-full flex items-center justify-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-all"
             >
               <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                 <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
@@ -148,25 +207,25 @@ export default function SignIn() {
           </div>
 
           <div className="relative mb-5">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200" /></div>
-            <div className="relative flex justify-center"><span className="bg-white px-3 text-xs text-slate-400">{t('orContinueWith')}</span></div>
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200 dark:border-slate-700" /></div>
+            <div className="relative flex justify-center"><span className="bg-white dark:bg-slate-900 px-3 text-xs text-slate-400">{t('orContinueWith')}</span></div>
           </div>
 
           {/* Login form */}
           {mode === 'login' && (
-            <form onSubmit={handleLogin} className="space-y-3">
+            <form onSubmit={handleLogin} className="space-y-3" autoComplete="on">
               <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">{t('email')} / {t('phone')}</label>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('email')} / {t('phone')}</label>
                 <input
                   required
                   value={form.email || form.phone}
                   onChange={e => {
                     const val = e.target.value;
                     const isPhone = val.startsWith('+') || /^[\d\s\-()]{3,}$/.test(val.replace(/^\+/, ''));
-                    setForm({ ...form, email: isPhone ? '' : val, phone: isPhone ? val : '' });
+                    setForm({ ...form, email: isPhone ? '' : val.toLowerCase(), phone: isPhone ? val : '' });
                   }}
                   placeholder="+250 7XX XXX XXX or email@example.com"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800 focus:border-sky-400"
                 />
               </div>
               <div>
@@ -174,10 +233,11 @@ export default function SignIn() {
                 <input
                   required
                   type="password"
+                  autoComplete="current-password"
                   value={form.password}
                   onChange={setField('password')}
                   placeholder="••••••••"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800 focus:border-sky-400"
                 />
               </div>
               <button
@@ -200,7 +260,7 @@ export default function SignIn() {
                   value={form.name}
                   onChange={setField('name')}
                   placeholder="Your full name"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800"
                 />
               </div>
               <div>
@@ -208,9 +268,9 @@ export default function SignIn() {
                 <input
                   type="email"
                   value={form.email}
-                  onChange={setField('email')}
+                  onChange={e => setForm({ ...form, email: e.target.value.toLowerCase() })}
                   placeholder="email@example.com"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800"
                 />
               </div>
               <div>
@@ -220,7 +280,7 @@ export default function SignIn() {
                   value={form.phone}
                   onChange={setField('phone')}
                   placeholder="+250 7XX XXX XXX"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800"
                 />
               </div>
               <div>
@@ -230,9 +290,24 @@ export default function SignIn() {
                   type="password"
                   value={form.password}
                   onChange={setField('password')}
-                  placeholder="Min 6 characters"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200"
+                  placeholder="Min 8 chars · Uppercase · Number · Symbol"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800"
                 />
+                {form.password && (
+                  <div className="mt-2 space-y-1">
+                    <div className="flex gap-1">
+                      {[1,2,3,4,5].map(i => (
+                        <div key={i} className={`h-1.5 flex-1 rounded-full transition-all ${i <= strength.score ? strength.color : 'bg-slate-200 dark:bg-slate-700'}`} />
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className={`text-xs font-semibold ${strength.score <= 2 ? 'text-red-500' : strength.score === 3 ? 'text-amber-500' : strength.score === 4 ? 'text-sky-600' : 'text-emerald-600'}`}>
+                        {strength.label}
+                      </p>
+                      <p className="text-[10px] text-slate-400">Use A–Z · 0–9 · !@#$ for Strong</p>
+                    </div>
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1">Confirm Password *</label>
@@ -242,7 +317,7 @@ export default function SignIn() {
                   value={form.confirmPassword}
                   onChange={setField('confirmPassword')}
                   placeholder="Repeat password"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800"
                 />
               </div>
               <p className="text-xs text-slate-400">Enter email, phone number, or both. At least one is required.</p>

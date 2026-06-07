@@ -1,8 +1,8 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 // Exchange rates relative to USD (updated periodically in production)
 const RATES = { USD: 1, RWF: 1340, EUR: 0.92, GBP: 0.79, KES: 130, UGX: 3750 };
-const SYMBOLS = { USD: '$', RWF: 'RF ', EUR: '€', GBP: '£', KES: 'KSh ', UGX: 'USh ' };
+const SYMBOLS = { USD: '$', RWF: 'RWF ', EUR: '€', GBP: '£', KES: 'KSh ', UGX: 'USh ' };
 const NAMES = { USD: 'US Dollar', RWF: 'Rwandan Franc', EUR: 'Euro', GBP: 'British Pound', KES: 'Kenyan Shilling', UGX: 'Ugandan Shilling' };
 
 const CurrencyContext = createContext({
@@ -12,12 +12,11 @@ const CurrencyContext = createContext({
 });
 
 export function CurrencyProvider({ children }) {
-  const [currency, setCurrencyState] = useState('USD');
-
-  useEffect(() => {
+  const [currency, setCurrencyState] = useState(() => {
+    if (typeof window === 'undefined') return 'USD';
     const saved = localStorage.getItem('currency');
-    if (saved && RATES[saved]) setCurrencyState(saved);
-  }, []);
+    return saved && RATES[saved] ? saved : 'USD';
+  });
 
   function setCurrency(c) {
     setCurrencyState(c);

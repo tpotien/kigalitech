@@ -18,7 +18,7 @@ export default function HeroSection({ config = {} }) {
   const line3 = titleLines[2] || 'Your Life';
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-sky-950 min-h-[600px] lg:min-h-[680px]">
+    <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-sky-950 min-h-[520px] sm:min-h-[600px] lg:min-h-[680px]">
       {/* Subtle grid */}
       <div
         className="absolute inset-0 opacity-[0.07]"
@@ -32,10 +32,10 @@ export default function HeroSection({ config = {} }) {
       <div className="absolute -bottom-32 -left-32 h-[500px] w-[500px] rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid min-h-[600px] lg:min-h-[680px] items-center gap-8 lg:grid-cols-[1fr_480px] xl:grid-cols-[1fr_560px]">
+        <div className="grid min-h-[520px] sm:min-h-[600px] lg:min-h-[680px] items-center gap-0 lg:gap-8 lg:grid-cols-[1fr_480px] xl:grid-cols-[1fr_560px]">
 
           {/* ── Left: Text ── */}
-          <div className="py-16 lg:py-20">
+          <div className="py-10 sm:py-16 lg:py-20 relative z-10">
             <span className="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-4 py-1.5 text-sm font-medium text-sky-300">
               <span className="h-2 w-2 rounded-full bg-sky-400 animate-pulse" />
               {badgeText}
@@ -70,22 +70,71 @@ export default function HeroSection({ config = {} }) {
               </Link>
             </div>
 
+            {/* Global connected illustration */}
+            <div className="mt-4 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 w-fit backdrop-blur-sm">
+              <div className="flex -space-x-1">
+                {['📱','💻','🎧','📺','⌚'].map((e, i) => (
+                  <span key={i} className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-sm border border-white/10">{e}</span>
+                ))}
+              </div>
+              <div className="w-px h-6 bg-white/20" />
+              <div className="flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs font-semibold text-white/80">Global · Secure · Guaranteed</span>
+              </div>
+            </div>
+
             {/* Stats */}
-            <div className="mt-12 flex flex-wrap gap-10">
+            <div className="mt-10 sm:mt-12 flex items-center gap-6 sm:gap-10 flex-nowrap overflow-x-auto scrollbar-none pb-1">
               {[
                 { label: 'Products', value: '500+' },
                 { label: 'Happy Customers', value: '12K+' },
                 { label: 'Brands', value: '40+' },
               ].map(({ label, value }) => (
-                <div key={label}>
-                  <p className="text-3xl font-extrabold text-white">{value}</p>
-                  <p className="text-sm text-slate-400">{label}</p>
+                <div key={label} className="flex-shrink-0">
+                  <p className="text-2xl sm:text-3xl font-extrabold text-white whitespace-nowrap">{value}</p>
+                  <p className="text-xs sm:text-sm text-slate-400 whitespace-nowrap">{label}</p>
                 </div>
               ))}
             </div>
+
+            {/* ── Mobile image card — visible only below lg ── */}
+            <div className="lg:hidden mt-8 relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl" style={{ maxHeight: '260px' }}>
+              <div
+                className="absolute inset-0"
+                style={{
+                  WebkitMaskImage: 'radial-gradient(ellipse 100% 100% at 60% 50%, black 30%, rgba(0,0,0,0.6) 60%, transparent 85%)',
+                  maskImage: 'radial-gradient(ellipse 100% 100% at 60% 50%, black 30%, rgba(0,0,0,0.6) 60%, transparent 85%)',
+                }}
+              >
+                <img
+                  src={imageUrl}
+                  alt="New Arrival"
+                  className="w-full h-full object-cover object-center"
+                  style={{ maxHeight: '260px' }}
+                  loading="eager"
+                />
+              </div>
+              <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-slate-950 to-transparent pointer-events-none" />
+              <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-slate-950/80 to-transparent pointer-events-none" />
+              <div className="absolute bottom-3 left-4 z-10 rounded-xl bg-white/90 backdrop-blur px-4 py-2 shadow-lg">
+                <p className="text-[10px] font-medium text-slate-500">{priceLabel}</p>
+                <p className="text-lg font-extrabold text-slate-900 leading-none">{heroPrice}</p>
+              </div>
+              <div className="absolute top-3 right-4 z-10 flex items-center gap-1.5 rounded-xl bg-white/90 backdrop-blur px-3 py-1.5 shadow-lg">
+                <div className="flex text-amber-400 gap-0.5">
+                  {[1,2,3,4,5].map(s => (
+                    <svg key={s} className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <span className="text-xs font-bold text-slate-800">4.9</span>
+              </div>
+            </div>
           </div>
 
-          {/* ── Right: Product Image — radial-mask blend ── */}
+          {/* ── Right: Product Image — radial-mask blend — desktop only ── */}
           <div className="relative hidden lg:flex h-full min-h-[600px] items-stretch self-stretch overflow-hidden">
 
             {/* Glow orb behind phone */}

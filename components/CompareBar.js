@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useCompare } from '../context/CompareContext';
 import { useCurrency } from '../context/CurrencyContext';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 
 function parse(v) { try { return typeof v === 'string' ? JSON.parse(v) : v ?? {}; } catch { return {}; } }
 
@@ -17,11 +18,11 @@ function CompareModal({ items, onClose }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl">
+      <div className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white dark:bg-slate-900 shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white/95 backdrop-blur px-6 py-4">
-          <h2 className="text-lg font-bold text-slate-900">Compare Products</h2>
-          <button onClick={onClose} className="rounded-full p-2 hover:bg-slate-100 text-slate-500">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur px-6 py-4">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Compare Products</h2>
+          <button onClick={onClose} className="rounded-full p-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -37,12 +38,12 @@ function CompareModal({ items, onClose }) {
               const img = Array.isArray(imgs) ? imgs[0] : '';
               return (
                 <div key={p.id} className="text-center">
-                  <div className="mx-auto mb-3 h-32 w-32 overflow-hidden rounded-2xl bg-slate-100">
+                  <div className="mx-auto mb-3 h-32 w-32 overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800">
                     {img && <img src={img} alt={p.name} className="h-full w-full object-cover" />}
                   </div>
                   <p className="text-xs text-sky-600 font-semibold uppercase tracking-widest">{p.category}</p>
-                  <p className="font-bold text-slate-900 text-sm mt-0.5 leading-snug">{p.name}</p>
-                  <p className="text-xl font-extrabold text-slate-900 mt-1">{format(p.price)}</p>
+                  <p className="font-bold text-slate-900 dark:text-slate-100 text-sm mt-0.5 leading-snug">{p.name}</p>
+                  <p className="text-xl font-extrabold text-slate-900 dark:text-slate-100 mt-1">{format(p.price)}</p>
                   {p.comparePrice && <p className="text-xs text-slate-400 line-through">{format(p.comparePrice)}</p>}
                   <Link href={`/products/${p.id}`} className="mt-3 inline-block rounded-full bg-sky-600 px-4 py-1.5 text-xs font-semibold text-white no-underline hover:bg-sky-700">
                     View Product
@@ -70,11 +71,11 @@ function CompareModal({ items, onClose }) {
               render: p => parse(p.specs)[key] || '—',
             })),
           ].map(({ label, render }, rowIdx) => (
-            <div key={label} className={`grid gap-4 py-3 ${rowIdx % 2 === 0 ? 'bg-slate-50 rounded-xl px-3' : 'px-3'}`}
+            <div key={label} className={`grid gap-4 py-3 ${rowIdx % 2 === 0 ? 'bg-slate-50 dark:bg-slate-800 rounded-xl px-3' : 'px-3'}`}
               style={{ gridTemplateColumns: `160px repeat(${items.length}, 1fr)` }}>
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 self-center">{label}</span>
               {items.map((p, i) => (
-                <span key={p.id} className="text-sm text-slate-700 text-center">{render(p, i)}</span>
+                <span key={p.id} className="text-sm text-slate-700 dark:text-slate-300 text-center">{render(p, i)}</span>
               ))}
             </div>
           ))}
@@ -88,6 +89,8 @@ export default function CompareBar() {
   const { items, remove, clear } = useCompare();
   const { format } = useCurrency();
   const [modalOpen, setModalOpen] = useState(false);
+  const router = useRouter();
+  const onComparePage = router.pathname === '/compare';
 
   if (items.length === 0) return null;
 
@@ -123,12 +126,24 @@ export default function CompareBar() {
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <button onClick={clear} className="text-xs text-slate-400 hover:text-slate-200 transition-colors px-2">Clear</button>
+            {!onComparePage && (
+              <Link
+                href="/compare"
+                className={`rounded-full px-4 py-2 text-xs font-bold text-white no-underline transition-all ${
+                  items.length >= 2
+                    ? 'bg-sky-500 hover:bg-sky-400'
+                    : 'bg-sky-500/40 cursor-not-allowed pointer-events-none'
+                }`}
+              >
+                Compare Now
+              </Link>
+            )}
             <button
               onClick={() => setModalOpen(true)}
               disabled={items.length < 2}
-              className="rounded-full bg-sky-500 px-4 py-2 text-xs font-bold text-white hover:bg-sky-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="rounded-full bg-slate-700 border border-white/10 px-4 py-2 text-xs font-bold text-slate-200 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
             >
-              Compare {items.length >= 2 ? 'Now' : `(need ${2 - items.length} more)`}
+              Quick View
             </button>
           </div>
         </div>

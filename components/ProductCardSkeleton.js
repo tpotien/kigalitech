@@ -1,6 +1,6 @@
 export default function ProductCardSkeleton() {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+    <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
       {/* Image */}
       <div className="skeleton h-56 w-full" />
       {/* Body */}

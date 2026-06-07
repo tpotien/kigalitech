@@ -6,7 +6,7 @@ import ProductCard from '../../components/ProductCard';
 import ProductCardSkeleton from '../../components/ProductCardSkeleton';
 import { useLang } from '../../context/LanguageContext';
 
-const CATEGORIES = ['All', 'Phones', 'Laptops', 'Tablets', 'TVs', 'Audio', 'Headphones', 'Wearables', 'Cameras', 'Gaming', 'Accessories', 'Routers', 'Storage', 'Others'];
+const CATEGORIES = ['All', 'Phones', 'Laptops', 'TVs', 'Audio', 'Wearables', 'Gaming', 'Tablets', 'Cameras', 'Accessories', 'Smart Home'];
 function getSortOptions(t) {
   return [
     { value: 'default', label: t('featured') },
@@ -91,7 +91,7 @@ export default function ProductsPage() {
       </div>
 
       {/* Category tabs */}
-      <div className="sticky top-16 z-20 bg-white border-b border-slate-100 shadow-sm">
+      <div className="sticky top-16 z-20 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-2.5 overflow-x-auto">
           <div className="flex items-center gap-2 min-w-max">
             {CATEGORIES.map(cat => (
@@ -99,7 +99,7 @@ export default function ProductsPage() {
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-                  activeCategory === cat ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  activeCategory === cat ? 'bg-sky-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
                 {cat}
@@ -116,12 +116,12 @@ export default function ProductsPage() {
             {/* In-stock filter */}
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={inStockOnly} onChange={e => setInStockOnly(e.target.checked)} className="accent-sky-600" />
-              <span className="text-sm font-medium text-slate-700">{t('inStockOnly')}</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('inStockOnly')}</span>
             </label>
 
             {/* Max price */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-500">{t('maxPrice')}: ${(maxPrice / 100).toFixed(0)}</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400">{t('maxPrice')}: ${(maxPrice / 100).toFixed(0)}</span>
               <input
                 type="range"
                 min={1000}
@@ -140,7 +140,7 @@ export default function ProductsPage() {
             <select
               value={sort}
               onChange={e => setSort(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-400"
+              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-white dark:placeholder-slate-400 outline-none focus:border-sky-400"
             >
               {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
@@ -155,8 +155,8 @@ export default function ProductsPage() {
         ) : filtered.length === 0 ? (
           <div className="py-24 text-center">
             <div className="mx-auto mb-4 text-5xl">🔍</div>
-            <h3 className="text-lg font-semibold text-slate-900">{t('noResults')}</h3>
-            <p className="text-slate-500 mt-2">{t('tryDifferent')}</p>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('noResults')}</h3>
+            <p className="text-slate-500 dark:text-slate-400 mt-2">{t('tryDifferent')}</p>
             <button onClick={() => { setActiveCategory('All'); setSearch(''); setInStockOnly(false); setMaxPrice(500000); }} className="mt-6 rounded-full bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-700">
               {t('clearFilters')}
             </button>
