@@ -33,7 +33,7 @@ export default function ReceiptPage({ order, items }) {
   });
 
   function fmt(cents) {
-    return `RWF ${Math.round((cents / 100) * 1340).toLocaleString()}`;
+    return `RWF ${Math.round((cents / 100) * 1475).toLocaleString()}`;
   }
 
   return (

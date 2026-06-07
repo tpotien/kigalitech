@@ -1,13 +1,13 @@
 import { createContext, useContext, useState } from 'react';
 
 // Exchange rates relative to USD (updated periodically in production)
-const RATES = { USD: 1, RWF: 1340, EUR: 0.92, GBP: 0.79, KES: 130, UGX: 3750 };
+const RATES = { USD: 1, RWF: 1475, EUR: 0.92, GBP: 0.79, KES: 130, UGX: 3750 };
 const SYMBOLS = { USD: '$', RWF: 'RWF ', EUR: '€', GBP: '£', KES: 'KSh ', UGX: 'USh ' };
 const NAMES = { USD: 'US Dollar', RWF: 'Rwandan Franc', EUR: 'Euro', GBP: 'British Pound', KES: 'Kenyan Shilling', UGX: 'Ugandan Shilling' };
 
 const CurrencyContext = createContext({
   currency: 'RWF', setCurrency: () => {},
-  format: (cents) => `RWF ${Math.round((cents / 100) * 1340).toLocaleString()}`,
+  format: (cents) => `RWF ${Math.round((cents / 100) * 1475).toLocaleString()}`,
   symbol: 'RWF ',
 });
 
