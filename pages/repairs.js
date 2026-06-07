@@ -130,11 +130,19 @@ export default function RepairsPage() {
     }
   }
 
-  const STATUS_COLORS = {
-    pending: 'bg-amber-100 text-amber-700',
-    in_progress: 'bg-sky-100 text-sky-700',
-    completed: 'bg-emerald-100 text-emerald-700',
-    cancelled: 'bg-red-100 text-red-600',
+  const STATUS_META = {
+    open:          { label: 'Open',          color: 'bg-amber-100 text-amber-700' },
+    in_progress:   { label: 'In Progress',   color: 'bg-sky-100 text-sky-700' },
+    waiting_parts: { label: 'Waiting Parts', color: 'bg-violet-100 text-violet-700' },
+    completed:     { label: 'Completed',     color: 'bg-emerald-100 text-emerald-700' },
+    cancelled:     { label: 'Cancelled',     color: 'bg-red-100 text-red-600' },
+  };
+  const QUOTE_META = {
+    pending:   null,
+    quoted:    { label: 'Quote ready',   color: 'bg-amber-50 border-amber-200 text-amber-800' },
+    accepted:  { label: 'Quote accepted', color: 'bg-emerald-50 border-emerald-200 text-emerald-800' },
+    rejected:  { label: 'Quote rejected', color: 'bg-red-50 border-red-200 text-red-700' },
+    confirmed: { label: 'Confirmed',      color: 'bg-sky-50 border-sky-200 text-sky-800' },
   };
 
   return (
@@ -174,6 +182,47 @@ export default function RepairsPage() {
           {/* Logged in */}
           {status === 'authenticated' && (
             <div className="space-y-8">
+
+              {/* Existing tickets — shown FIRST */}
+              {loadingTickets && (
+                <div className="flex justify-center py-6">
+                  <div className="h-6 w-6 animate-spin rounded-full border-4 border-sky-400 border-t-transparent" />
+                </div>
+              )}
+              {!loadingTickets && tickets.length > 0 && (
+                <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 sm:p-8">
+                  <div className="flex items-center justify-between mb-5">
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">My Repair Tickets</h2>
+                    <Link href="/account?tab=repairs" className="text-xs font-semibold text-sky-600 hover:text-sky-700 no-underline">View all →</Link>
+                  </div>
+                  <div className="space-y-3">
+                    {tickets.map(ticket => {
+                      const sm = STATUS_META[ticket.status] || { label: ticket.status, color: 'bg-slate-100 text-slate-600' };
+                      const qm = QUOTE_META[ticket.quoteStatus];
+                      return (
+                        <div key={ticket.id} className="rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-slate-900 dark:text-white text-sm truncate">{ticket.productName}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">{ticket.issue}</p>
+                              <p className="text-xs text-slate-400 mt-1">{new Date(ticket.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                            </div>
+                            <span className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${sm.color}`}>{sm.label}</span>
+                          </div>
+                          {qm && (
+                            <div className={`mt-3 rounded-xl border px-3 py-2 text-xs font-semibold ${qm.color}`}>
+                              {ticket.quoteStatus === 'quoted' && ticket.quotedCost > 0
+                                ? `${qm.label}: $${(ticket.quotedCost / 100).toFixed(2)} — check your account to accept or decline`
+                                : qm.label}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Success state */}
               {success && (
                 <div className="rounded-3xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-800 p-6 text-center">
@@ -331,32 +380,6 @@ export default function RepairsPage() {
                       {submitting ? 'Submitting…' : 'Submit Repair Request'}
                     </button>
                   </form>
-                </div>
-              )}
-
-              {/* Existing tickets */}
-              {tickets.length > 0 && (
-                <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 sm:p-8">
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-5">My Repair Tickets</h2>
-                  <div className="space-y-4">
-                    {tickets.map(ticket => (
-                      <div key={ticket.id} className="flex items-start justify-between gap-4 rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-slate-900 dark:text-white text-sm truncate">{ticket.productName}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{ticket.issue}</p>
-                          <p className="text-xs text-slate-400 mt-1">{new Date(ticket.createdAt).toLocaleDateString()}</p>
-                        </div>
-                        <span className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${STATUS_COLORS[ticket.status] || 'bg-slate-100 text-slate-600'}`}>
-                          {ticket.status?.replace('_', ' ')}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 text-center">
-                    <Link href="/account?tab=repairs" className="text-sm font-semibold text-sky-600 hover:text-sky-700 no-underline">
-                      View all in My Account →
-                    </Link>
-                  </div>
                 </div>
               )}
 
