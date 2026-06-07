@@ -1,13 +1,12 @@
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../../auth/[...nextauth]';
+import { getToken } from 'next-auth/jwt';
 import prisma from '../../../../lib/prisma';
 
 export default async function handler(req, res) {
-  const session = await getServerSession(req, res, authOptions);
-  if (!session) return res.status(401).json({ error: 'Unauthorized' });
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
   const id = parseInt(req.query.id);
-  const userId = session.user.id;
+  const userId = Number(token.id);
 
   const tradeIn = await prisma.tradeIn.findFirst({ where: { id, userId } });
   if (!tradeIn) return res.status(404).json({ error: 'Not found' });
@@ -54,7 +53,7 @@ export default async function handler(req, res) {
             userId: admin.id,
             type: 'trade_in',
             title: 'Counter-offer received',
-            body: `${session.user.name || session.user.email} countered your offer with $${(amt / 100).toFixed(2)} for ${tradeIn.productName}`,
+            body: `${token.name || token.email} countered your offer with $${(amt / 100).toFixed(2)} for ${tradeIn.productName}`,
             link: `/admin/trade-ins/${id}`,
           },
         })

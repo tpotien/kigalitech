@@ -1,10 +1,9 @@
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../../auth/[...nextauth]';
+import { getToken } from 'next-auth/jwt';
 import prisma from '../../../../lib/prisma';
 
 export default async function handler(req, res) {
-  const session = await getServerSession(req, res, authOptions);
-  if (!session || session.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  if (!token || !['admin', 'staff'].includes(token.role)) return res.status(403).json({ error: 'Forbidden' });
 
   if (req.method === 'GET') {
     const { status } = req.query;
