@@ -242,7 +242,7 @@ function RepairCard({ ticket, onUpdate }) {
           <>
             <span><span className="font-bold text-slate-700">Customer: </span>{ticket.user.name || '—'}</span>
             <span><span className="font-bold text-slate-700">Email: </span>{ticket.user.email}</span>
-            {ticket.user.phone && <span><span className="font-bold text-slate-700">Phone: </span>{ticket.user.phone}</span>}
+            {ticket.user.phoneNumber && <span><span className="font-bold text-slate-700">Phone: </span>{ticket.user.phoneNumber}</span>}
           </>
         )}
         <span><span className="font-bold text-slate-700">Submitted: </span>{new Date(ticket.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>

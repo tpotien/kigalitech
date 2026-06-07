@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const tickets = await prisma.repairTicket.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { user: { select: { name: true, email: true, phone: true } }, order: { select: { id: true, status: true } } },
+      include: { user: { select: { name: true, email: true, phoneNumber: true } }, order: { select: { id: true, status: true } } },
     });
     return res.json(tickets);
   }
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
         ...(priority && { priority }),
         updatedAt: new Date(),
       },
-      include: { user: { select: { name: true, email: true, phone: true } } },
+      include: { user: { select: { name: true, email: true, phoneNumber: true } } },
     });
 
     if (status) {
