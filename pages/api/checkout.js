@@ -80,7 +80,7 @@ export default async function handler(req, res) {
 
     await prisma.order.update({ where: { id: order.id }, data: { receiptUrl: `/orders/${order.id}` } });
 
-    // Auto-decrement stock — silent failures
+    // Auto-decrement stock
     for (const item of items) {
       const productId = Number(item.productId || item.id);
       try {
@@ -92,17 +92,23 @@ export default async function handler(req, res) {
             const cs = JSON.parse(product.colorStock || '{}');
             if (cs[item.color] !== undefined) cs[item.color] = Math.max(0, cs[item.color] - item.quantity);
             updates.colorStock = JSON.stringify(cs);
-          } catch {}
+          } catch (e) {
+            console.error(`Stock color parse error for product ${productId}:`, e.message);
+          }
         }
         if (item.storage) {
           try {
             const ss = JSON.parse(product.storageStock || '{}');
             if (ss[item.storage] !== undefined) ss[item.storage] = Math.max(0, ss[item.storage] - item.quantity);
             updates.storageStock = JSON.stringify(ss);
-          } catch {}
+          } catch (e) {
+            console.error(`Stock storage parse error for product ${productId}:`, e.message);
+          }
         }
         await prisma.product.update({ where: { id: productId }, data: updates });
-      } catch {}
+      } catch (e) {
+        console.error(`Failed to decrement stock for product ${productId} (order ${order.id}):`, e.message);
+      }
     }
 
     if (shippingEmail) sendOrderConfirmation({ order, shippingName, shippingEmail, items }).catch(() => {});
@@ -110,7 +116,7 @@ export default async function handler(req, res) {
 
     // SMS confirmation
     if (shippingPhone) {
-      const fmtTotal = `$${(total / 100).toFixed(2)}`;
+      const fmtTotal = `RWF ${Math.round((total / 100) * 1475).toLocaleString()}`;
       sendSms(shippingPhone, SMS_TEMPLATES.orderConfirmed(shippingName, order.id, fmtTotal)).catch(() => {});
     }
 

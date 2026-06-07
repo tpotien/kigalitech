@@ -113,7 +113,7 @@ export default function FlashSalesAdmin() {
                 <div className="flex items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
                   <div className="flex-1">
                     <p className="font-semibold text-slate-900 text-sm">{selectedProduct.name}</p>
-                    <p className="text-xs text-slate-500">Current price: ${(selectedProduct.price / 100).toFixed(2)}</p>
+                    <p className="text-xs text-slate-500">Current price: RWF {Math.round((selectedProduct.price / 100) * 1475).toLocaleString()}</p>
                   </div>
                   <button
                     type="button"
@@ -143,7 +143,7 @@ export default function FlashSalesAdmin() {
                         >
                           <div className="flex-1">
                             <p className="text-sm font-semibold text-slate-800">{p.name}</p>
-                            <p className="text-xs text-slate-400">${(p.price / 100).toFixed(2)} · {p.category}</p>
+                            <p className="text-xs text-slate-400">RWF {Math.round((p.price / 100) * 1475).toLocaleString()} · {p.category}</p>
                           </div>
                           {p.flashSalePrice && (
                             <span className="rounded-full bg-orange-100 text-orange-600 text-xs font-bold px-2 py-0.5">Sale active</span>
@@ -192,9 +192,9 @@ export default function FlashSalesAdmin() {
               <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm">
                 <p className="font-semibold text-amber-800">Preview</p>
                 <p className="text-amber-700 mt-0.5">
-                  Original: <span className="line-through">${(selectedProduct.price / 100).toFixed(2)}</span>
+                  Original: <span className="line-through">RWF {Math.round((selectedProduct.price / 100) * 1475).toLocaleString()}</span>
                   {' → '}
-                  Sale price: <span className="font-bold">${((selectedProduct.price * (1 - discountPct / 100)) / 100).toFixed(2)}</span>
+                  Sale price: <span className="font-bold">RWF {Math.round((selectedProduct.price * (1 - discountPct / 100) / 100) * 1475).toLocaleString()}</span>
                   {' — '}Ends in {hoursLeft}h
                 </p>
               </div>
@@ -247,8 +247,8 @@ export default function FlashSalesAdmin() {
                   return (
                     <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
                       <td className="px-6 py-4 font-semibold text-slate-800">{p.name}</td>
-                      <td className="px-6 py-4 text-slate-500">${(p.price / 100).toFixed(2)}</td>
-                      <td className="px-6 py-4 font-bold text-orange-600">${(p.flashSalePrice / 100).toFixed(2)}</td>
+                      <td className="px-6 py-4 text-slate-500">RWF {Math.round((p.price / 100) * 1475).toLocaleString()}</td>
+                      <td className="px-6 py-4 font-bold text-orange-600">RWF {Math.round((p.flashSalePrice / 100) * 1475).toLocaleString()}</td>
                       <td className="px-6 py-4 text-slate-500 text-xs">{formatDate(p.flashSaleEnd)}</td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${

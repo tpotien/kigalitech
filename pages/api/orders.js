@@ -11,30 +11,33 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid order items' });
   }
 
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const order = await prisma.order.create({
-    data: {
-      total,
-      userId: userId || undefined,
-      deliverySlot: deliverySlot || '',
-      deliveryDate: deliveryDate || '',
-      items: {
-        create: items.map((item) => ({
-          productId: item.productId,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          color: item.color,
-          storage: item.storage,
-          warranty: item.warranty,
-          serial: item.serial || 'N/A'
-        }))
-      }
-    },
-    include: { items: true }
-  });
-
-  const receiptUrl = `/orders/${order.id}/receipt`;
-  await prisma.order.update({ where: { id: order.id }, data: { receiptUrl } });
-  res.status(201).json({ orderId: order.id, receiptUrl });
+  try {
+    const total = items.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0);
+    const order = await prisma.order.create({
+      data: {
+        total,
+        userId: userId || undefined,
+        deliverySlot: deliverySlot || '',
+        deliveryDate: deliveryDate || '',
+        items: {
+          create: items.map((item) => ({
+            productId: item.productId,
+            name: item.name,
+            price: Number(item.price) || 0,
+            quantity: Number(item.quantity) || 1,
+            color: item.color,
+            storage: item.storage,
+            warranty: item.warranty,
+            serial: item.serial || 'N/A',
+          })),
+        },
+      },
+      include: { items: true },
+    });
+    const receiptUrl = `/orders/${order.id}/receipt`;
+    await prisma.order.update({ where: { id: order.id }, data: { receiptUrl } });
+    return res.status(201).json({ orderId: order.id, receiptUrl });
+  } catch (e) {
+    return res.status(500).json({ error: 'Failed to create order' });
+  }
 }

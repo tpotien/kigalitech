@@ -53,7 +53,7 @@ export default async function handler(req, res) {
             userId: admin.id,
             type: 'trade_in',
             title: 'Counter-offer received',
-            body: `${token.name || token.email} countered your offer with $${(amt / 100).toFixed(2)} for ${tradeIn.productName}`,
+            body: `${token.name || token.email} countered your offer with RWF ${Math.round((amt / 100) * 1475).toLocaleString()} for ${tradeIn.productName}`,
             link: `/admin/trade-ins/${id}`,
           },
         })

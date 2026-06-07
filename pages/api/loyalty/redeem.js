@@ -40,7 +40,7 @@ export default async function handler(req, res) {
         userId,
         points: -points,
         action: 'redeem',
-        reason: `Redeemed ${points} points for $${(discountCents / 100).toFixed(2)} discount`,
+        reason: `Redeemed ${points} points for RWF ${Math.round((discountCents / 100) * 1475).toLocaleString()} discount`,
         orderId: orderId ? Number(orderId) : null,
       },
     }),

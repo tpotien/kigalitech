@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react';
 import AdminLayout from '../../components/AdminLayout';
 import prisma from '../../lib/prisma';
+import { getToken } from 'next-auth/jwt';
 
-export async function getServerSideProps() {
+export async function getServerSideProps({ req }) {
+  const token = await getToken({ req });
+  if (!token || !['admin', 'staff'].includes(token.role)) {
+    return { redirect: { destination: '/signin', permanent: false } };
+  }
   const users = await prisma.user.findMany({
     select: { id: true, name: true, email: true, image: true, role: true },
     orderBy: { id: 'desc' },

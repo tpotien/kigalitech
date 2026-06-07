@@ -77,6 +77,7 @@ export default function Layout({ children }) {
             <div className="hidden sm:flex items-center gap-5 flex-shrink-0 ml-4">
               <Link href="/trade-in" className="text-slate-400 hover:text-white no-underline transition-colors">Trade-In</Link>
               <Link href="/repairs" className="text-slate-400 hover:text-white no-underline transition-colors">Repairs</Link>
+              <Link href="/bulk-order" className="text-slate-400 hover:text-white no-underline transition-colors">Bulk Order</Link>
               <div className="text-slate-600">|</div>
               <LanguageSwitcher compact />
               <CurrencySwitcher compact />
@@ -306,8 +307,9 @@ export default function Layout({ children }) {
 
               {/* Extra links */}
               <div className="ml-auto flex items-center gap-4 h-full text-[13px] font-semibold text-slate-500">
-                <Link href="/trade-in" className="hover:text-sky-600 no-underline transition-colors hidden 2xl:block">Trade-In</Link>
-                <Link href="/repairs" className="hover:text-sky-600 no-underline transition-colors hidden 2xl:block">Repairs</Link>
+                <Link href="/trade-in" className="hover:text-sky-600 no-underline transition-colors hidden xl:block">Trade-In</Link>
+                <Link href="/repairs" className="hover:text-sky-600 no-underline transition-colors hidden xl:block">Repairs</Link>
+                <Link href="/bulk-order" className="hover:text-sky-600 no-underline transition-colors hidden xl:block">Bulk Order</Link>
                 <Link href="/marketplace" className="hover:text-sky-600 no-underline transition-colors">Marketplace</Link>
               </div>
             </nav>
@@ -346,6 +348,7 @@ export default function Layout({ children }) {
               ))}
               <Link href="/trade-in" onClick={() => setMobileOpen(false)} className="flex items-center justify-between py-3 text-base font-bold text-slate-800 dark:text-slate-100 no-underline border-b border-slate-50 dark:border-slate-800">Trade-In <svg className="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></Link>
               <Link href="/repairs" onClick={() => setMobileOpen(false)} className="flex items-center justify-between py-3 text-base font-bold text-slate-800 dark:text-slate-100 no-underline border-b border-slate-50 dark:border-slate-800">Repairs <svg className="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></Link>
+              <Link href="/bulk-order" onClick={() => setMobileOpen(false)} className="flex items-center justify-between py-3 text-base font-bold text-slate-800 dark:text-slate-100 no-underline border-b border-slate-50 dark:border-slate-800">Bulk Order <svg className="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></Link>
             </div>
             <div className="px-4 pb-4 pt-2 border-t border-slate-100">
               <LanguageSwitcher />

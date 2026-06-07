@@ -48,7 +48,7 @@ export default async function handler(req, res) {
           userId: tradeIn.userId,
           type: 'trade_in',
           title: `We have an offer for your ${tradeIn.productName}`,
-          body: `We're offering $${(amt / 100).toFixed(2)} for your ${tradeIn.productName}. Open your account to accept, counter, or decline.`,
+          body: `We're offering RWF ${Math.round((amt / 100) * 1475).toLocaleString()} for your ${tradeIn.productName}. Open your account to accept, counter, or decline.`,
           link: '/account?tab=trade-ins',
         },
       });
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
           userId: tradeIn.userId,
           type: 'trade_in',
           title: 'Counter-offer accepted!',
-          body: `We accepted your counter-offer of $${(tradeIn.counterPrice / 100).toFixed(2)} for your ${tradeIn.productName}. Awaiting final confirmation.`,
+          body: `We accepted your counter-offer of RWF ${Math.round((tradeIn.counterPrice / 100) * 1475).toLocaleString()} for your ${tradeIn.productName}. Awaiting final confirmation.`,
           link: '/account?tab=trade-ins',
         },
       });
@@ -99,7 +99,7 @@ export default async function handler(req, res) {
           userId: tradeIn.userId,
           type: 'trade_in',
           title: 'Updated offer for your trade-in',
-          body: `We've revised our offer to $${(amt / 100).toFixed(2)} for your ${tradeIn.productName}. Open your account to respond.`,
+          body: `We've revised our offer to RWF ${Math.round((amt / 100) * 1475).toLocaleString()} for your ${tradeIn.productName}. Open your account to respond.`,
           link: '/account?tab=trade-ins',
         },
       });

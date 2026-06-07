@@ -53,16 +53,16 @@ export default function AdminOrderDetail() {
                     <p className="text-xs text-slate-400">Serial: {item.serial}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-slate-900">${(item.price / 100).toFixed(2)}</p>
+                    <p className="font-bold text-slate-900">RWF {Math.round((item.price / 100) * 1475).toLocaleString()}</p>
                     <p className="text-xs text-slate-400">×{item.quantity}</p>
-                    <p className="text-sm font-semibold text-sky-700">${((item.price * item.quantity) / 100).toFixed(2)}</p>
+                    <p className="text-sm font-semibold text-sky-700">RWF {Math.round((item.price * item.quantity / 100) * 1475).toLocaleString()}</p>
                   </div>
                 </div>
               ))}
             </div>
             <div className="border-t border-slate-100 px-6 py-4 flex justify-between">
               <span className="font-semibold text-slate-900">Total</span>
-              <span className="text-xl font-extrabold text-slate-900">${(order.total / 100).toFixed(2)}</span>
+              <span className="text-xl font-extrabold text-slate-900">RWF {Math.round((order.total / 100) * 1475).toLocaleString()}</span>
             </div>
           </div>
 

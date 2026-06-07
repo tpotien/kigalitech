@@ -71,7 +71,7 @@ export default function AdminTradeInDetail() {
   }
 
   function fmt(cents) {
-    return `$${(cents / 100).toFixed(2)}`;
+    return `RWF ${Math.round((cents / 100) * 1475).toLocaleString()}`;
   }
 
   if (loading) {
@@ -277,16 +277,16 @@ export default function AdminTradeInDetail() {
                     {item.status === 'negotiating' ? 'Counter with New Offer' : item.status === 'offer_made' ? 'Revise Offer' : 'Make Offer'}
                   </p>
                   <div>
-                    <label className="text-xs font-medium text-slate-600 block mb-1">Offer Amount (USD)</label>
+                    <label className="text-xs font-medium text-slate-600 block mb-1">Offer Amount (RWF)</label>
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-500 text-sm">$</span>
+                      <span className="text-slate-500 text-xs font-semibold">RWF</span>
                       <input
                         type="number"
                         min="0"
-                        step="0.01"
+                        step="1"
                         value={offerAmount}
                         onChange={e => setOfferAmount(e.target.value)}
-                        placeholder="0.00"
+                        placeholder="0"
                         className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
                       />
                     </div>
@@ -301,7 +301,7 @@ export default function AdminTradeInDetail() {
                   <button
                     disabled={!offerAmount || actionLoading}
                     onClick={() => doAction(item.status === 'negotiating' ? 'counter_offer' : 'offer', {
-                      offeredPrice: Math.round(parseFloat(offerAmount) * 100),
+                      offeredPrice: Math.round(parseFloat(offerAmount) * 100 / 1475),
                       adminNotes: offerNote,
                     })}
                     className="w-full rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50 transition-colors"

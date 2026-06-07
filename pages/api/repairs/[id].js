@@ -27,7 +27,7 @@ export default async function handler(req, res) {
         userId: admin.id,
         type: 'repair_update',
         title: `Repair #${id} — Quote Accepted`,
-        body: `Customer accepted the $${(ticket.quotedCost / 100).toFixed(2)} quote for ${ticket.productName}`,
+        body: `Customer accepted the RWF ${Math.round((ticket.quotedCost / 100) * 1475).toLocaleString()} quote for ${ticket.productName}`,
         link: `/admin/repairs`,
       });
     }

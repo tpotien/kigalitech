@@ -113,7 +113,7 @@ export default function LoyaltyPage() {
           </h2>
           <div className="space-y-3">
             {[
-              { icon: '🛒', label: 'Purchase', desc: 'Earn 1 point per $1 spent on any order', pts: '1 pt / $1' },
+              { icon: '🛒', label: 'Purchase', desc: 'Earn 1 point per RWF 1,475 spent on any order', pts: '1 pt / RWF 1,475' },
               { icon: '⭐', label: 'Write a Review', desc: 'Leave a verified product review', pts: '10 pts' },
               { icon: '👥', label: 'Refer a Friend', desc: 'Your friend places their first order', pts: '50 pts' },
               { icon: '🎂', label: 'Birthday Bonus', desc: 'Points bonus on your birthday month', pts: '100 pts' },

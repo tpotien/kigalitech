@@ -95,8 +95,8 @@ export default function AdminProductsList() {
                       </div>
                     </td>
                     <td className="px-4 py-3 font-semibold text-slate-900">
-                      ${(p.price / 100).toFixed(2)}
-                      {p.comparePrice && <p className="text-xs text-slate-400 line-through">${(p.comparePrice / 100).toFixed(2)}</p>}
+                      RWF {Math.round((p.price / 100) * 1475).toLocaleString()}
+                      {p.comparePrice && <p className="text-xs text-slate-400 line-through">RWF {Math.round((p.comparePrice / 100) * 1475).toLocaleString()}</p>}
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
                       <span className={`font-semibold ${p.stock <= p.lowStockThreshold ? 'text-amber-600' : 'text-emerald-600'}`}>{p.stock}</span>

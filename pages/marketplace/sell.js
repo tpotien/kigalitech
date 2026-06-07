@@ -125,10 +125,10 @@ export default function SellPage() {
 
               <div className="grid grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Price (USD) *</label>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Price (RWF) *</label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
-                    <input name="price" type="number" min="0" step="0.01" value={form.price} onChange={handleChange} required placeholder="0.00" className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 py-2.5 pl-8 pr-4 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900" />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-semibold">RWF</span>
+                    <input name="price" type="number" min="0" step="1" value={form.price} onChange={handleChange} required placeholder="0" className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 py-2.5 pl-12 pr-4 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900" />
                   </div>
                 </div>
                 <div>

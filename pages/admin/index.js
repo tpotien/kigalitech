@@ -59,7 +59,7 @@ export default function AdminDashboard() {
     <AdminLayout title="Dashboard">
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        <StatCard label="Total Revenue" value={stats ? `$${(stats.totalRevenue / 100).toFixed(2)}` : '…'} sub="All time" href="/admin/orders" />
+        <StatCard label="Total Revenue" value={stats ? `RWF ${Math.round((stats.totalRevenue / 100) * 1475).toLocaleString()}` : '…'} sub="All time" href="/admin/orders" />
         <StatCard label="Total Orders" value={stats?.totalOrders} sub={`${stats?.pendingOrders || 0} pending`} href="/admin/orders" />
         <StatCard label="Products" value={stats?.totalProducts} sub="Active listings" href="/admin/products" />
         <StatCard
@@ -101,7 +101,7 @@ export default function AdminDashboard() {
                   <p className="text-xs text-slate-500">{o.items.length} item{o.items.length !== 1 ? 's' : ''} · {new Date(o.createdAt).toLocaleDateString()}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-slate-900">${(o.total / 100).toFixed(2)}</p>
+                  <p className="text-sm font-bold text-slate-900">RWF {Math.round((o.total / 100) * 1475).toLocaleString()}</p>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_COLOR[o.status] || 'bg-slate-100 text-slate-600'}`}>
                     {o.status}
                   </span>

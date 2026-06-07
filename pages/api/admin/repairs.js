@@ -38,7 +38,7 @@ export default async function handler(req, res) {
         userId: ticket.userId,
         type: 'repair_quote',
         title: `Repair Quote for #${ticket.id}`,
-        body: `Your ${ticket.productName} repair quote is $${(ticket.quotedCost / 100).toFixed(2)}. Accept or decline in your account.`,
+        body: `Your ${ticket.productName} repair quote is RWF ${Math.round((ticket.quotedCost / 100) * 1475).toLocaleString()}. Accept or decline in your account.`,
         link: `/account#repairs`,
       });
       const qEmail = ticket.user?.email;

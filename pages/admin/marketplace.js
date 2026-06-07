@@ -121,7 +121,7 @@ export default function AdminMarketplace() {
                         <p className="text-xs text-slate-400">{l.phone}</p>
                       </td>
                       <td className="px-6 py-4 text-slate-600">{l.category}</td>
-                      <td className="px-6 py-4 font-semibold text-slate-900">${(l.price / 100).toFixed(2)}</td>
+                      <td className="px-6 py-4 font-semibold text-slate-900">RWF {Math.round((l.price / 100) * 1475).toLocaleString()}</td>
                       <td className="px-6 py-4 capitalize text-slate-600">{l.condition?.replace('_', ' ')}</td>
                       <td className="px-6 py-4">
                         <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${STATUS_COLORS[l.status]}`}>{l.status}</span>

@@ -1,8 +1,11 @@
 import prisma from '../../../lib/prisma';
 import { sendNewsletterWelcome } from '../../../lib/email';
+import { rateLimit } from '../../../lib/rate-limit';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
+  const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  if (!rateLimit(ip, 'newsletter', 3, 60_000)) return res.status(429).json({ error: 'Too many requests. Please try again later.' });
   const { email, name } = req.body;
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
     return res.status(400).json({ error: 'Valid email required' });

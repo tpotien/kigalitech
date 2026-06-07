@@ -1,9 +1,12 @@
+import { getToken } from 'next-auth/jwt';
 import prisma from '../../../../lib/prisma';
 import { sendOrderStatusUpdate } from '../../../../lib/email';
 import { notifyOrderUpdate } from '../../../../lib/notify';
 import { sendSms } from '../../../../lib/sms';
 
 export default async function handler(req, res) {
+  const token = await getToken({ req });
+  if (!token || !['admin', 'staff'].includes(token.role)) return res.status(403).json({ error: 'Forbidden' });
   const id = Number(req.query.id);
 
   if (req.method === 'GET') {
@@ -22,7 +25,7 @@ export default async function handler(req, res) {
     const { status, adminConfirmed, paymentConfirmed } = req.body;
     const current = await prisma.order.findUnique({
       where: { id },
-      include: { user: { select: { name: true, email: true } } },
+      include: { user: { select: { name: true, email: true, verifiedBuyer: true } } },
     });
     if (!current) return res.status(404).json({ error: 'Not found' });
 
@@ -45,11 +48,8 @@ export default async function handler(req, res) {
     });
 
     // Grant verified buyer badge on first delivery
-    if (status && ['delivered', 'completed'].includes(status) && current.userId) {
-      const buyer = await prisma.user.findUnique({ where: { id: current.userId }, select: { verifiedBuyer: true } });
-      if (buyer && !buyer.verifiedBuyer) {
-        await prisma.user.update({ where: { id: current.userId }, data: { verifiedBuyer: true } });
-      }
+    if (status && ['delivered', 'completed'].includes(status) && current.userId && current.user && !current.user.verifiedBuyer) {
+      await prisma.user.update({ where: { id: current.userId }, data: { verifiedBuyer: true } });
     }
 
     // Send email + in-app notification when status changes (non-blocking)

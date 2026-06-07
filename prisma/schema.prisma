@@ -116,6 +116,9 @@ model Product {
   stockAlerts       StockAlert[]
   qaItems           ProductQA[]
   preOrders         PreOrder[]
+  @@index([category])
+  @@index([active, featured])
+  @@index([active, category])
 }
 
 model Order {
@@ -154,6 +157,9 @@ model Order {
   items                    OrderItem[]
   repairTickets            RepairTicket[]
   returnRequest            Return?
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
 }
 
 model OrderItem {
@@ -232,6 +238,7 @@ model Notification {
   link      String   @default("")
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
+  @@index([userId, read])
 }
 
 model SiteConfig {
@@ -301,6 +308,7 @@ model LoyaltyTransaction {
   reason    String   // 'purchase' | 'review' | 'referral' | 'manual'
   orderId   Int?
   createdAt DateTime @default(now())
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 model StockAlert {
@@ -313,6 +321,7 @@ model StockAlert {
   phone     String?
   notified  Boolean  @default(false)
   createdAt DateTime @default(now())
+  @@index([productId, notified])
 }
 
 model DeliveryZone {

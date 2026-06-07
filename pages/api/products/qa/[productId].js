@@ -12,7 +12,7 @@ async function askGroq(question, product) {
   const userPrompt = `Product: ${product.name}
 Category: ${product.category}
 Brand: ${product.brand || 'N/A'}
-Price: $${(product.price / 100).toFixed(2)}
+Price: RWF ${Math.round((product.price / 100) * 1475).toLocaleString()}
 Description: ${product.description}
 ${specText ? `Specs: ${specText}` : ''}
 ${colors.length ? `Available colors: ${colors.join(', ')}` : ''}

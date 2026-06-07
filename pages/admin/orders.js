@@ -82,7 +82,7 @@ export default function AdminOrders() {
                     <p className="text-xs text-slate-400">{o.user?.email || o.shippingEmail || '—'}</p>
                   </td>
                   <td className="px-4 py-3 text-slate-600">{o.items?.length} item{o.items?.length !== 1 ? 's' : ''}</td>
-                  <td className="px-4 py-3 font-bold text-slate-900">${(o.total / 100).toFixed(2)}</td>
+                  <td className="px-4 py-3 font-bold text-slate-900">RWF {Math.round((o.total / 100) * 1475).toLocaleString()}</td>
                   <td className="px-4 py-3">
                     <select
                       value={o.status}
@@ -122,7 +122,13 @@ export default function AdminOrders() {
               ))}
             </tbody>
           </table>
-          {filtered.length === 0 && <div className="py-16 text-center text-slate-400">No orders found.</div>}
+          {filtered.length === 0 && (
+            <div className="py-16 text-center">
+              <p className="text-4xl mb-3">📦</p>
+              <p className="text-sm font-semibold text-slate-600">No orders found</p>
+              <p className="text-xs text-slate-400 mt-1">{orders.length === 0 ? 'Orders will appear here once customers start purchasing.' : 'Try adjusting your filters.'}</p>
+            </div>
+          )}
         </div>
       )}
     </AdminLayout>

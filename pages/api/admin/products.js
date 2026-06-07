@@ -1,3 +1,4 @@
+import { getToken } from 'next-auth/jwt';
 import prisma from '../../../lib/prisma';
 
 function serialize(p) {
@@ -14,6 +15,8 @@ function serialize(p) {
 }
 
 export default async function handler(req, res) {
+  const token = await getToken({ req });
+  if (!token || !['admin', 'staff'].includes(token.role)) return res.status(403).json({ error: 'Forbidden' });
   if (req.method === 'GET') {
     const products = await prisma.product.findMany({ orderBy: { id: 'desc' } });
     return res.json(products);

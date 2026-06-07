@@ -30,10 +30,11 @@ export default NextAuth({
 
         const input = credentials.email.trim().toLowerCase();
 
-        // Check for hardcoded admin
+        // Check for env-configured admin (no hardcoded fallbacks)
         if (
-          input === (process.env.ADMIN_EMAIL || 'admin@kigalitech.com') &&
-          credentials.password === (process.env.ADMIN_PASSWORD || 'admin123')
+          process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD &&
+          input === process.env.ADMIN_EMAIL &&
+          credentials.password === process.env.ADMIN_PASSWORD
         ) {
           let user = await prisma.user.findUnique({ where: { email: input } });
           if (!user) {

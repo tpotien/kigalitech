@@ -16,7 +16,7 @@ const STATUS_COLORS = {
 const PIE_FALLBACK = ['#0ea5e9', '#8b5cf6', '#f59e0b', '#22c55e', '#ef4444', '#ec4899'];
 
 function fmt(cents) {
-  return `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  return `RWF ${Math.round((cents / 100) * 1475).toLocaleString()}`;
 }
 
 function Trend({ current, prev }) {
@@ -161,7 +161,7 @@ export default function AdminAnalytics() {
               interval={4}
             />
             <YAxis
-              tickFormatter={(v) => `$${(v / 100).toFixed(0)}`}
+              tickFormatter={(v) => `RWF ${Math.round((v / 100) * 1475).toLocaleString()}`}
               tick={{ fontSize: 10, fill: '#94a3b8' }}
               tickLine={false}
               axisLine={false}

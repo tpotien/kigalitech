@@ -1,6 +1,7 @@
 import prisma from '../../../lib/prisma';
 import bcrypt from 'bcryptjs';
 import { sendTempPasswordEmail } from '../../../lib/email';
+import { rateLimit } from '../../../lib/rate-limit';
 
 function randomPassword(len = 10) {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -9,6 +10,8 @@ function randomPassword(len = 10) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
+  const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  if (!rateLimit(ip, 'forgot-password', 3, 300_000)) return res.status(429).json({ error: 'Too many requests. Please try again in 5 minutes.' });
 
   const { email } = req.body;
   if (!email || typeof email !== 'string') return res.status(400).json({ error: 'Email required' });

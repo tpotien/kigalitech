@@ -210,10 +210,10 @@ export default function AdminCoupons() {
                     <span className="font-mono font-bold text-slate-900">{coupon.code}</span>
                   </td>
                   <td className="px-4 py-4 text-slate-700">
-                    {coupon.type === 'percent' ? `${coupon.value}% off` : `$${(coupon.value / 100).toFixed(2)} off`}
+                    {coupon.type === 'percent' ? `${coupon.value}% off` : `RWF ${Math.round((coupon.value / 100) * 1475).toLocaleString()} off`}
                   </td>
                   <td className="px-4 py-4 text-slate-600">{coupon.usedCount} / {coupon.maxUses}</td>
-                  <td className="px-4 py-4 text-slate-600">${(coupon.minOrder / 100).toFixed(2)}</td>
+                  <td className="px-4 py-4 text-slate-600">RWF {Math.round((coupon.minOrder / 100) * 1475).toLocaleString()}</td>
                   <td className="px-4 py-4 text-slate-500 text-xs">
                     {coupon.expiresAt ? new Date(coupon.expiresAt).toLocaleDateString() : '—'}
                   </td>
