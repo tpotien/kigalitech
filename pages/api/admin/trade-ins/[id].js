@@ -1,5 +1,6 @@
 import { getToken } from 'next-auth/jwt';
 import prisma from '../../../../lib/prisma';
+import { sendTradeInUpdate } from '../../../../lib/email';
 
 function randomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -23,7 +24,10 @@ export default async function handler(req, res) {
 
   if (req.method === 'PATCH') {
     const { action, offeredPrice, adminNotes } = req.body;
-    const tradeIn = await prisma.tradeIn.findUnique({ where: { id } });
+    const tradeIn = await prisma.tradeIn.findUnique({
+      where: { id },
+      include: { user: { select: { name: true, email: true } } },
+    });
     if (!tradeIn) return res.status(404).json({ error: 'Not found' });
 
     // Make or update offer
@@ -48,6 +52,7 @@ export default async function handler(req, res) {
           link: '/account?tab=trade-ins',
         },
       });
+      sendTradeInUpdate({ email: tradeIn.user?.email, name: tradeIn.user?.name, productName: tradeIn.productName, action: 'offer', offeredPrice: amt }).catch(() => {});
       return res.json(updated);
     }
 
@@ -98,6 +103,7 @@ export default async function handler(req, res) {
           link: '/account?tab=trade-ins',
         },
       });
+      sendTradeInUpdate({ email: tradeIn.user?.email, name: tradeIn.user?.name, productName: tradeIn.productName, action: 'offer', offeredPrice: amt }).catch(() => {});
       return res.json(updated);
     }
 
@@ -131,10 +137,11 @@ export default async function handler(req, res) {
           userId: tradeIn.userId,
           type: 'trade_in',
           title: '🎉 Trade-in confirmed — here\'s your coupon!',
-          body: `Your trade-in for ${tradeIn.productName} is confirmed. Use code ${code} to get $${(agreed / 100).toFixed(2)} off your next purchase!`,
+          body: `Your trade-in for ${tradeIn.productName} is confirmed. Use code ${code} to get RWF ${(agreed / 100).toLocaleString()} off your next purchase!`,
           link: '/account?tab=trade-ins',
         },
       });
+      sendTradeInUpdate({ email: tradeIn.user?.email, name: tradeIn.user?.name, productName: tradeIn.productName, action: 'confirmed', couponCode: code, finalPrice: agreed }).catch(() => {});
       return res.json(updated);
     }
 
@@ -157,6 +164,7 @@ export default async function handler(req, res) {
           link: '/account?tab=trade-ins',
         },
       });
+      sendTradeInUpdate({ email: tradeIn.user?.email, name: tradeIn.user?.name, productName: tradeIn.productName, action: 'rejected', rejectReason: adminNotes }).catch(() => {});
       return res.json(updated);
     }
 
