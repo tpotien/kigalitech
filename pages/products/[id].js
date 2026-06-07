@@ -14,6 +14,7 @@ import { useCompare } from '../../context/CompareContext';
 import { useToast } from '../../context/ToastContext';
 import { useWhatsAppCtx } from '../../context/WhatsAppContext';
 import TranslatedText from '../../components/TranslatedText';
+import StockAlertButton from '../../components/StockAlertButton';
 
 export async function getStaticPaths() {
   const products = await prisma.product.findMany({ where: { active: true } });
@@ -433,6 +434,8 @@ export default function ProductPage({ product, bundledProducts = [] }) {
   const [added, setAdded] = useState(false);
   const [heartAnim, setHeartAnim] = useState(false);
   const [recs, setRecs] = useState([]);
+  const hourOfDay = new Date().getHours();
+  const [viewingCount] = useState(() => Math.floor(((product.id * 7 + hourOfDay * 13) % 15) + 4));
 
   const colorAvailable = (c) => colorStock[c] === undefined || colorStock[c] > 0;
   const storageAvailable = (s) => storageStock[s] === undefined || storageStock[s] > 0;
@@ -875,6 +878,17 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                   </div>
                 </div>
 
+                {/* Social proof counter */}
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                  </span>
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">{viewingCount} people</span> viewing this right now
+                  </span>
+                </div>
+
                 {/* Qty + CTA */}
                 <div className="flex items-center gap-3">
                   <div className="flex items-center rounded-full border border-slate-200 dark:border-slate-700">
@@ -894,6 +908,11 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                     {product.stock === 0 ? 'Out of Stock' : added ? '✓ Added to Cart' : 'Add to Cart'}
                   </button>
                 </div>
+
+                {/* Stock alert for out-of-stock products */}
+                {product.stock === 0 && (
+                  <StockAlertButton productId={product.id} />
+                )}
 
                 {/* Wishlist + Compare row */}
                 <div className="flex items-center gap-3 pt-1">
@@ -1013,6 +1032,11 @@ export default function ProductPage({ product, bundledProducts = [] }) {
             {product.stock === 0 ? 'Out of Stock' : added ? '✓ Added!' : 'Add to Cart'}
           </button>
         </div>
+        {product.stock === 0 && (
+          <div className="mt-2 px-1">
+            <StockAlertButton productId={product.id} />
+          </div>
+        )}
       </div>
     </Layout>
   );

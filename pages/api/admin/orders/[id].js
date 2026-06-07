@@ -1,6 +1,7 @@
 import prisma from '../../../../lib/prisma';
 import { sendOrderStatusUpdate } from '../../../../lib/email';
 import { notifyOrderUpdate } from '../../../../lib/notify';
+import { sendSms } from '../../../../lib/sms';
 
 export default async function handler(req, res) {
   const id = Number(req.query.id);
@@ -49,6 +50,22 @@ export default async function handler(req, res) {
       const name = current.user?.name || current.shippingName;
       if (email) sendOrderStatusUpdate({ order, status, customerEmail: email, customerName: name }).catch(() => {});
       notifyOrderUpdate({ order: { ...order, userId: current.userId }, status }).catch(() => {});
+
+      // Send SMS notification if customer has a phone number
+      const shippingPhone = current.shippingPhone;
+      if (shippingPhone) {
+        const siteUrl = process.env.NEXTAUTH_URL || 'https://electronics-shop-amber.vercel.app';
+        const smsMessages = {
+          confirmed: `KigaliTech: Your order #${order.id} is confirmed! We're preparing it now.`,
+          shipped: `KigaliTech: Order #${order.id} has been shipped! Track at: ${siteUrl}/orders/${order.id}`,
+          delivered: `KigaliTech: Order #${order.id} has been delivered! Thank you for shopping with us.`,
+          cancelled: `KigaliTech: Your order #${order.id} has been cancelled. Contact us: +250 786 276 555`,
+        };
+        const smsText = smsMessages[status];
+        if (smsText) {
+          sendSms(shippingPhone, smsText).catch(() => {});
+        }
+      }
     }
 
     return res.json(order);

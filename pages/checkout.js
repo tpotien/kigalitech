@@ -81,6 +81,8 @@ export default function Checkout() {
   const [couponCode, setCouponCode] = useState('');
   const [addons, setAddons] = useState([]);         // available accessories from DB
   const [selectedAddons, setSelectedAddons] = useState({}); // { productId: true }
+  const [deliveryZones, setDeliveryZones] = useState([]);
+  const [selectedZoneId, setSelectedZoneId] = useState(null);
 
   useEffect(() => {
     fetch('/api/products?category=Accessories&limit=8')
@@ -89,11 +91,26 @@ export default function Checkout() {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    fetch('/api/delivery-zones')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length) {
+          setDeliveryZones(data);
+          setSelectedZoneId(data[0].id);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const inp = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-800';
 
   const addonTotal = addons.filter(a => selectedAddons[a.id]).reduce((s, a) => s + a.price, 0);
-  const shipping = (subtotal + addonTotal) >= 9900 ? 0 : 999;
+  const selectedZone = deliveryZones.find(z => z.id === selectedZoneId) || null;
+  const shipping = selectedZone
+    ? selectedZone.fee
+    : (subtotal + addonTotal) >= 9900 ? 0 : 999;
   const tvInstallFee = tvInstallation ? 5000 : 0;
   const total = subtotal + addonTotal + shipping + tvInstallFee;
   const isInstallment = form.paymentMethod === 'installment';
@@ -396,6 +413,42 @@ export default function Checkout() {
                 </div>
               </div>
 
+              {/* Delivery Zone */}
+              {deliveryZones.length > 0 && (
+                <div className="mt-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                    Delivery Zone
+                  </label>
+                  <div className="space-y-2">
+                    {deliveryZones.map(zone => (
+                      <label
+                        key={zone.id}
+                        className={`flex items-center justify-between gap-3 rounded-xl border p-3.5 cursor-pointer transition ${
+                          selectedZoneId === zone.id
+                            ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20'
+                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-600'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="deliveryZone"
+                            value={zone.id}
+                            checked={selectedZoneId === zone.id}
+                            onChange={() => setSelectedZoneId(zone.id)}
+                            className="accent-sky-600"
+                          />
+                          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{zone.name}</span>
+                        </div>
+                        <span className={`text-sm font-semibold ${zone.fee === 0 ? 'text-emerald-600' : 'text-slate-700 dark:text-slate-300'}`}>
+                          {zone.fee === 0 ? 'Free' : `RWF ${zone.fee.toLocaleString()}`}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* TV Installation */}
               {hasTVItem && (
                 <div className="rounded-2xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800 p-6">
@@ -528,6 +581,36 @@ export default function Checkout() {
                         <p className="text-xs text-green-700 dark:text-green-400">Enter your mobile money number. You will get a payment prompt.</p>
                       </div>
                     </div>
+
+                    {/* MoMo QR Code */}
+                    <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-5">
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">Pay via QR Code</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Scan with your MTN MoMo or Airtel Money app</p>
+                      <div className="flex flex-col sm:flex-row items-center gap-5">
+                        <div className="flex-shrink-0 rounded-2xl border-4 border-sky-100 dark:border-sky-900 p-1 bg-white shadow-sm">
+                          <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('tel:+250786276555')}`}
+                            alt="MoMo QR code"
+                            width={160}
+                            height={160}
+                            className="rounded-xl"
+                          />
+                        </div>
+                        <div className="text-center sm:text-left">
+                          <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-800 px-4 py-2 mb-3">
+                            <span className="text-lg">📱</span>
+                            <span className="font-mono text-base font-bold text-sky-700 dark:text-sky-300">+250 786 276 555</span>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">KigaliTech Business Number</p>
+                          <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-3 py-2">
+                            <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">Amount to pay:</p>
+                            <p className="text-xl font-extrabold text-amber-800 dark:text-amber-200">{format(total)}</p>
+                          </div>
+                          <p className="mt-3 text-xs text-slate-400">After paying, click <strong>"Pay via Paypack"</strong> below to complete your order</p>
+                        </div>
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Mobile Money Number *</label>
                       <input
@@ -701,7 +784,7 @@ export default function Checkout() {
                     </div>
                   )}
                   <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400">
-                    <span>{t('shipping')}</span>
+                    <span>{t('shipping')}{selectedZone ? ` — ${selectedZone.name}` : ''}</span>
                     <span>{shipping === 0 ? <span className="text-emerald-600">Free</span> : format(shipping)}</span>
                   </div>
                   {tvInstallFee > 0 && (

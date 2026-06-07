@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import { useLang } from '../context/LanguageContext';
 import prisma from '../lib/prisma';
 import Layout from '../components/Layout';
@@ -12,6 +13,7 @@ import QuickViewModal from '../components/QuickViewModal';
 import CountdownTimer from '../components/CountdownTimer';
 import TrustBadges from '../components/TrustBadges';
 import Newsletter from '../components/Newsletter';
+import NewsletterSignup from '../components/NewsletterSignup';
 import Footer from '../components/Footer';
 
 function parse(val) { try { return typeof val === 'string' ? JSON.parse(val) : val; } catch { return []; } }
@@ -38,9 +40,16 @@ export async function getStaticProps() {
 
 export default function Home({ products, siteConfig = {} }) {
   const { t } = useLang();
+  const router = useRouter();
   const [quickViewProduct, setQuickViewProduct] = useState(null);
   const [activeCategory, setActiveCategory] = useState('All');
   const [activeColor, setActiveColor] = useState('All');
+
+  // Capture referral code from ?ref= query param
+  useEffect(() => {
+    const { ref } = router.query;
+    if (ref) localStorage.setItem('referralCode', ref);
+  }, [router.query]);
 
   const categories = ['All', ...Array.from(new Set(products.map((p) => p.category)))];
 
@@ -182,6 +191,7 @@ export default function Home({ products, siteConfig = {} }) {
       </section>
 
       <Newsletter />
+      <NewsletterSignup />
       <Footer />
 
       {quickViewProduct && (

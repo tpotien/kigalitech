@@ -251,6 +251,120 @@ export default function OrderPage() {
               </svg>
               {t('printReceipt')}
             </button>
+            <button
+              onClick={() => {
+                const orderItems = order.items || [];
+                const sub = orderItems.reduce((s, i) => s + i.price * i.quantity, 0);
+                const win = window.open('', '_blank');
+                win.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Invoice #${order.id} — KigaliTech</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; color: #1e293b; background: #fff; padding: 40px; font-size: 14px; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #0ea5e9; padding-bottom: 20px; margin-bottom: 28px; }
+  .brand { font-size: 24px; font-weight: 900; color: #0f172a; }
+  .brand-sub { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .invoice-meta { text-align: right; }
+  .invoice-meta h2 { font-size: 20px; font-weight: 800; color: #0ea5e9; }
+  .invoice-meta p { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px; }
+  .info-block p { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; font-weight: 600; }
+  .info-block span { font-size: 14px; font-weight: 600; color: #1e293b; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  thead tr { background: #0f172a; }
+  thead th { color: #fff; text-align: left; padding: 10px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+  .totals { width: 300px; margin-left: auto; }
+  .totals table { margin-bottom: 0; }
+  .totals td { padding: 8px 12px; }
+  .totals .grand { background: #0f172a; color: #fff; font-weight: 800; font-size: 16px; }
+  .footer { margin-top: 48px; border-top: 1px solid #e2e8f0; padding-top: 16px; text-align: center; font-size: 12px; color: #94a3b8; }
+  @media print { body { padding: 20px; } @page { margin: 12mm; size: A4; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <div class="brand">KigaliTech</div>
+    <div class="brand-sub">Kigali, Rwanda &middot; info@kigalitech.com &middot; +250 700 000 000</div>
+  </div>
+  <div class="invoice-meta">
+    <h2>INVOICE #${order.id}</h2>
+    <p>Date: ${new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+    <p>Status: ${(order.status || '').toUpperCase()}</p>
+  </div>
+</div>
+<div class="info-grid">
+  <div class="info-block">
+    <p>Bill To</p>
+    <span>${order.shippingName || 'Customer'}</span><br/>
+    <span style="font-weight:400;color:#64748b;">${order.shippingEmail || ''}</span><br/>
+    <span style="font-weight:400;color:#64748b;">${order.shippingPhone || ''}</span>
+  </div>
+  <div class="info-block">
+    <p>Delivery Address</p>
+    <span style="font-weight:400;color:#1e293b;">${order.mpostAddress ? 'Mpost: ' + order.mpostAddress : (order.shippingAddress || '—')}</span>
+  </div>
+  <div class="info-block">
+    <p>Payment Method</p>
+    <span>${order.paymentMethod || 'Pending'}</span>
+  </div>
+  <div class="info-block">
+    <p>Payment Status</p>
+    <span style="color:${order.paymentConfirmed ? '#16a34a' : '#d97706'}">${order.paymentConfirmed ? 'Confirmed' : 'Pending'}</span>
+  </div>
+</div>
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Item</th>
+      <th>Variant</th>
+      <th style="text-align:right;">Qty</th>
+      <th style="text-align:right;">Unit Price</th>
+      <th style="text-align:right;">Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${orderItems.map((item, idx) => `
+    <tr>
+      <td>${idx + 1}</td>
+      <td><strong>${item.name}</strong>${item.serial && item.serial !== 'TBD' ? '<br/><small style="color:#94a3b8;">S/N: ' + item.serial + '</small>' : ''}</td>
+      <td style="color:#64748b;">${[item.color, item.storage, item.warranty ? 'Warranty: ' + item.warranty : ''].filter(Boolean).join(' · ')}</td>
+      <td style="text-align:right;">${item.quantity}</td>
+      <td style="text-align:right;">RWF ${(item.price).toLocaleString()}</td>
+      <td style="text-align:right;font-weight:600;">RWF ${(item.price * item.quantity).toLocaleString()}</td>
+    </tr>`).join('')}
+  </tbody>
+</table>
+<div class="totals">
+  <table>
+    <tr><td>Subtotal</td><td style="text-align:right;">RWF ${sub.toLocaleString()}</td></tr>
+    ${order.discountAmount > 0 ? `<tr><td style="color:#16a34a;">Discount${order.couponCode ? ' (' + order.couponCode + ')' : ''}</td><td style="text-align:right;color:#16a34a;">−RWF ${order.discountAmount.toLocaleString()}</td></tr>` : ''}
+    ${order.tvInstallation ? `<tr><td>TV Installation</td><td style="text-align:right;">RWF 5,000</td></tr>` : ''}
+    <tr class="grand"><td>TOTAL</td><td style="text-align:right;">RWF ${(order.total).toLocaleString()}</td></tr>
+  </table>
+</div>
+<div class="footer">
+  <p>Thank you for shopping with <strong>KigaliTech</strong>. This is a computer-generated invoice.</p>
+  <p style="margin-top:4px;">For queries, contact us at info@kigalitech.com or call +250 700 000 000</p>
+</div>
+<script>window.onload = function() { window.print(); }<\/script>
+</body>
+</html>`);
+                win.document.close();
+              }}
+              className="flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 px-5 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download Invoice
+            </button>
             <Link href={`/orders/${order.id}/receipt`} className="flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 px-5 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 no-underline transition-all">
               Full Receipt
             </Link>
@@ -428,6 +542,19 @@ export default function OrderPage() {
 
         {/* Delivery Tracker — outside receipt card, hidden on print */}
         <div className="no-print mt-6 space-y-4">
+          {order.status === 'delivered' && !order.returnRequest && (
+            <div className="flex justify-end">
+              <Link
+                href={`/returns/${order.id}`}
+                className="flex items-center gap-2 rounded-full border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-5 py-2 text-sm font-semibold text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 no-underline transition-all"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                </svg>
+                Request Return
+              </Link>
+            </div>
+          )}
           <DeliveryTracker order={order} />
           <InstallmentCard order={order} />
         </div>

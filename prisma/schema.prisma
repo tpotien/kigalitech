@@ -31,6 +31,11 @@ model User {
   wishlist              Wishlist[]
   loyaltyTransactions   LoyaltyTransaction[]
   stockAlerts           StockAlert[]
+  referralCode          String?              @unique
+  referralsMade         Referral[]           @relation("referrer")
+  referredBy            Referral?            @relation("referred")
+  returns               Return[]
+  newsletterSub         Newsletter?
 }
 
 model Account {
@@ -137,6 +142,7 @@ model Order {
   stripePaymentIntentId    String?
   items                    OrderItem[]
   repairTickets            RepairTicket[]
+  returnRequest            Return?
 }
 
 model OrderItem {
@@ -313,5 +319,55 @@ model SmsLog {
   status    String   @default("pending")
   provider  String   @default("africastalking")
   orderId   Int?
+  createdAt DateTime @default(now())
+}
+
+model Newsletter {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  name       String?
+  active     Boolean  @default(true)
+  couponCode String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId     Int?     @unique
+  createdAt  DateTime @default(now())
+}
+
+model Referral {
+  id             Int      @id @default(autoincrement())
+  referrer       User     @relation("referrer", fields: [referrerId], references: [id])
+  referrerId     Int
+  referredEmail  String
+  referredUser   User?    @relation("referred", fields: [referredUserId], references: [id])
+  referredUserId Int?     @unique
+  code           String   @unique
+  status         String   @default("pending")
+  rewardGiven    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}
+
+model Return {
+  id           Int      @id @default(autoincrement())
+  order        Order    @relation(fields: [orderId], references: [id])
+  orderId      Int      @unique
+  user         User?    @relation(fields: [userId], references: [id])
+  userId       Int?
+  reason       String
+  description  String   @default("")
+  images       String   @default("[]")
+  status       String   @default("pending")
+  adminNotes   String   @default("")
+  refundAmount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now())
+}
+
+model AbandonedCart {
+  id        Int      @id @default(autoincrement())
+  userId    Int?     @unique
+  email     String?
+  items     String   @default("[]")
+  emailSent Boolean  @default(false)
+  updatedAt DateTime @default(now())
   createdAt DateTime @default(now())
 }

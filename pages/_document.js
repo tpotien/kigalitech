@@ -13,6 +13,14 @@ export default function Document() {
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="application-name" content="KigaliTech" />
         <meta name="format-detection" content="telephone=no" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+              navigator.serviceWorker.register('/sw.js').catch(function(){});
+            });
+          }
+        `}} />
 
         {/* Viewport safe area for iPhone notch */}
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />

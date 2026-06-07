@@ -95,8 +95,28 @@ export default function SignIn() {
     }
     // Email accounts require verification; phone-only accounts auto sign in
     if (data.requiresVerification) {
+      // Track referral if there was one
+      const refCode = localStorage.getItem('referralCode');
+      if (refCode && data.email) {
+        fetch('/api/referral/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: refCode, newUserEmail: data.email }),
+        }).catch(() => {});
+        localStorage.removeItem('referralCode');
+      }
       router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
       return;
+    }
+    // Track referral for phone-only registration
+    const refCode = localStorage.getItem('referralCode');
+    if (refCode && (form.email || form.phone)) {
+      fetch('/api/referral/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: refCode, newUserEmail: form.email || form.phone }),
+      }).catch(() => {});
+      localStorage.removeItem('referralCode');
     }
     const identifier = form.phone;
     await signIn('credentials', { email: identifier, password: form.password, redirect: false });

@@ -96,6 +96,26 @@ export default function ContactPage() {
           </div>
         </div>
       </div>
+
+      {/* Map */}
+      <div className="mx-auto max-w-5xl px-4 pb-16 sm:px-6 lg:px-8">
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100">Find Us</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">KN 74St, infront of Al madina mosque, Kigali, Rwanda</p>
+        </div>
+        <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3987.4895!2d30.0619!3d-1.9441!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x19dca6f7e9b6c4a1%3A0x8c2b4e3f1a9d5e2b!2sKN%2074%20St%2C%20Kigali!5e0!3m2!1sen!2srw!4v1699000000000!5m2!1sen!2srw"
+            width="100%"
+            height="400"
+            style={{ border: 0, display: 'block' }}
+            allowFullScreen
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            title="KigaliTech Store Location"
+          />
+        </div>
+      </div>
     </Layout>
   );
 }

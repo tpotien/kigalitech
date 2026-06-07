@@ -5,6 +5,7 @@ import Layout from '../components/Layout';
 import { useLang } from '../context/LanguageContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useWishlist } from '../context/WishlistContext';
+import ReferralCard from '../components/ReferralCard';
 
 const STATUS_COLORS = {
   pending: 'bg-amber-100 text-amber-700',
@@ -813,6 +814,8 @@ export default function AccountPage() {
 
           {/* ── Profile Tab ── */}
           {tab === 'profile' && (
+            <div className="space-y-5">
+            <ReferralCard />
             <form onSubmit={saveProfile} className="space-y-5">
               <div className="rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm">
                 <h2 className="mb-5 text-lg font-bold text-slate-900 dark:text-slate-100">Profile Picture</h2>
@@ -871,6 +874,7 @@ export default function AccountPage() {
                 {savingProfile ? 'Saving…' : 'Save Profile'}
               </button>
             </form>
+            </div>
           )}
 
           {/* ── Repair Tickets Tab ── */}
