@@ -9,8 +9,8 @@ const CATEGORIES = [
 // Defined outside component so React never recreates them on re-render
 function Section({ title, children }) {
   return (
-    <div className="rounded-2xl bg-white border border-slate-200 p-6">
-      <h3 className="font-semibold text-slate-900 mb-4">{title}</h3>
+    <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6">
+      <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">{title}</h3>
       {children}
     </div>
   );
@@ -19,8 +19,8 @@ function Section({ title, children }) {
 function Field({ label, help, children }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
-      {help && <p className="text-xs text-slate-400 mb-1">{help}</p>}
+      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{label}</label>
+      {help && <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">{help}</p>}
       {children}
     </div>
   );
@@ -206,7 +206,8 @@ export default function ProductForm({ initial }) {
   function handleNameBlur(e) {
     const name = e.target.value.trim();
     if (!name) return;
-    const isEmpty = !form.description && !form.brand && !form.colors && !form.specs;
+    const specsBlank = !form.specs || form.specs.trim() === '{}' || form.specs.trim() === '';
+    const isEmpty = !form.description && !form.brand && !form.colors && specsBlank;
     if (isEmpty) runAiFill(name, form.category);
   }
 
@@ -279,7 +280,7 @@ export default function ProductForm({ initial }) {
     }
   }
 
-  const inp = 'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100';
+  const inp = 'w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 px-3 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900';
   const ta = `${inp} resize-none`;
 
   return (
@@ -298,16 +299,16 @@ export default function ProductForm({ initial }) {
       )}
 
       {/* AI Fill Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-violet-50 to-sky-50 border border-violet-100 p-5">
+      <div className="rounded-2xl bg-gradient-to-r from-violet-50 to-sky-50 dark:from-violet-950/40 dark:to-sky-950/40 border border-violet-100 dark:border-violet-800 p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-slate-800 text-sm flex items-center gap-2">
+            <p className="font-semibold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-2">
               AI Product Assistant
               {(aiLoading || scanning) && <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />}
             </p>
-            <p className="text-xs text-slate-500 mt-0.5">
-              <span className="font-medium text-violet-700">📷 Scan a photo</span> — AI reads the product and fills everything instantly.
-              Or type the name and click <span className="font-medium text-violet-700">AI Fill</span>. All fields can be edited manually.
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <span className="font-medium text-violet-700 dark:text-violet-400">📷 Scan a photo</span> — AI reads the product and fills everything instantly.
+              Or type the name and click <span className="font-medium text-violet-700 dark:text-violet-400">AI Fill</span>. All fields can be edited manually.
             </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -479,8 +480,8 @@ export default function ProductForm({ initial }) {
             {form.colors && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {form.colors.split(',').map((c) => c.trim()).filter(Boolean).map((c) => (
-                  <span key={c} className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-xs font-medium text-slate-600">
-                    <span className="mr-1.5 h-2.5 w-2.5 rounded-full border border-slate-200" style={{ background: c.toLowerCase().replace(/\s/g, '') }} />
+                  <span key={c} className="inline-flex items-center rounded-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
+                    <span className="mr-1.5 h-2.5 w-2.5 rounded-full border border-slate-200 dark:border-slate-500" style={{ background: c.toLowerCase().replace(/\s/g, '') }} />
                     {c}
                   </span>
                 ))}
@@ -508,7 +509,7 @@ export default function ProductForm({ initial }) {
           {form.specs && form.specs !== '{}' && (
             <div className="flex flex-wrap gap-1.5">
               {Object.entries((() => { try { return JSON.parse(form.specs); } catch { return {}; } })()).slice(0, 4).map(([k, v]) => (
-                <span key={k} className="rounded-lg bg-sky-50 border border-sky-100 px-2 py-0.5 text-xs text-sky-700">
+                <span key={k} className="rounded-lg bg-sky-50 dark:bg-sky-900/30 border border-sky-100 dark:border-sky-800 px-2 py-0.5 text-xs text-sky-700 dark:text-sky-300">
                   <span className="font-medium">{k}:</span> {v}
                 </span>
               ))}
@@ -544,17 +545,17 @@ export default function ProductForm({ initial }) {
         <div className="mt-4 flex flex-wrap gap-6">
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={form.featured} onChange={(e) => set('featured', e.target.checked)} className="h-4 w-4 rounded accent-sky-600" />
-            <span className="text-sm text-slate-700">Featured product</span>
+            <span className="text-sm text-slate-700 dark:text-slate-300">Featured product</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={form.active} onChange={(e) => set('active', e.target.checked)} className="h-4 w-4 rounded accent-sky-600" />
-            <span className="text-sm text-slate-700">Active (visible in store)</span>
+            <span className="text-sm text-slate-700 dark:text-slate-300">Active (visible in store)</span>
           </label>
         </div>
       </Section>
 
       {/* Pre-Order Settings */}
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+      <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 space-y-4">
         <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Pre-Order Settings</h3>
         <label className="flex items-center gap-3 cursor-pointer">
           <input type="checkbox" checked={!!form.preOrder} onChange={e => setForm({...form, preOrder: e.target.checked})}
@@ -579,7 +580,7 @@ export default function ProductForm({ initial }) {
       </div>
 
       {/* Bundle Products */}
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+      <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 space-y-4">
         <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Bundle Products</h3>
         <p className="text-xs text-slate-500">Add product IDs to bundle together (customers get a discount on bundled items)</p>
         <div className="flex gap-2">
