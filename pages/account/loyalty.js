@@ -3,6 +3,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
 import Link from 'next/link';
+import { useCurrency } from '../../context/CurrencyContext';
 
 function TransactionRow({ tx }) {
   const isEarn = tx.points > 0;
@@ -64,9 +65,9 @@ export default function LoyaltyPage() {
 
   if (!session) return null;
 
+  const { format } = useCurrency();
   const points = data?.points ?? 0;
   const transactions = data?.transactions ?? [];
-  const dollarsValue = (points / 100).toFixed(2);
 
   return (
     <Layout>
@@ -101,7 +102,7 @@ export default function LoyaltyPage() {
           </div>
           <div className="mt-5 pt-5 border-t border-sky-400/30 flex items-center justify-between">
             <p className="text-sm text-sky-100">Redeemable value</p>
-            <p className="text-lg font-extrabold">${dollarsValue}</p>
+            <p className="text-lg font-extrabold">{format(points)}</p>
           </div>
         </div>
 
@@ -132,7 +133,7 @@ export default function LoyaltyPage() {
             ))}
           </div>
           <p className="mt-4 text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700/40 rounded-xl px-4 py-3">
-            <strong>Redeem:</strong> 100 points = $1.00 discount at checkout. Minimum redemption: 100 points.
+            <strong>Redeem:</strong> 100 points = RWF 1,340 discount at checkout. Minimum redemption: 100 points.
           </p>
         </div>
 

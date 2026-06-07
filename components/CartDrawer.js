@@ -1,8 +1,10 @@
 import { useCart } from '../context/CartContext';
 import Link from 'next/link';
+import { useCurrency } from '../context/CurrencyContext';
 
 export default function CartDrawer() {
   const { items, drawerOpen, closeDrawer, removeItem, updateQty, subtotal, clearCart } = useCart();
+  const { format } = useCurrency();
 
   return (
     <>
@@ -93,7 +95,7 @@ export default function CartDrawer() {
                           className="px-3 py-1 text-slate-500 hover:text-slate-900 dark:hover:text-white"
                         >+</button>
                       </div>
-                      <p className="font-bold text-slate-900 dark:text-slate-100">${((item.price * item.quantity) / 100).toFixed(2)}</p>
+                      <p className="font-bold text-slate-900 dark:text-slate-100">{format(item.price * item.quantity)}</p>
                     </div>
                   </div>
                 </li>
@@ -107,7 +109,7 @@ export default function CartDrawer() {
           <div className="border-t border-slate-100 dark:border-slate-800 px-6 py-5 space-y-4">
             <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
               <span>Subtotal</span>
-              <span className="text-lg font-bold text-slate-900 dark:text-slate-100">${(subtotal / 100).toFixed(2)}</span>
+              <span className="text-lg font-bold text-slate-900 dark:text-slate-100">{format(subtotal)}</span>
             </div>
             <p className="text-xs text-center text-slate-400">Shipping & taxes calculated at checkout</p>
             <Link

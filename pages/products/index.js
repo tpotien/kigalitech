@@ -5,6 +5,7 @@ import Footer from '../../components/Footer';
 import ProductCard from '../../components/ProductCard';
 import ProductCardSkeleton from '../../components/ProductCardSkeleton';
 import { useLang } from '../../context/LanguageContext';
+import { useCurrency } from '../../context/CurrencyContext';
 
 const CATEGORIES = ['All', 'Phones', 'Laptops', 'TVs', 'Audio', 'Wearables', 'Gaming', 'Tablets', 'Cameras', 'Accessories', 'Smart Home'];
 function getSortOptions(t) {
@@ -20,6 +21,7 @@ function getSortOptions(t) {
 export default function ProductsPage() {
   const router = useRouter();
   const { t } = useLang();
+  const { format } = useCurrency();
   const SORT_OPTIONS = getSortOptions(t);
   const { category: qCat, sub: qSub, search: qSearch } = router.query;
 
@@ -121,7 +123,7 @@ export default function ProductsPage() {
 
             {/* Max price */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-500 dark:text-slate-400">{t('maxPrice')}: ${(maxPrice / 100).toFixed(0)}</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400">{t('maxPrice')}: {format(maxPrice)}</span>
               <input
                 type="range"
                 min={1000}

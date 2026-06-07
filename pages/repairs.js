@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import Link from 'next/link';
 import { useWhatsAppCtx } from '../context/WhatsAppContext';
+import { useCurrency } from '../context/CurrencyContext';
 
 const ISSUE_TYPES = [
   'Screen Damage',
@@ -22,6 +23,7 @@ const URGENCY_OPTIONS = [
 
 export default function RepairsPage() {
   const { data: session, status } = useSession();
+  const { format } = useCurrency();
   const router = useRouter();
   const { setWhatsappCtx } = useWhatsAppCtx();
 
@@ -212,7 +214,7 @@ export default function RepairsPage() {
                           {qm && (
                             <div className={`mt-3 rounded-xl border px-3 py-2 text-xs font-semibold ${qm.color}`}>
                               {ticket.quoteStatus === 'quoted' && ticket.quotedCost > 0
-                                ? `${qm.label}: $${(ticket.quotedCost / 100).toFixed(2)} — check your account to accept or decline`
+                                ? `${qm.label}: ${format(ticket.quotedCost)} — check your account to accept or decline`
                                 : qm.label}
                             </div>
                           )}

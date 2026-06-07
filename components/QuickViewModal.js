@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useCart } from '../context/CartContext';
+import { useCurrency } from '../context/CurrencyContext';
 
 export default function QuickViewModal({ product, onClose }) {
   const { addItem } = useCart();
+  const { format } = useCurrency();
   const [color, setColor] = useState('');
   const [storage, setStorage] = useState('');
   const [qty, setQty] = useState(1);
@@ -92,7 +94,7 @@ export default function QuickViewModal({ product, onClose }) {
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">{product.category}</p>
               <h2 className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">{product.name}</h2>
-              <p className="mt-2 text-2xl font-extrabold text-slate-900 dark:text-slate-100">${(product.price / 100).toFixed(2)}</p>
+              <p className="mt-2 text-2xl font-extrabold text-slate-900 dark:text-slate-100">{format(product.price)}</p>
             </div>
 
             {/* Color */}

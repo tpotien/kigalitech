@@ -6,16 +6,16 @@ const SYMBOLS = { USD: '$', RWF: 'RWF ', EUR: '€', GBP: '£', KES: 'KSh ', UGX
 const NAMES = { USD: 'US Dollar', RWF: 'Rwandan Franc', EUR: 'Euro', GBP: 'British Pound', KES: 'Kenyan Shilling', UGX: 'Ugandan Shilling' };
 
 const CurrencyContext = createContext({
-  currency: 'USD', setCurrency: () => {},
-  format: (cents) => `$${(cents / 100).toFixed(2)}`,
-  symbol: '$',
+  currency: 'RWF', setCurrency: () => {},
+  format: (cents) => `RWF ${Math.round((cents / 100) * 1340).toLocaleString()}`,
+  symbol: 'RWF ',
 });
 
 export function CurrencyProvider({ children }) {
   const [currency, setCurrencyState] = useState(() => {
-    if (typeof window === 'undefined') return 'USD';
+    if (typeof window === 'undefined') return 'RWF';
     const saved = localStorage.getItem('currency');
-    return saved && RATES[saved] ? saved : 'USD';
+    return saved && RATES[saved] ? saved : 'RWF';
   });
 
   function setCurrency(c) {

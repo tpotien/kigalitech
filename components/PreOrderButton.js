@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { useCurrency } from '../context/CurrencyContext';
 
 export default function PreOrderButton({ product }) {
   const { data: session } = useSession();
+  const { format } = useCurrency();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     name: session?.user?.name || '',
@@ -14,7 +16,7 @@ export default function PreOrderButton({ product }) {
   const [error, setError] = useState('');
 
   const deposit = product.preOrderDeposit
-    ? `RWF ${(product.preOrderDeposit / 100).toLocaleString()}`
+    ? format(product.preOrderDeposit)
     : 'Free to reserve';
   const releaseDate = product.preOrderDate
     ? new Date(product.preOrderDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })

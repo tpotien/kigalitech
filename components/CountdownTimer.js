@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useCurrency } from '../context/CurrencyContext';
 
 function getTimeLeft(target) {
   const diff = target - Date.now();
@@ -11,6 +12,7 @@ function getTimeLeft(target) {
 }
 
 export default function CountdownTimer({ product, discount = 25, hours = 8, label = 'Flash Deal — Ends Soon' }) {
+  const { format } = useCurrency();
   const [target] = useState(() => Date.now() + (hours || 8) * 3600000);
   const [time, setTime] = useState(getTimeLeft(target));
 
@@ -47,10 +49,10 @@ export default function CountdownTimer({ product, discount = 25, hours = 8, labe
             {product && (
               <div className="mt-4 flex items-baseline gap-3">
                 <span className="text-4xl font-extrabold text-white">
-                  ${((product.price * (1 - discount / 100)) / 100).toFixed(2)}
+                  {format(Math.round(product.price * (1 - discount / 100)))}
                 </span>
                 <span className="text-xl text-slate-500 line-through">
-                  ${(product.price / 100).toFixed(2)}
+                  {format(product.price)}
                 </span>
                 <span className="rounded-full bg-red-500 px-2.5 py-0.5 text-xs font-bold text-white">
                   {discount}% OFF
