@@ -1,30 +1,10 @@
 import NextAuth from 'next-auth';
-import GoogleProvider from 'next-auth/providers/google';
-import GitHubProvider from 'next-auth/providers/github';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import prisma from '../../../lib/prisma';
 import bcrypt from 'bcryptjs';
 
 const providers = [];
-
-if (process.env.GOOGLE_CLIENT_ID && !process.env.GOOGLE_CLIENT_ID.includes('placeholder') &&
-    process.env.GOOGLE_CLIENT_SECRET && !process.env.GOOGLE_CLIENT_SECRET.includes('placeholder')) {
-  providers.push(GoogleProvider({
-    clientId: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    allowDangerousEmailAccountLinking: true,
-  }));
-}
-
-if (process.env.GITHUB_ID && !process.env.GITHUB_ID.includes('placeholder') &&
-    process.env.GITHUB_SECRET && !process.env.GITHUB_SECRET.includes('placeholder')) {
-  providers.push(GitHubProvider({
-    clientId: process.env.GITHUB_ID,
-    clientSecret: process.env.GITHUB_SECRET,
-    allowDangerousEmailAccountLinking: true,
-  }));
-}
 
 providers.push(CredentialsProvider({
   name: 'Credentials',
