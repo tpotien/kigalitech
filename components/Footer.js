@@ -42,7 +42,7 @@ const SOCIALS = [
   {
     id: 'instagram',
     label: 'Instagram',
-    href: 'https://instagram.com',
+    href: 'https://www.instagram.com/kigalitechservices/',
     // Official Instagram gradient
     bg: '',
     style: { background: 'linear-gradient(45deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D, #F56040, #F77737, #FCAF45)' },
@@ -55,7 +55,7 @@ const SOCIALS = [
   {
     id: 'facebook',
     label: 'Facebook',
-    href: 'https://facebook.com',
+    href: 'https://www.facebook.com/kigalitechservices/',
     // Official Facebook blue
     bg: 'hover:brightness-110',
     style: { background: '#1877F2' },
