@@ -51,7 +51,7 @@ export default function CartDrawer() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
               </div>
-              <p className="text-slate-500">Your cart is empty</p>
+              <p className="text-slate-500 dark:text-slate-400">Your cart is empty</p>
               <button
                 onClick={closeDrawer}
                 className="rounded-full bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-700"
@@ -80,19 +80,19 @@ export default function CartDrawer() {
                         </svg>
                       </button>
                     </div>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       {item.color} · {item.storage}
                     </p>
                     <div className="mt-2 flex items-center justify-between">
                       <div className="flex items-center rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                         <button
                           onClick={() => item.quantity > 1 ? updateQty(item.key, item.quantity - 1) : removeItem(item.key)}
-                          className="px-3 py-1 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                          className="px-3 py-1 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                         >−</button>
                         <span className="min-w-[2rem] text-center text-sm font-semibold">{item.quantity}</span>
                         <button
                           onClick={() => updateQty(item.key, item.quantity + 1)}
-                          className="px-3 py-1 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                          className="px-3 py-1 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                         >+</button>
                       </div>
                       <p className="font-bold text-slate-900 dark:text-slate-100">{format(item.price * item.quantity)}</p>
@@ -111,7 +111,7 @@ export default function CartDrawer() {
               <span>Subtotal</span>
               <span className="text-lg font-bold text-slate-900 dark:text-slate-100">{format(subtotal)}</span>
             </div>
-            <p className="text-xs text-center text-slate-400">Shipping & taxes calculated at checkout</p>
+            <p className="text-xs text-center text-slate-400 dark:text-slate-500">Shipping & taxes calculated at checkout</p>
             <Link
               href="/checkout"
               onClick={closeDrawer}
@@ -121,7 +121,7 @@ export default function CartDrawer() {
             </Link>
             <button
               onClick={clearCart}
-              className="block w-full text-center text-sm text-slate-400 hover:text-red-500"
+              className="block w-full text-center text-sm text-slate-400 dark:text-slate-500 hover:text-red-500"
             >
               Clear cart
             </button>

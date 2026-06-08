@@ -165,15 +165,15 @@ export default function Layout({ children }) {
                     </svg>
                   </button>
                   <div className="absolute right-0 top-full mt-1 w-56 rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 py-2 shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-50">
-                    <div className="px-4 py-2.5 border-b border-slate-50">
+                    <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-700">
                       <p className="text-sm font-bold text-slate-900 truncate">{session.user.name || 'User'}</p>
                       <p className="text-xs text-slate-400 capitalize mt-0.5">{session.user.email}</p>
                     </div>
-                    <Link href="/account" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 no-underline">
+                    <Link href="/account" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 no-underline">
                       <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                       {t('myAccount')}
                     </Link>
-                    <Link href="/account" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 no-underline">
+                    <Link href="/account" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 no-underline">
                       <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
                       {t('myOrders')}
                     </Link>
@@ -183,7 +183,7 @@ export default function Layout({ children }) {
                         {t('adminPanel')}
                       </Link>
                     )}
-                    <hr className="my-1 border-slate-100" />
+                    <hr className="my-1 border-slate-100 dark:border-slate-700" />
                     <button onClick={() => signOut({ callbackUrl: '/' })} className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                       {t('signOut')}
@@ -218,7 +218,7 @@ export default function Layout({ children }) {
               {/* Mobile hamburger */}
               <button
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="xl:hidden rounded-full p-2.5 text-slate-500 hover:bg-slate-100"
+                className="xl:hidden rounded-full p-2.5 text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   {mobileOpen
@@ -265,7 +265,7 @@ export default function Layout({ children }) {
                     {hasMega && megaActive === link.label && (
                       <div className="absolute left-1/2 -translate-x-1/2 top-full z-50 w-[520px]">
                         <div className="rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xl shadow-slate-200/60 overflow-hidden mt-0.5">
-                          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-50">
+                          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-700">
                             <span className="text-xs font-bold uppercase tracking-widest text-slate-400">{link.label}</span>
                             <Link href={link.href} className="text-xs font-bold text-sky-600 no-underline hover:text-sky-700">View all →</Link>
                           </div>
@@ -274,13 +274,13 @@ export default function Layout({ children }) {
                               {products.map((p) => (
                                 <Link key={p.id} href={`/products/${p.id}`}
                                   className="group flex flex-col items-center gap-2 rounded-xl p-2.5 no-underline hover:bg-sky-50 transition-colors">
-                                  <div className="h-20 w-20 rounded-xl bg-slate-50 overflow-hidden flex items-center justify-center border border-slate-100">
+                                  <div className="h-20 w-20 rounded-xl bg-slate-50 dark:bg-slate-700 overflow-hidden flex items-center justify-center border border-slate-100 dark:border-slate-600">
                                     {p.image
                                       ? <img src={p.image} alt={p.name} className="h-full w-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
                                       : <span className="text-2xl">📦</span>}
                                   </div>
                                   <div className="text-center">
-                                    <p className="text-xs font-semibold text-slate-800 leading-tight line-clamp-2 group-hover:text-sky-700">{p.name}</p>
+                                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-tight line-clamp-2 group-hover:text-sky-700 dark:group-hover:text-sky-400">{p.name}</p>
                                     <p className="mt-0.5 text-xs font-bold text-sky-600">{format(p.price)}</p>
                                   </div>
                                 </Link>
@@ -289,7 +289,7 @@ export default function Layout({ children }) {
                           ) : (
                             <div className="px-5 py-8 text-center text-sm text-slate-400">Loading products…</div>
                           )}
-                          <div className="border-t border-slate-50 px-5 py-3 bg-slate-50/60">
+                          <div className="border-t border-slate-100 dark:border-slate-700 px-5 py-3 bg-slate-50/60 dark:bg-slate-800/60">
                             <Link href={link.href}
                               className="flex items-center justify-center gap-1.5 rounded-xl bg-sky-600 py-2 text-xs font-bold text-white no-underline hover:bg-sky-700 transition-colors">
                               Browse all {link.label}
@@ -319,13 +319,13 @@ export default function Layout({ children }) {
           <div className="xl:hidden border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
             {/* Mobile search */}
             <form onSubmit={handleSearch} className="px-4 py-3 border-b border-slate-50">
-              <div className="flex rounded-full border border-slate-200 overflow-hidden bg-slate-50">
+              <div className="flex rounded-full border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-800">
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Search products…"
-                  className="flex-1 bg-transparent px-4 py-2.5 text-sm outline-none"
+                  className="flex-1 bg-transparent px-4 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none"
                 />
                 <button type="submit" className="px-4 bg-sky-600 text-white">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -347,6 +347,8 @@ export default function Layout({ children }) {
               <Link href="/trade-in" onClick={() => setMobileOpen(false)} className="flex items-center justify-between py-3 text-base font-bold text-slate-800 dark:text-slate-100 no-underline border-b border-slate-50 dark:border-slate-800">Trade-In <svg className="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></Link>
               <Link href="/repairs" onClick={() => setMobileOpen(false)} className="flex items-center justify-between py-3 text-base font-bold text-slate-800 dark:text-slate-100 no-underline border-b border-slate-50 dark:border-slate-800">Repairs <svg className="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></Link>
               <Link href="/bulk-order" onClick={() => setMobileOpen(false)} className="flex items-center justify-between py-3 text-base font-bold text-slate-800 dark:text-slate-100 no-underline border-b border-slate-50 dark:border-slate-800">Bulk Order <svg className="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></Link>
+              <Link href="/marketplace" onClick={() => setMobileOpen(false)} className="flex items-center justify-between py-3 text-base font-bold text-slate-800 dark:text-slate-100 no-underline border-b border-slate-100 dark:border-slate-800">Marketplace <svg className="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></Link>
+              <Link href="/deals" onClick={() => setMobileOpen(false)} className="flex items-center justify-between py-3 text-base font-bold text-red-500 no-underline border-b border-slate-100 dark:border-slate-800">Deals <svg className="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></Link>
             </div>
             <div className="px-4 pb-4 pt-2 border-t border-slate-100">
               <LanguageSwitcher />

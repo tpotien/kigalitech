@@ -467,7 +467,7 @@ export default function Checkout() {
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input type="checkbox" checked={tvInstallation} onChange={e => setTvInstallation(e.target.checked)} className="accent-amber-600" />
                         <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                          {t('addInstallation')} — <span className="text-amber-700 font-semibold">{format(tvInstallFee)}</span>
+                          {t('addInstallation')} — <span className="text-amber-700 dark:text-amber-400 font-semibold">{format(tvInstallFee)}</span>
                         </span>
                       </label>
                       {tvInstallation && (
