@@ -2,15 +2,6 @@ import Link from 'next/link';
 import { useLang } from '../context/LanguageContext';
 
 const LINKS = {
-  Shop: [
-    { label: 'Phones', href: '/products?category=Phones' },
-    { label: 'Laptops', href: '/products?category=Laptops' },
-    { label: 'Audio & Headphones', href: '/products?category=Headphones' },
-    { label: 'Gaming', href: '/products?category=Gaming' },
-    { label: 'Wearables', href: '/products?category=Wearables' },
-    { label: 'Deals', href: '/deals' },
-    { label: 'Marketplace', href: '/marketplace' },
-  ],
   Account: [
     { label: 'My Orders', href: '/account' },
     { label: 'Track Order', href: '/account' },

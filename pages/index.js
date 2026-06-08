@@ -13,7 +13,6 @@ import QuickViewModal from '../components/QuickViewModal';
 import CountdownTimer from '../components/CountdownTimer';
 import TrustBadges from '../components/TrustBadges';
 import Newsletter from '../components/Newsletter';
-import NewsletterSignup from '../components/NewsletterSignup';
 import Footer from '../components/Footer';
 
 function parse(val) { try { return typeof val === 'string' ? JSON.parse(val) : val; } catch { return []; } }
@@ -198,7 +197,6 @@ export default function Home({ products, siteConfig = {} }) {
       </section>
 
       <Newsletter />
-      <NewsletterSignup />
       <Footer />
 
       {quickViewProduct && (

@@ -15,7 +15,7 @@ export default function HeroSection({ config = {} }) {
   const line3 = titleLines[2] || 'Your Life';
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-sky-950">
+    <section className="relative overflow-hidden bg-slate-950">
 
       {/* Subtle grid decoration */}
       <div
@@ -108,11 +108,11 @@ export default function HeroSection({ config = {} }) {
               loading="eager"
               fetchpriority="high"
             />
-            {/* Blend left edge into dark section background */}
-            <div className="absolute inset-y-0 left-0 w-3/5 bg-gradient-to-r from-slate-950 via-slate-950/70 to-transparent pointer-events-none" />
-            {/* Blend top + bottom edges */}
-            <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-slate-950/70 to-transparent pointer-events-none" />
-            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-950/70 to-transparent pointer-events-none" />
+            {/* Seamless left blend — hard stop matches section bg, fades to transparent */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{ background: 'linear-gradient(to right, #020617 0%, #020617 20%, rgba(2,6,23,0.85) 38%, rgba(2,6,23,0.3) 58%, transparent 78%)' }}
+            />
           </div>
 
         </div>
