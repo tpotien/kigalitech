@@ -99,7 +99,7 @@ export default function Layout({ children }) {
               <img src="/logo.png" alt="KigaliTech" className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover shadow-sm" />
               <div>
                 <span className="block text-base sm:text-xl font-extrabold text-slate-900 dark:text-white leading-none tracking-tight">KigaliTech</span>
-                <span className="hidden sm:block text-[10px] font-semibold uppercase tracking-widest text-sky-600 mt-0.5">Premium Electronics</span>
+                <span className="block text-[10px] font-semibold uppercase tracking-widest text-sky-600 mt-0.5">Premium Electronics</span>
               </div>
             </Link>
 
