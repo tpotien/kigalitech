@@ -1,5 +1,6 @@
 import { getToken } from 'next-auth/jwt';
 import prisma from '../../../lib/prisma';
+import { broadcastNewProduct } from '../../../lib/email';
 
 export const config = { api: { bodyParser: { sizeLimit: '15mb' } } };
 
@@ -28,6 +29,14 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const data = serialize(req.body);
     const product = await prisma.product.create({ data });
+
+    // Fire newsletter broadcast in background — don't block the response
+    if (product.active) {
+      prisma.newsletter.findMany({ where: { active: true }, select: { email: true, name: true } })
+        .then(subscribers => broadcastNewProduct({ product: req.body, subscribers }))
+        .catch(err => console.error('[products] newsletter broadcast error:', err.message));
+    }
+
     return res.status(201).json(product);
   }
 
