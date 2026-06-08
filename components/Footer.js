@@ -73,10 +73,10 @@ export default function Footer() {
   const { t } = useLang();
   return (
     <footer className="bg-slate-900 text-slate-400">
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Brand */}
-          <div>
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:py-16 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
+          {/* Brand — full width on mobile */}
+          <div className="col-span-2 lg:col-span-1">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600">
                 <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -132,13 +132,10 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-slate-800 pt-8 sm:flex-row">
           <p className="text-xs">© {new Date().getFullYear()} KigaliTech. All rights reserved.</p>
-          <div className="flex items-center gap-2">
-            {['visa', 'mc', 'amex', 'stripe'].map((card) => (
-              <span
-                key={card}
-                className="rounded-md bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-300 uppercase"
-              >
-                {card}
+          <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-end">
+            {['MTN MoMo', 'Airtel Money', 'Visa', 'Cash'].map((m) => (
+              <span key={m} className="rounded-md bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-300">
+                {m}
               </span>
             ))}
           </div>

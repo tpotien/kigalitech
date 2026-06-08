@@ -7,16 +7,11 @@ export default function HeroSection({ config = {} }) {
   const badgeText = config.heroBadgeText || 'New Arrivals Just Dropped';
   const subtitle = config.heroSubtitle || 'Premium electronics — phones, laptops, audio, wearables — with fast delivery, real warranties, and zero compromise.';
   const imageUrl = config.heroImageUrl || 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=85';
-  const priceLabel = config.heroPriceLabel || 'Starting from';
-  const heroPrice = config.heroPrice || '$129.99';
-
   const rawTitle = config.heroTitle || 'Tech That\nElevates\nYour Life';
   const titleLines = rawTitle.split('\\n').join('\n').split('\n');
   const line1 = titleLines[0] || 'Tech That';
   const line2 = titleLines[1] || 'Elevates';
   const line3 = titleLines[2] || 'Your Life';
-
-  const starPath = 'M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z';
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-sky-950 min-h-[520px] sm:min-h-[600px] lg:min-h-[680px]">
@@ -62,34 +57,10 @@ export default function HeroSection({ config = {} }) {
           <img
             src={imageUrl}
             alt="New Arrival"
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-cover object-right"
             loading="eager"
             fetchpriority="high"
           />
-        </div>
-
-        {/* Floating card — price */}
-        <div className="absolute bottom-14 right-16 z-20 rounded-2xl bg-white/95 backdrop-blur-sm px-5 py-3.5 shadow-2xl pointer-events-auto">
-          <p className="text-xs font-medium text-slate-500">{priceLabel}</p>
-          <p className="text-2xl font-extrabold text-slate-900">{heroPrice}</p>
-        </div>
-
-        {/* Floating card — rating */}
-        <div className="absolute top-14 right-16 z-20 flex items-center gap-2.5 rounded-2xl bg-white/95 backdrop-blur-sm px-4 py-3 shadow-2xl pointer-events-auto">
-          <div className="flex text-amber-400">
-            {[1,2,3,4,5].map(s => (
-              <svg key={s} className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d={starPath} />
-              </svg>
-            ))}
-          </div>
-          <span className="text-sm font-bold text-slate-800">4.9</span>
-          <span className="text-xs text-slate-400">12K reviews</span>
-        </div>
-
-        {/* NEW 2026 badge */}
-        <div className="absolute top-1/2 right-4 z-20 -translate-y-1/2 rounded-full bg-sky-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-sky-500/40 rotate-[-90deg] pointer-events-auto">
-          NEW 2026
         </div>
       </div>
 
