@@ -124,17 +124,22 @@ const TRADEIN_STATUS = {
   completed:   { label: 'Completed',          color: 'bg-slate-600 text-white',         icon: '✓' },
 };
 
-function LoyaltyTierCard({ points }) {
-  const tiers = [
-    { name: 'Bronze', icon: '🥉', min: 0,     max: 999,   color: 'from-amber-600 to-amber-700',   bg: 'bg-amber-50 dark:bg-amber-900/20',   border: 'border-amber-200 dark:border-amber-800', perks: ['1 point per $1 spent', 'Member discounts'] },
-    { name: 'Silver', icon: '🥈', min: 1000,  max: 4999,  color: 'from-slate-400 to-slate-500',   bg: 'bg-slate-50 dark:bg-slate-800/50',   border: 'border-slate-200 dark:border-slate-600', perks: ['1.5 points per $1', 'Free standard delivery', 'Early sale access'] },
-    { name: 'Gold',   icon: '🥇', min: 5000,  max: 14999, color: 'from-yellow-400 to-amber-500',  bg: 'bg-yellow-50 dark:bg-yellow-900/20', border: 'border-yellow-200 dark:border-yellow-700', perks: ['2 points per $1', 'Free delivery always', 'Priority support', 'Birthday bonus'] },
-    { name: 'Platinum',icon: '💎',min: 15000, max: Infinity,color:'from-violet-500 to-purple-600',bg:'bg-violet-50 dark:bg-violet-900/20',  border: 'border-violet-200 dark:border-violet-700', perks: ['3 points per $1', '5% extra discount', 'Dedicated account manager', 'VIP events'] },
+// Gold and Platinum are admin-only — regular users are capped at Silver
+function LoyaltyTierCard({ points, isAdmin }) {
+  const ALL_TIERS = [
+    { name: 'Bronze',   icon: '🥉', min: 0,     max: 999,      color: 'from-amber-600 to-amber-700',  bg: 'bg-amber-50 dark:bg-amber-900/20',   border: 'border-amber-200 dark:border-amber-800',   perks: ['1 point per $1 spent', 'Member discounts'] },
+    { name: 'Silver',   icon: '🥈', min: 1000,  max: Infinity,  color: 'from-slate-400 to-slate-500',  bg: 'bg-slate-50 dark:bg-slate-800/50',   border: 'border-slate-200 dark:border-slate-600',   perks: ['1.5 points per $1', 'Free standard delivery', 'Early sale access'] },
+    { name: 'Gold',     icon: '🥇', min: 5000,  max: 14999,    color: 'from-yellow-400 to-amber-500', bg: 'bg-yellow-50 dark:bg-yellow-900/20', border: 'border-yellow-200 dark:border-yellow-700', perks: ['2 points per $1', 'Free delivery always', 'Priority support', 'Birthday bonus'] },
+    { name: 'Platinum', icon: '💎', min: 15000, max: Infinity,  color: 'from-violet-500 to-purple-600',bg: 'bg-violet-50 dark:bg-violet-900/20',  border: 'border-violet-200 dark:border-violet-700', perks: ['3 points per $1', '5% extra discount', 'Dedicated account manager', 'VIP events'] },
   ];
 
-  const current = tiers.find(t => points >= t.min && points <= t.max) || tiers[0];
-  const nextTier = tiers[tiers.indexOf(current) + 1];
-  const progress = nextTier ? Math.min(100, Math.round(((points - current.min) / (nextTier.min - current.min)) * 100)) : 100;
+  // Admin always gets Gold regardless of points; regular users capped at Silver
+  const tiers = isAdmin ? ALL_TIERS : ALL_TIERS.slice(0, 2);
+  const effectivePoints = isAdmin ? Math.max(points, 5000) : points;
+
+  const current = tiers.find(t => effectivePoints >= t.min && effectivePoints <= t.max) || tiers[tiers.length - 1];
+  const nextTier = isAdmin ? tiers[tiers.indexOf(current) + 1] : null;
+  const progress = nextTier ? Math.min(100, Math.round(((effectivePoints - current.min) / (nextTier.min - current.min)) * 100)) : 100;
 
   return (
     <div className={`rounded-2xl border ${current.border} ${current.bg} p-5 mb-6`}>
@@ -775,7 +780,7 @@ export default function AccountPage() {
           {/* ── Orders Tab ── */}
           {tab === 'orders' && (
             <div className="space-y-4">
-              <LoyaltyTierCard points={loyaltyPoints || session?.user?.loyaltyPoints || 0} />
+              <LoyaltyTierCard points={loyaltyPoints || session?.user?.loyaltyPoints || 0} isAdmin={session?.user?.role === 'admin'} />
               {loadingOrders ? (
                 <div className="flex justify-center py-16">
                   <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />

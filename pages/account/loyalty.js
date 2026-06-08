@@ -37,13 +37,19 @@ function TransactionRow({ tx }) {
   );
 }
 
-function TierProgress({ points }) {
-  const tiers = [
-    { name: 'Bronze', min: 0,    max: 499,  color: 'bg-amber-600', icon: '🥉' },
-    { name: 'Silver', min: 500,  max: 999,  color: 'bg-slate-400', icon: '🥈' },
-    { name: 'Gold',   min: 1000, max: null, color: 'bg-yellow-500', icon: '🥇' },
-  ];
-  const current = tiers.find(t => points >= t.min && (t.max === null || points <= t.max));
+// Gold is admin-only — regular users progress Bronze → Silver only
+function TierProgress({ points, isAdmin }) {
+  const tiers = isAdmin
+    ? [
+        { name: 'Bronze', min: 0,    max: 499,  color: 'bg-amber-600', icon: '🥉' },
+        { name: 'Silver', min: 500,  max: 999,  color: 'bg-slate-400', icon: '🥈' },
+        { name: 'Gold',   min: 1000, max: null, color: 'bg-yellow-500', icon: '🥇' },
+      ]
+    : [
+        { name: 'Bronze', min: 0,   max: 499, color: 'bg-amber-600', icon: '🥉' },
+        { name: 'Silver', min: 500, max: null, color: 'bg-slate-400', icon: '🥈' },
+      ];
+  const current = tiers.find(t => points >= t.min && (t.max === null || points <= t.max)) || tiers[0];
   const next = tiers.find(t => t.min > (current?.min ?? 0));
   const pct = next ? Math.min(100, ((points - current.min) / (next.min - current.min)) * 100) : 100;
 
@@ -98,7 +104,9 @@ export default function LoyaltyPage() {
 
   const points = data?.points ?? 0;
   const transactions = data?.transactions ?? [];
-  const tier = points >= 1000 ? 'Gold' : points >= 500 ? 'Silver' : 'Bronze';
+  const isAdmin = session?.user?.role === 'admin';
+  // Gold is exclusive to admin — regular users cap at Silver
+  const tier = isAdmin ? 'Gold' : (points >= 500 ? 'Silver' : 'Bronze');
 
   return (
     <Layout>
@@ -136,7 +144,7 @@ export default function LoyaltyPage() {
             <p className="text-sm text-sky-100">Redeemable value</p>
             <p className="text-lg font-extrabold">{rwfValue(points)}</p>
           </div>
-          <TierProgress points={points} />
+          <TierProgress points={points} isAdmin={isAdmin} />
         </div>
 
         {/* How to earn */}
