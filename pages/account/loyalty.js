@@ -77,11 +77,97 @@ function TierProgress({ points, role }) {
   );
 }
 
+const TIER_GRADIENT = {
+  Bronze:   'from-amber-600 to-amber-800',
+  Silver:   'from-slate-400 to-slate-600',
+  Gold:     'from-yellow-400 to-amber-600',
+  Platinum: 'from-violet-500 to-indigo-700',
+};
+const TIER_ICON = { Bronze: '🥉', Silver: '🥈', Gold: '🥇', Platinum: '💎' };
+
+function LoyaltyCardDisplay({ card, userName }) {
+  const expiry = card.expiresAt ? new Date(card.expiresAt) : null;
+  const expiryStr = expiry
+    ? `${String(expiry.getMonth() + 1).padStart(2, '0')}/${expiry.getFullYear().toString().slice(-2)}`
+    : '';
+
+  return (
+    <div
+      id="loyalty-card-print"
+      style={{
+        width: '340px', height: '213px',
+        borderRadius: '16px',
+        background: card.tier === 'Platinum'
+          ? 'linear-gradient(135deg, #7c3aed 0%, #4338ca 100%)'
+          : card.tier === 'Gold'
+            ? 'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)'
+            : card.tier === 'Silver'
+              ? 'linear-gradient(135deg, #64748b 0%, #334155 100%)'
+              : 'linear-gradient(135deg, #92400e 0%, #78350f 100%)',
+        color: 'white',
+        padding: '20px 24px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        fontFamily: 'system-ui, sans-serif',
+        position: 'relative',
+        overflow: 'hidden',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+        flexShrink: 0,
+      }}
+    >
+      {/* Background pattern */}
+      <div style={{ position: 'absolute', top: -30, right: -30, width: 160, height: 160, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+      <div style={{ position: 'absolute', bottom: -40, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+
+      {/* Top row */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <img src="/logo.png" alt="KigaliTech" style={{ width: '32px', height: '32px', borderRadius: '8px', objectFit: 'contain', background: 'rgba(255,255,255,0.15)', padding: '3px' }} />
+          <div>
+            <div style={{ fontWeight: 800, fontSize: '13px', letterSpacing: '1px' }}>KIGALITECH</div>
+            <div style={{ fontSize: '9px', opacity: 0.7, letterSpacing: '2px' }}>LOYALTY CARD</div>
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '24px', lineHeight: 1 }}>{TIER_ICON[card.tier]}</div>
+          <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', opacity: 0.9, marginTop: '2px' }}>{card.tier.toUpperCase()}</div>
+        </div>
+      </div>
+
+      {/* Card number */}
+      <div style={{ position: 'relative' }}>
+        <div style={{ fontFamily: 'monospace', fontSize: '13px', letterSpacing: '3px', opacity: 0.85 }}>
+          {card.cardNumber}
+        </div>
+      </div>
+
+      {/* Bottom row */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', position: 'relative' }}>
+        <div>
+          <div style={{ fontSize: '9px', opacity: 0.6, letterSpacing: '1.5px', marginBottom: '3px' }}>CARD HOLDER</div>
+          <div style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '0.5px' }}>{(userName || 'Member').toUpperCase()}</div>
+          <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '4px' }}>{card.points.toLocaleString()} points</div>
+        </div>
+        {expiryStr && (
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '9px', opacity: 0.6, letterSpacing: '1.5px', marginBottom: '3px' }}>VALID THRU</div>
+            <div style={{ fontSize: '13px', fontWeight: 700 }}>{expiryStr}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function LoyaltyPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [card, setCard] = useState(null);
+  const [cardLoading, setCardLoading] = useState(true);
+  const [requesting, setRequesting] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -96,7 +182,27 @@ export default function LoyaltyPage() {
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    fetch('/api/loyalty/card')
+      .then(r => r.json())
+      .then(d => setCard(d.card || null))
+      .catch(() => {})
+      .finally(() => setCardLoading(false));
   }, [status]);
+
+  async function requestCard() {
+    setRequesting(true);
+    try {
+      const res = await fetch('/api/loyalty/card', { method: 'POST' });
+      const d = await res.json();
+      if (d.card) setCard(d.card);
+    } catch {}
+    setRequesting(false);
+  }
+
+  function printCard() {
+    window.print();
+  }
 
   if (status === 'loading' || loading) {
     return (
@@ -155,6 +261,64 @@ export default function LoyaltyPage() {
           <TierProgress points={points} role={role} />
         </div>
 
+        {/* Loyalty Card */}
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 mb-6 shadow-sm">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <span>🪪</span> Loyalty Card
+          </h2>
+
+          {cardLoading ? (
+            <div className="h-12 flex items-center text-slate-400 text-sm">Loading card status...</div>
+          ) : card?.status === 'approved' ? (
+            <div className="space-y-4">
+              <p className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold">Your card is active ✓</p>
+              <div className="overflow-x-auto">
+                <LoyaltyCardDisplay card={card} userName={session?.user?.name} />
+              </div>
+              <button onClick={printCard}
+                className="flex items-center gap-2 rounded-full bg-slate-900 dark:bg-white dark:text-slate-900 text-white px-5 py-2.5 text-sm font-semibold hover:bg-slate-700 dark:hover:bg-slate-100 transition">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                </svg>
+                Download / Print Card
+              </button>
+              <p className="text-xs text-slate-400">
+                Card #{card.cardNumber} · {card.tier} · Expires {card.expiresAt ? new Date(card.expiresAt).toLocaleDateString() : '—'}
+              </p>
+            </div>
+          ) : card?.status === 'pending' ? (
+            <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-4">
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Request pending review</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">Our team will review and approve your loyalty card shortly. You&apos;ll be able to download it once approved.</p>
+              <p className="text-xs text-amber-500 mt-2 font-mono">Card #: {card.cardNumber}</p>
+            </div>
+          ) : card?.status === 'rejected' ? (
+            <div className="space-y-3">
+              <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-4">
+                <p className="text-sm font-semibold text-red-700 dark:text-red-400">Request not approved</p>
+                {card.adminNotes && <p className="text-xs text-red-600 dark:text-red-500 mt-1">{card.adminNotes}</p>}
+              </div>
+              <button onClick={requestCard} disabled={requesting}
+                className="rounded-full bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60 transition">
+                {requesting ? 'Requesting...' : 'Request Again'}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-slate-600 dark:text-slate-400">Get a physical loyalty card showing your tier and membership details. Present it in-store or share digitally.</p>
+              <ul className="text-xs text-slate-500 dark:text-slate-400 space-y-1">
+                <li>✓ Shows your name, tier &amp; card number</li>
+                <li>✓ Valid for 1 year from approval</li>
+                <li>✓ Download, print, or save as PDF</li>
+              </ul>
+              <button onClick={requestCard} disabled={requesting}
+                className="rounded-full bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60 transition">
+                {requesting ? 'Requesting...' : 'Request My Loyalty Card'}
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* How to earn */}
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 mb-6 shadow-sm">
           <h2 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
@@ -209,6 +373,21 @@ export default function LoyaltyPage() {
         </div>
 
       </div>
+
+      <style global jsx>{`
+        @media print {
+          body > * { display: none !important; }
+          #loyalty-card-print {
+            display: flex !important;
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            width: 340px !important;
+            height: 213px !important;
+          }
+        }
+      `}</style>
     </Layout>
   );
 }

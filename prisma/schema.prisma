@@ -39,6 +39,7 @@ model User {
   verifiedBuyer         Boolean              @default(false)
   preOrders             PreOrder[]
   storeCredit           Int                  @default(0)
+  loyaltyCard           LoyaltyCard?
   createdAt             DateTime             @default(now())
   mustChangePassword    Boolean              @default(false)
 }
@@ -432,6 +433,21 @@ model BulkQuote {
   quotedTotal Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now())
+}
+
+model LoyaltyCard {
+  id          Int       @id @default(autoincrement())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int       @unique
+  cardNumber  String    @unique
+  status      String    @default("pending")
+  tier        String    @default("Bronze")
+  points      Int       @default(0)
+  approvedAt  DateTime?
+  expiresAt   DateTime?
+  adminNotes  String    @default("")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now())
 }
 
 model GiftCard {

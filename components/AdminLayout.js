@@ -18,6 +18,7 @@ const NAV = [
   { href: '/admin/flash-sales', label: 'Flash Sales', icon: '⚡' },
   { href: '/admin/returns', label: 'Returns', icon: '↩️' },
   { href: '/admin/delivery-zones', label: 'Delivery Zones', icon: '🚚' },
+  { href: '/admin/loyalty-cards', label: 'Loyalty Cards', icon: '🪪' },
   { href: '/admin/proforma', label: 'Proforma Invoice', icon: '📄' },
   { href: '/admin/site-config', label: 'Settings', icon: '⚙️' },
   { href: '/admin/profile', label: 'My Profile', icon: '🧑' },
