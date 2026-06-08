@@ -37,21 +37,29 @@ function TransactionRow({ tx }) {
   );
 }
 
-// Gold is admin-only — regular users progress Bronze → Silver only
-function TierProgress({ points, isAdmin }) {
-  const tiers = isAdmin
-    ? [
-        { name: 'Bronze', min: 0,    max: 499,  color: 'bg-amber-600', icon: '🥉' },
-        { name: 'Silver', min: 500,  max: 999,  color: 'bg-slate-400', icon: '🥈' },
-        { name: 'Gold',   min: 1000, max: null, color: 'bg-yellow-500', icon: '🥇' },
-      ]
-    : [
-        { name: 'Bronze', min: 0,   max: 499, color: 'bg-amber-600', icon: '🥉' },
-        { name: 'Silver', min: 500, max: null, color: 'bg-slate-400', icon: '🥈' },
-      ];
-  const current = tiers.find(t => points >= t.min && (t.max === null || points <= t.max)) || tiers[0];
+// Tier ladder by role: admin=Platinum(top), staff=Gold(top), users capped at Silver
+function TierProgress({ points, role }) {
+  const ALL = [
+    { name: 'Bronze',   min: 0,     max: 499,  color: 'bg-amber-600',  icon: '🥉' },
+    { name: 'Silver',   min: 500,   max: 999,  color: 'bg-slate-400',  icon: '🥈' },
+    { name: 'Gold',     min: 1000,  max: 4999, color: 'bg-yellow-500', icon: '🥇' },
+    { name: 'Platinum', min: 5000,  max: null, color: 'bg-violet-500', icon: '💎' },
+  ];
+  const tiers = role === 'admin'
+    ? ALL
+    : role === 'staff'
+      ? ALL.slice(0, 3) // Bronze → Silver → Gold (top for staff)
+      : ALL.slice(0, 2); // Bronze → Silver (top for regular users)
+
+  const effectivePoints = role === 'admin'
+    ? Math.max(points, 5000)
+    : role === 'staff'
+      ? Math.max(points, 1000)
+      : points;
+
+  const current = tiers.find(t => effectivePoints >= t.min && (t.max === null || effectivePoints <= t.max)) || tiers[tiers.length - 1];
   const next = tiers.find(t => t.min > (current?.min ?? 0));
-  const pct = next ? Math.min(100, ((points - current.min) / (next.min - current.min)) * 100) : 100;
+  const pct = next ? Math.min(100, ((effectivePoints - current.min) / (next.min - current.min)) * 100) : 100;
 
   return (
     <div className="mt-5 pt-5 border-t border-sky-400/30">
@@ -104,9 +112,9 @@ export default function LoyaltyPage() {
 
   const points = data?.points ?? 0;
   const transactions = data?.transactions ?? [];
-  const isAdmin = session?.user?.role === 'admin';
-  // Gold is exclusive to admin — regular users cap at Silver
-  const tier = isAdmin ? 'Gold' : (points >= 500 ? 'Silver' : 'Bronze');
+  const role = session?.user?.role;
+  // Tier by role: admin=Platinum, staff=Gold, others capped at Silver
+  const tier = role === 'admin' ? 'Platinum' : role === 'staff' ? 'Gold' : (points >= 500 ? 'Silver' : 'Bronze');
 
   return (
     <Layout>
@@ -134,7 +142,7 @@ export default function LoyaltyPage() {
             </div>
             <div className="text-right">
               <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-sm font-bold">
-                <span>{tier === 'Gold' ? '🥇' : tier === 'Silver' ? '🥈' : '🥉'}</span>
+                <span>{tier === 'Platinum' ? '💎' : tier === 'Gold' ? '🥇' : tier === 'Silver' ? '🥈' : '🥉'}</span>
                 {tier}
               </div>
               <p className="mt-2 text-xs text-sky-200 text-right">≈ {rwfValue(points)}</p>
@@ -144,7 +152,7 @@ export default function LoyaltyPage() {
             <p className="text-sm text-sky-100">Redeemable value</p>
             <p className="text-lg font-extrabold">{rwfValue(points)}</p>
           </div>
-          <TierProgress points={points} isAdmin={isAdmin} />
+          <TierProgress points={points} role={role} />
         </div>
 
         {/* How to earn */}
