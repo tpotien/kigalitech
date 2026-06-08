@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import AdminLayout from '../../../components/AdminLayout';
@@ -7,11 +7,13 @@ const STATUS_OPTS = ['pending', 'confirmed', 'processing', 'shipped', 'delivered
 const STATUS_COLOR = { pending: 'bg-amber-100 text-amber-700', confirmed: 'bg-sky-100 text-sky-700', processing: 'bg-indigo-100 text-indigo-700', shipped: 'bg-violet-100 text-violet-700', delivered: 'bg-emerald-100 text-emerald-700', cancelled: 'bg-red-100 text-red-700' };
 
 function parse(val) { try { return typeof val === 'string' ? JSON.parse(val) : val; } catch { return []; } }
+function rwf(n) { return `RWF ${Math.round((n / 100) * 1475).toLocaleString()}`; }
 
 export default function AdminOrderDetail() {
   const { query } = useRouter();
   const [order, setOrder] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
   useEffect(() => {
     if (query.id) fetch(`/api/admin/orders/${query.id}`).then((r) => r.json()).then(setOrder);
@@ -23,6 +25,11 @@ export default function AdminOrderDetail() {
     const updated = await res.json();
     setOrder(updated);
     setSaving(false);
+  }
+
+  function handlePrint() {
+    setPrinting(true);
+    setTimeout(() => { window.print(); setPrinting(false); }, 100);
   }
 
   if (!order) return <AdminLayout title="Order"><div className="py-20 text-center text-slate-400">Loading...</div></AdminLayout>;
@@ -121,8 +128,19 @@ export default function AdminOrderDetail() {
             </button>
 
             <div className={`rounded-xl p-3 text-center text-sm font-semibold ${order.billPrintable ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-500'}`}>
-              {order.billPrintable ? '🖨 Bill Unlocked for Printing' : '🔒 Bill Locked — Awaiting Confirmation'}
+              {order.billPrintable ? '🖨 Bill Unlocked for Customer' : '🔒 Bill Locked — Awaiting Confirmation'}
             </div>
+
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="w-full rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white hover:bg-slate-700 transition flex items-center justify-center gap-2"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+              </svg>
+              Print Bill
+            </button>
           </div>
 
           <div className="rounded-2xl bg-white border border-slate-200 p-5 space-y-2">
@@ -160,6 +178,96 @@ export default function AdminOrderDetail() {
           </div>
         </div>
       </div>
+      {/* ── Printable Bill (hidden on screen, shown on print) ── */}
+      <div id="order-print-bill" style={{ display: 'none' }}>
+        <div style={{ fontFamily: 'monospace', maxWidth: '420px', margin: '0 auto', padding: '24px', fontSize: '13px', color: '#000' }}>
+          {/* Header */}
+          <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: '12px', marginBottom: '12px' }}>
+            <p style={{ fontWeight: 'bold', fontSize: '18px', margin: '0 0 2px' }}>KigaliTech Services</p>
+            <p style={{ margin: '0', fontSize: '11px' }}>KG 7 Ave, Kigali, Rwanda</p>
+            <p style={{ margin: '0', fontSize: '11px' }}>Tel: +250 786 276 555</p>
+            <p style={{ margin: '2px 0 0', fontSize: '11px' }}>info@kigalitechservices.com</p>
+          </div>
+
+          <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+            <p style={{ fontWeight: 'bold', fontSize: '15px', margin: '0' }}>SALES RECEIPT</p>
+            <p style={{ margin: '2px 0 0', fontSize: '11px' }}>Order #{order.id} · {new Date(order.createdAt).toLocaleString('en-RW')}</p>
+          </div>
+
+          {/* Customer */}
+          <div style={{ borderTop: '1px dashed #000', borderBottom: '1px dashed #000', padding: '8px 0', marginBottom: '12px' }}>
+            <p style={{ margin: '0', fontWeight: 'bold' }}>Customer</p>
+            <p style={{ margin: '2px 0 0' }}>{order.shippingName || order.user?.name || '—'}</p>
+            {order.shippingPhone && <p style={{ margin: '1px 0 0', fontSize: '11px' }}>{order.shippingPhone}</p>}
+            {(order.shippingEmail || order.user?.email) && <p style={{ margin: '1px 0 0', fontSize: '11px' }}>{order.shippingEmail || order.user?.email}</p>}
+            {order.shippingAddress && <p style={{ margin: '1px 0 0', fontSize: '11px' }}>{order.shippingAddress}</p>}
+          </div>
+
+          {/* Items */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px', fontSize: '12px' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #000' }}>
+                <th style={{ textAlign: 'left', paddingBottom: '4px' }}>Item</th>
+                <th style={{ textAlign: 'right', paddingBottom: '4px' }}>Qty</th>
+                <th style={{ textAlign: 'right', paddingBottom: '4px' }}>Price</th>
+                <th style={{ textAlign: 'right', paddingBottom: '4px' }}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(order.items || []).map(item => (
+                <tr key={item.id}>
+                  <td style={{ paddingTop: '4px', paddingRight: '8px' }}>
+                    <div style={{ fontWeight: 'bold' }}>{item.name}</div>
+                    {item.color && <div style={{ fontSize: '10px', color: '#444' }}>{[item.color, item.storage].filter(Boolean).join(' · ')}</div>}
+                    {item.serial && item.serial !== 'TBD' && <div style={{ fontSize: '10px', color: '#444' }}>S/N: {item.serial}</div>}
+                    <div style={{ fontSize: '10px', color: '#444' }}>Warranty: {item.warranty}</div>
+                  </td>
+                  <td style={{ textAlign: 'right', paddingTop: '4px' }}>{item.quantity}</td>
+                  <td style={{ textAlign: 'right', paddingTop: '4px' }}>{rwf(item.price)}</td>
+                  <td style={{ textAlign: 'right', paddingTop: '4px', fontWeight: 'bold' }}>{rwf(item.price * item.quantity)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Totals */}
+          <div style={{ borderTop: '1px dashed #000', paddingTop: '8px', marginBottom: '12px' }}>
+            {order.discountAmount > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                <span>Discount {order.couponCode ? `(${order.couponCode})` : ''}</span>
+                <span>-{rwf(order.discountAmount)}</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px', borderTop: '1px solid #000', paddingTop: '6px', marginTop: '4px' }}>
+              <span>TOTAL</span>
+              <span>{rwf(order.total)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '4px' }}>
+              <span>Payment Method</span>
+              <span>{order.paymentMethod || '—'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '2px' }}>
+              <span>Payment Status</span>
+              <span style={{ fontWeight: 'bold' }}>{order.paymentConfirmed ? 'PAID ✓' : 'PENDING'}</span>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div style={{ textAlign: 'center', borderTop: '1px dashed #000', paddingTop: '10px', fontSize: '11px' }}>
+            <p style={{ margin: '0', fontWeight: 'bold' }}>Thank you for shopping at KigaliTech!</p>
+            <p style={{ margin: '4px 0 0' }}>Warranty claims: +250 786 276 555</p>
+            <p style={{ margin: '2px 0 0' }}>kigalitechservices.com</p>
+            <p style={{ margin: '8px 0 0', fontSize: '10px', color: '#666' }}>Printed by admin · {new Date().toLocaleString('en-RW')}</p>
+          </div>
+        </div>
+      </div>
+
+      <style global jsx>{`
+        @media print {
+          body > * { display: none !important; }
+          #order-print-bill { display: block !important; position: fixed; top: 0; left: 0; width: 100%; }
+        }
+      `}</style>
     </AdminLayout>
   );
 }
