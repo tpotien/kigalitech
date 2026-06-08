@@ -16,7 +16,7 @@ export default function MarqueeBanner() {
     <div className="bg-sky-600 text-white overflow-hidden py-2.5">
       <div className="flex animate-marquee whitespace-nowrap">
         {repeated.map((item, i) => (
-          <span key={i} className="mx-8 text-sm font-medium tracking-wide">
+          <span key={i} className="mx-5 sm:mx-8 text-[11px] sm:text-sm font-medium tracking-wide">
             {item}
           </span>
         ))}

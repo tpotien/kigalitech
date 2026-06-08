@@ -58,23 +58,23 @@ export default function FeaturedCategories() {
   const { t } = useLang();
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-      <div className="mb-10 flex items-end justify-between">
+    <section className="mx-auto max-w-7xl px-3 py-7 sm:py-16 sm:px-6 lg:px-8">
+      <div className="mb-5 sm:mb-10 flex items-end justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">{t('categories')}</p>
-          <h2 className="mt-1 text-3xl font-extrabold text-slate-900 dark:text-white">Browse by Category</h2>
+          <p className="text-[10px] sm:text-sm font-semibold uppercase tracking-widest text-sky-600">{t('categories')}</p>
+          <h2 className="mt-0.5 text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">Browse by Category</h2>
         </div>
-        <Link href="/products" className="text-sm font-medium text-sky-600 hover:text-sky-800 no-underline">
+        <Link href="/products" className="text-xs sm:text-sm font-medium text-sky-600 hover:text-sky-800 no-underline">
           {t('viewAll')} →
         </Link>
       </div>
 
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="grid gap-2 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {CATEGORIES.map((cat) => (
           <Link
             key={cat.name}
             href={cat.href}
-            className="group relative overflow-hidden rounded-3xl no-underline aspect-[3/4] sm:aspect-auto sm:h-48 xl:h-52"
+            className="group relative overflow-hidden rounded-2xl sm:rounded-3xl no-underline aspect-[3/4] sm:aspect-auto sm:h-48 xl:h-52"
           >
             {/* Product photo fills entire card */}
             <img
@@ -87,14 +87,14 @@ export default function FeaturedCategories() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/5 transition-all duration-300 group-hover:from-black/70" />
 
             {/* Content */}
-            <div className="relative flex h-full flex-col justify-between px-5 py-5">
-              <span className="text-3xl drop-shadow-lg">{cat.icon}</span>
+            <div className="relative flex h-full flex-col justify-between px-3 py-3 sm:px-5 sm:py-5">
+              <span className="text-xl sm:text-3xl drop-shadow-lg">{cat.icon}</span>
               <div>
-                <h3 className="text-lg font-bold leading-tight text-white drop-shadow">{t(cat.key)}</h3>
-                <p className="mt-0.5 text-xs text-white/75">{cat.desc}</p>
-                <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-xs font-semibold text-white transition-all group-hover:bg-white/30">
+                <h3 className="text-sm sm:text-lg font-bold leading-tight text-white drop-shadow">{t(cat.key)}</h3>
+                <p className="mt-0.5 text-[10px] sm:text-xs text-white/75 leading-tight">{cat.desc}</p>
+                <span className="mt-2 sm:mt-3 inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-sm px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-white transition-all group-hover:bg-white/30">
                   {t('shopNow')}
-                  <svg className="h-3 w-3 translate-x-0 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-2.5 w-2.5 sm:h-3 sm:w-3 translate-x-0 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </span>

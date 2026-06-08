@@ -93,14 +93,14 @@ export default function Home({ products, siteConfig = {} }) {
       />
 
       {/* Product Grid */}
-      <section id="products" className="mx-auto max-w-7xl px-4 py-6 sm:py-16 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-4">
+      <section id="products" className="mx-auto max-w-7xl px-3 py-5 sm:py-16 sm:px-6 lg:px-8">
+        <div className="mb-4 sm:mb-6">
+          <div className="flex items-end justify-between mb-3 sm:mb-4">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">{t('categories')}</p>
-              <h2 className="mt-1 text-3xl font-extrabold text-slate-900 dark:text-slate-100">{t('featuredProducts')}</h2>
+              <p className="text-[10px] sm:text-sm font-semibold uppercase tracking-widest text-sky-600">{t('categories')}</p>
+              <h2 className="mt-0.5 text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100">{t('featuredProducts')}</h2>
             </div>
-            <p className="text-sm text-slate-500">{filtered.length} product{filtered.length !== 1 ? 's' : ''}</p>
+            <p className="text-[11px] sm:text-sm text-slate-500">{filtered.length} item{filtered.length !== 1 ? 's' : ''}</p>
           </div>
 
           {/* Category filter */}
@@ -164,11 +164,11 @@ export default function Home({ products, siteConfig = {} }) {
       </section>
 
       {/* Reviews */}
-      <section className="bg-white dark:bg-slate-900 py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">{t('reviews')}</p>
-            <h2 className="mt-1 text-3xl font-extrabold text-slate-900 dark:text-slate-100">{t('customersReviews')}</h2>
+      <section className="bg-white dark:bg-slate-900 py-7 sm:py-12">
+        <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+          <div className="text-center mb-5 sm:mb-10">
+            <p className="text-[10px] sm:text-sm font-semibold uppercase tracking-widest text-sky-600">{t('reviews')}</p>
+            <h2 className="mt-0.5 text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100">{t('customersReviews')}</h2>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
             {REVIEWS.map((r) => (
