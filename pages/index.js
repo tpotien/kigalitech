@@ -50,8 +50,7 @@ export default function Home({ products, siteConfig = {} }) {
   }, [router.query]);
 
   const categories = ['All', ...Array.from(new Set(products.map((p) => p.category)))];
-  // Default to first real category; 'All' is an explicit opt-in
-  const [activeCategory, setActiveCategory] = useState(categories[1] || 'All');
+  const [activeCategory, setActiveCategory] = useState('All');
 
   const allColors = useMemo(() => {
     const set = new Set();
