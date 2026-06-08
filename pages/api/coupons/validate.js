@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   if (!coupon || !coupon.active) return res.status(404).json({ error: 'Invalid or expired coupon code' });
   if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) return res.status(400).json({ error: 'This coupon has expired' });
   if (coupon.maxUses > 0 && coupon.usedCount >= coupon.maxUses) return res.status(400).json({ error: 'Coupon usage limit reached' });
-  if (orderTotal < coupon.minOrder) return res.status(400).json({ error: `Minimum order of RWF ${Math.round((coupon.minOrder / 100) * 1475).toLocaleString()} required` });
+  if (coupon.minOrder > 0 && orderTotal < coupon.minOrder) return res.status(400).json({ error: `Minimum order of RWF ${Number(coupon.minOrder).toLocaleString()} required` });
 
   const discount = coupon.type === 'percent'
     ? Math.round(orderTotal * coupon.value / 100)
