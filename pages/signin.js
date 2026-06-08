@@ -275,7 +275,7 @@ export default function SignIn() {
                 <input
                   type="email"
                   value={magicEmail}
-                  onChange={e => setMagicEmail(e.target.value)}
+                  onChange={e => setMagicEmail(e.target.value.toLowerCase())}
                   placeholder="your@email.com"
                   className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800"
                 />

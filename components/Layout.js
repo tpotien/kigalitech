@@ -34,9 +34,12 @@ export default function Layout({ children }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [navProducts, setNavProducts] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [announcementIdx, setAnnouncementIdx] = useState(0);
   const [logoUrl, setLogoUrl] = useState('/logo.png');
   const searchRef = useRef(null);
+  const suggestRef = useRef(null);
 
   useEffect(() => {
     fetch('/api/nav-products').then(r => r.json()).then(setNavProducts).catch(() => {});
@@ -62,11 +65,27 @@ export default function Layout({ children }) {
     { label: t('deals'),     href: '/deals', cat: null, red: true },
   ];
 
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2) { setSuggestions([]); return; }
+    const t = setTimeout(() => {
+      fetch(`/api/search/autocomplete?q=${encodeURIComponent(q)}`)
+        .then(r => r.json()).then(setSuggestions).catch(() => {});
+    }, 200);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
   function handleSearch(e) {
     e.preventDefault();
+    setShowSuggestions(false);
     if (searchQuery.trim()) {
       router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
     }
+  }
+
+  function pickSuggestion(p) {
+    setShowSuggestions(false);
+    router.push(`/products/${p.id}`);
   }
 
   return (
@@ -109,26 +128,40 @@ export default function Layout({ children }) {
             </Link>
 
             {/* ── Inline search bar (desktop) ── */}
-            <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-2xl">
+            <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-2xl relative" ref={suggestRef}>
               <div className="flex w-full rounded-full border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus-within:border-sky-500 focus-within:bg-white dark:focus-within:bg-slate-700 transition-all overflow-hidden shadow-sm">
                 <input
                   ref={searchRef}
                   type="text"
                   value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
+                  onChange={e => { setSearchQuery(e.target.value); setShowSuggestions(true); }}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                   placeholder="Search phones, laptops, earbuds, TVs…"
                   className="flex-1 bg-transparent px-5 py-3 text-sm font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none"
                 />
-                <button
-                  type="submit"
-                  className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 px-6 text-white text-sm font-bold transition-colors flex-shrink-0"
-                >
+                <button type="submit" className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 px-6 text-white text-sm font-bold transition-colors flex-shrink-0">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                   <span className="hidden xl:inline">Search</span>
                 </button>
               </div>
+              {/* Autocomplete dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden z-50">
+                  {suggestions.map(p => (
+                    <button key={p.id} type="button" onMouseDown={() => pickSuggestion(p)}
+                      className="w-full flex items-center justify-between px-5 py-3 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition text-left">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white">{p.name}</p>
+                        <p className="text-xs text-slate-400">{p.brand} · {p.category}</p>
+                      </div>
+                      <p className="text-sm font-bold text-sky-700 dark:text-sky-400 flex-shrink-0">RWF {Number(p.price).toLocaleString()}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
             </form>
 
             {/* ── Right icons ── */}

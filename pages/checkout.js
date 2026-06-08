@@ -64,6 +64,25 @@ export default function Checkout() {
   const [tvInstallation, setTvInstallation] = useState(false);
   const [tvInstallAddress, setTvInstallAddress] = useState('');
 
+  // Coupon state
+  const [couponInput, setCouponInput] = useState('');
+  const [couponApplied, setCouponApplied] = useState(null); // { code, discount, type, value }
+  const [couponError, setCouponError] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+
+  // Store credit state
+  const [storeCredit, setStoreCredit] = useState(0);
+  const [useStoreCredit, setUseStoreCredit] = useState(false);
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetch('/api/account/credit')
+        .then(r => r.json())
+        .then(d => setStoreCredit(d.storeCredit || 0))
+        .catch(() => {});
+    }
+  }, [session]);
+
   const hasTVItem = items.some(i => i.category === 'TVs' || i.name?.toLowerCase().includes('tv'));
 
   useEffect(() => {
@@ -85,6 +104,26 @@ export default function Checkout() {
       .catch(() => {});
   }, []);
 
+  async function applyCoupon() {
+    if (!couponInput.trim()) return;
+    setCouponLoading(true);
+    setCouponError('');
+    try {
+      const res = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: couponInput.trim(), orderTotal: subtotal + addonTotal }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setCouponError(data.error || 'Invalid coupon'); return; }
+      setCouponApplied({ code: data.coupon.code, discount: data.coupon.discount });
+    } catch {
+      setCouponError('Could not validate coupon');
+    } finally {
+      setCouponLoading(false);
+    }
+  }
+
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const inp = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-800';
 
@@ -92,7 +131,9 @@ export default function Checkout() {
   const selectedZone = deliveryZones.find(z => z.id === selectedZoneId) || null;
   const shipping = selectedZone ? selectedZone.fee : (subtotal + addonTotal) >= 9900 ? 0 : 999;
   const tvInstallFee = tvInstallation ? 5000 : 0;
-  const total = subtotal + addonTotal + shipping + tvInstallFee;
+  const couponDiscount = couponApplied?.discount || 0;
+  const creditApplied = useStoreCredit ? Math.min(storeCredit, subtotal + addonTotal + shipping + tvInstallFee - couponDiscount) : 0;
+  const total = Math.max(0, subtotal + addonTotal + shipping + tvInstallFee - couponDiscount - creditApplied);
   const isMomo = form.paymentMethod === 'momo';
   const isInstallment = form.paymentMethod === 'installment';
 
@@ -118,6 +159,8 @@ export default function Checkout() {
       currency: 'RWF',
       deliverySlot: deliverySlot.slot ? `${deliverySlot.date} ${deliverySlot.slot}` : '',
       deliveryDate: deliverySlot.date || '',
+      couponCode: couponApplied?.code || undefined,
+      useStoreCredit: creditApplied > 0,
       ...overrides,
     };
   }
@@ -244,7 +287,7 @@ export default function Checkout() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('email')} *</label>
-                    <input required type="email" autoComplete="email" value={form.email} onChange={e => set('email', e.target.value)} className={inp} placeholder="your@email.com" />
+                    <input required type="email" autoComplete="email" value={form.email} onChange={e => set('email', e.target.value.toLowerCase())} className={inp} placeholder="your@email.com" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('phone')} *</label>
@@ -452,6 +495,50 @@ export default function Checkout() {
                     </div>
                   ))}
                 </div>
+                {/* Coupon code */}
+                <div className="px-5 pt-3 pb-2 border-t border-slate-100 dark:border-slate-800">
+                  {couponApplied ? (
+                    <div className="flex items-center justify-between rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-3 py-2">
+                      <div>
+                        <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">Coupon: {couponApplied.code}</p>
+                        <p className="text-xs text-emerald-600 dark:text-emerald-500">-{format(couponDiscount)} saved</p>
+                      </div>
+                      <button type="button" onClick={() => { setCouponApplied(null); setCouponInput(''); }} className="text-xs text-red-500 hover:text-red-700 font-semibold">Remove</button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        value={couponInput}
+                        onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponError(''); }}
+                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), applyCoupon())}
+                        placeholder="Coupon code"
+                        className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none"
+                      />
+                      <button type="button" onClick={applyCoupon} disabled={couponLoading || !couponInput.trim()}
+                        className="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50 transition">
+                        {couponLoading ? '...' : 'Apply'}
+                      </button>
+                    </div>
+                  )}
+                  {couponError && <p className="mt-1 text-xs text-red-500">{couponError}</p>}
+                </div>
+
+                {/* Store credit */}
+                {storeCredit > 0 && (
+                  <div className="px-5 pb-3">
+                    <label className="flex items-center justify-between gap-3 rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 px-3 py-2 cursor-pointer">
+                      <div>
+                        <p className="text-xs font-semibold text-violet-800 dark:text-violet-300">Store Credit</p>
+                        <p className="text-xs text-violet-600 dark:text-violet-400">Balance: {format(storeCredit)}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {useStoreCredit && <span className="text-xs font-bold text-violet-700 dark:text-violet-300">-{format(creditApplied)}</span>}
+                        <input type="checkbox" checked={useStoreCredit} onChange={e => setUseStoreCredit(e.target.checked)} className="accent-violet-600 h-4 w-4" />
+                      </div>
+                    </label>
+                  </div>
+                )}
+
                 <div className="border-t border-slate-100 dark:border-slate-800 px-5 py-4 space-y-2">
                   <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400">
                     <span>{t('subtotal')}</span><span>{format(subtotal)}</span>
@@ -468,6 +555,16 @@ export default function Checkout() {
                   {tvInstallFee > 0 && (
                     <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400">
                       <span>TV Installation</span><span>{format(tvInstallFee)}</span>
+                    </div>
+                  )}
+                  {couponDiscount > 0 && (
+                    <div className="flex justify-between text-sm text-emerald-600 dark:text-emerald-400">
+                      <span>Coupon discount</span><span>-{format(couponDiscount)}</span>
+                    </div>
+                  )}
+                  {creditApplied > 0 && (
+                    <div className="flex justify-between text-sm text-violet-600 dark:text-violet-400">
+                      <span>Store credit</span><span>-{format(creditApplied)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-base font-extrabold text-slate-900 dark:text-slate-100 pt-2 border-t border-slate-100 dark:border-slate-800">

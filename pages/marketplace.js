@@ -136,10 +136,32 @@ export default function MarketplacePage({ listings, query }) {
                   <div className="p-5">
                     <p className="text-xs font-semibold uppercase tracking-widest text-violet-600 mb-1">{listing.category}</p>
                     <h3 className="font-semibold text-slate-900 dark:text-slate-100 leading-snug mb-2">{listing.title}</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mb-4">{listing.description}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mb-3">{listing.description}</p>
 
-                    <div className="flex items-center justify-between">
-                      <p className="text-xl font-extrabold text-slate-900 dark:text-slate-100">{format(listing.price)}</p>
+                    {/* Price + 3% fee breakdown */}
+                    {(() => {
+                      const sellerPrice = listing.price;
+                      const fee = Math.round(sellerPrice * 0.03);
+                      const total = sellerPrice + fee;
+                      return (
+                        <div className="rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-3 py-2.5 mb-3 space-y-1">
+                          <div className="flex justify-between text-xs text-slate-500">
+                            <span>Seller price</span>
+                            <span>RWF {sellerPrice.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-xs text-slate-500">
+                            <span>Service fee (3%)</span>
+                            <span>RWF {fee.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-sm font-extrabold text-slate-900 dark:text-white border-t border-slate-200 dark:border-slate-700 pt-1 mt-1">
+                            <span>Total</span>
+                            <span>RWF {total.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-1.5">
                         {listing.seller?.image
                           ? <img src={listing.seller.image} alt="" className="h-6 w-6 rounded-full object-cover" />

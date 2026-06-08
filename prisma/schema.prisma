@@ -38,6 +38,7 @@ model User {
   newsletterSub         Newsletter?
   verifiedBuyer         Boolean              @default(false)
   preOrders             PreOrder[]
+  storeCredit           Int                  @default(0)
   createdAt             DateTime             @default(now())
   mustChangePassword    Boolean              @default(false)
 }

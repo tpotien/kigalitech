@@ -4,10 +4,13 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
 
+// "Changed my mind" removed — only valid for exchange/switch, not refund
 const REASONS = [
-  'Defective product',
+  'Defective / not working',
   'Wrong item received',
-  'Changed my mind',
+  'Item not as described',
+  'Damaged on arrival',
+  'Missing parts or accessories',
   'Other',
 ];
 

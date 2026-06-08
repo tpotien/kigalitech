@@ -12,6 +12,7 @@ import ProductCard from '../components/ProductCard';
 import QuickViewModal from '../components/QuickViewModal';
 import CountdownTimer from '../components/CountdownTimer';
 import TrustBadges from '../components/TrustBadges';
+import TrendingInTech from '../components/TrendingInTech';
 import Newsletter from '../components/Newsletter';
 import Footer from '../components/Footer';
 
@@ -161,6 +162,8 @@ export default function Home({ products, siteConfig = {} }) {
           <div className="py-20 text-center text-slate-400">{t('noResults')}</div>
         )}
       </section>
+
+      <TrendingInTech />
 
       {/* Reviews */}
       <section className="bg-white dark:bg-slate-900 py-7 sm:py-12">

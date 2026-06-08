@@ -32,7 +32,7 @@ export default function Newsletter() {
               type="email"
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value.toLowerCase())}
               placeholder="Enter your email address"
               className="w-full rounded-full border-0 bg-white/20 px-6 py-3.5 text-white placeholder-sky-200 backdrop-blur-sm focus:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 sm:w-80"
             />

@@ -16,9 +16,11 @@ export default async function handler(req, res) {
     if (!shippingName) return res.status(400).json({ error: 'Full name is required' });
     if (!shippingPhone) return res.status(400).json({ error: 'Phone number is required' });
 
+    const { useStoreCredit } = req.body;
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     let discountAmount = 0;
     let validCoupon = null;
+    let creditUsed = 0;
 
     if (couponCode) {
       validCoupon = await prisma.coupon.findUnique({ where: { code: couponCode.toUpperCase().trim() } });
@@ -28,17 +30,30 @@ export default async function handler(req, res) {
         }
         discountAmount = validCoupon.type === 'percent'
           ? Math.round(subtotal * validCoupon.value / 100)
-          : Math.min(validCoupon.value, subtotal);
+          : validCoupon.value;
         await prisma.coupon.update({ where: { id: validCoupon.id }, data: { usedCount: { increment: 1 } } });
       }
     }
 
     const tvFee = tvInstallation ? 5000 : 0;
     const shippingFee = subtotal >= 9900 ? 0 : 999;
-    const total = Math.max(0, subtotal - discountAmount + tvFee + shippingFee);
+    const orderGross = subtotal + tvFee + shippingFee;
 
-    // Validate userId is a real number before connecting
+    // Apply store credit before finalizing total
     const validUserId = userId && !isNaN(Number(userId)) ? Number(userId) : null;
+    if (useStoreCredit && validUserId) {
+      const user = await prisma.user.findUnique({ where: { id: validUserId }, select: { storeCredit: true } });
+      if (user?.storeCredit > 0) {
+        creditUsed = Math.min(user.storeCredit, Math.max(0, orderGross - discountAmount));
+      }
+    }
+
+    // Cap coupon so total never goes negative; store the excess as account credit
+    const afterCoupon = Math.max(0, orderGross - discountAmount - creditUsed);
+    const couponRemainder = Math.max(0, discountAmount - (orderGross - creditUsed));
+    const total = afterCoupon;
+
+    // validUserId already computed above
 
     const order = await prisma.order.create({
       data: {
@@ -79,6 +94,15 @@ export default async function handler(req, res) {
     });
 
     await prisma.order.update({ where: { id: order.id }, data: { receiptUrl: `/orders/${order.id}` } });
+
+    // Credit accounting: deduct used credit and/or add coupon remainder
+    if (validUserId && (creditUsed > 0 || couponRemainder > 0)) {
+      await prisma.$executeRaw`
+        UPDATE "User"
+        SET "storeCredit" = GREATEST(0, "storeCredit" - ${creditUsed} + ${couponRemainder})
+        WHERE id = ${validUserId}
+      `;
+    }
 
     // Auto-decrement stock
     for (const item of items) {
