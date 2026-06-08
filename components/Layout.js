@@ -95,11 +95,11 @@ export default function Layout({ children }) {
           <div className="flex h-20 items-center gap-4 lg:gap-6">
 
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2.5 no-underline flex-shrink-0">
-              <img src="/logo.png" alt="KigaliTech" className="h-12 w-12 rounded-full object-cover shadow-sm" />
-              <div className="hidden sm:block">
-                <span className="block text-xl font-extrabold text-slate-900 dark:text-white leading-none tracking-tight">KigaliTech</span>
-                <span className="block text-[10px] font-semibold uppercase tracking-widest text-sky-600 mt-0.5">Premium Electronics</span>
+            <Link href="/" className="flex items-center gap-2 no-underline flex-shrink-0">
+              <img src="/logo.png" alt="KigaliTech" className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover shadow-sm" />
+              <div>
+                <span className="block text-base sm:text-xl font-extrabold text-slate-900 dark:text-white leading-none tracking-tight">KigaliTech</span>
+                <span className="hidden sm:block text-[10px] font-semibold uppercase tracking-widest text-sky-600 mt-0.5">Premium Electronics</span>
               </div>
             </Link>
 
@@ -316,9 +316,9 @@ export default function Layout({ children }) {
 
         {/* ── Mobile Nav drawer ── */}
         {mobileOpen && (
-          <div className="xl:hidden border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div className="xl:hidden border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-y-auto max-h-[calc(100svh-5rem)]">
             {/* Mobile search */}
-            <form onSubmit={handleSearch} className="px-4 py-3 border-b border-slate-50">
+            <form onSubmit={handleSearch} className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-10">
               <div className="flex rounded-full border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-800">
                 <input
                   type="text"
@@ -327,40 +327,55 @@ export default function Layout({ children }) {
                   placeholder="Search products…"
                   className="flex-1 bg-transparent px-4 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none"
                 />
-                <button type="submit" className="px-4 bg-sky-600 text-white">
+                <button type="submit" className="px-4 bg-sky-600 text-white flex-shrink-0">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </button>
               </div>
             </form>
-            <div className="px-4 py-2 space-y-0.5">
+
+            {/* All nav links */}
+            <div className="px-4 py-1">
               {NAV_LINKS.map((link) => (
                 <Link key={link.label} href={link.href} onClick={() => setMobileOpen(false)}
-                  className={`flex items-center justify-between py-3 text-base font-bold no-underline border-b border-slate-50 dark:border-slate-800 ${link.red ? 'text-red-500' : 'text-slate-800 dark:text-slate-100'}`}>
+                  className={`flex items-center justify-between py-3.5 text-[15px] font-bold no-underline border-b border-slate-100 dark:border-slate-800 ${link.red ? 'text-red-500' : 'text-slate-800 dark:text-slate-100'}`}>
                   {link.label}
-                  <svg className="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </Link>
               ))}
-              <Link href="/trade-in" onClick={() => setMobileOpen(false)} className="flex items-center justify-between py-3 text-base font-bold text-slate-800 dark:text-slate-100 no-underline border-b border-slate-50 dark:border-slate-800">Trade-In <svg className="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></Link>
-              <Link href="/repairs" onClick={() => setMobileOpen(false)} className="flex items-center justify-between py-3 text-base font-bold text-slate-800 dark:text-slate-100 no-underline border-b border-slate-50 dark:border-slate-800">Repairs <svg className="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></Link>
-              <Link href="/bulk-order" onClick={() => setMobileOpen(false)} className="flex items-center justify-between py-3 text-base font-bold text-slate-800 dark:text-slate-100 no-underline border-b border-slate-50 dark:border-slate-800">Bulk Order <svg className="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></Link>
-              <Link href="/marketplace" onClick={() => setMobileOpen(false)} className="flex items-center justify-between py-3 text-base font-bold text-slate-800 dark:text-slate-100 no-underline border-b border-slate-100 dark:border-slate-800">Marketplace <svg className="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></Link>
-              <Link href="/deals" onClick={() => setMobileOpen(false)} className="flex items-center justify-between py-3 text-base font-bold text-red-500 no-underline border-b border-slate-100 dark:border-slate-800">Deals <svg className="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></Link>
+
+              {/* Extra pages */}
+              {[
+                { href: '/trade-in',    label: 'Trade-In' },
+                { href: '/repairs',     label: 'Repairs' },
+                { href: '/marketplace', label: 'Marketplace' },
+                { href: '/bulk-order',  label: 'Bulk Order' },
+              ].map(({ href, label }) => (
+                <Link key={href} href={href} onClick={() => setMobileOpen(false)}
+                  className="flex items-center justify-between py-3.5 text-[15px] font-bold text-slate-800 dark:text-slate-100 no-underline border-b border-slate-100 dark:border-slate-800">
+                  {label}
+                  <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              ))}
             </div>
-            <div className="px-4 pb-4 pt-2 border-t border-slate-100">
+
+            {/* Footer actions — extra bottom padding so BottomNav never covers these */}
+            <div className="px-4 pt-3 pb-28 border-t border-slate-100 dark:border-slate-800">
               <LanguageSwitcher />
               {session ? (
                 <button onClick={() => { setMobileOpen(false); signOut({ callbackUrl: '/' }); }}
-                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 py-3 text-sm font-bold text-white text-center shadow-sm">
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 py-3 text-sm font-bold text-white shadow-sm">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                   Sign Out
                 </button>
               ) : (
                 <Link href="/signin" onClick={() => setMobileOpen(false)}
-                  className="mt-3 block w-full rounded-xl bg-sky-600 py-2.5 text-sm font-bold text-white text-center no-underline">
+                  className="mt-3 block w-full rounded-xl bg-sky-600 py-3 text-sm font-bold text-white text-center no-underline">
                   Sign In
                 </Link>
               )}
