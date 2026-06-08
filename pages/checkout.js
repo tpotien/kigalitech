@@ -13,12 +13,11 @@ import { useLang } from '../context/LanguageContext';
 const StripePaymentForm = dynamic(() => import('../components/StripePaymentForm'), { ssr: false });
 
 const PAYMENT_METHODS = [
-  { id: 'card',       label: 'Card / Google Pay / Apple Pay', icon: '💳', desc: 'Visa, Mastercard, Google Pay, Apple Pay — Stripe' },
-  { id: 'paypack',    label: 'Paypack (MoMo)',                icon: '🇷🇼', desc: 'MTN & Airtel via Paypack — instant confirmation' },
-  { id: 'mtn',        label: 'MTN Mobile Money',              icon: '🟡', desc: 'Pay with MTN MoMo via Flutterwave' },
-  { id: 'airtel',     label: 'Airtel Money',                  icon: '🔴', desc: 'Pay with Airtel Money via Flutterwave' },
+  { id: 'paypack',    label: 'MTN / Airtel MoMo',            icon: '🇷🇼', desc: 'Pay instantly with MTN or Airtel Mobile Money', popular: true },
+  { id: 'mtn',        label: 'MTN Mobile Money',              icon: '🟡', desc: 'Pay directly with MTN MoMo', popular: true },
+  { id: 'airtel',     label: 'Airtel Money',                  icon: '🔴', desc: 'Pay directly with Airtel Money' },
   { id: 'cash',       label: 'Cash on Delivery',              icon: '💵', desc: 'Pay cash when your order arrives' },
-  { id: 'bank',       label: 'Bank Transfer',                 icon: '🏦', desc: 'BK · Equity · I&M — details sent by email' },
+  { id: 'card',       label: 'Card / Google Pay / Apple Pay', icon: '💳', desc: 'Visa, Mastercard, Google Pay, Apple Pay' },
   { id: 'installment',label: 'Installment Plan',              icon: '📅', desc: 'Split over 3–12 months — subject to approval' },
 ];
 
@@ -480,17 +479,25 @@ export default function Checkout() {
 
               {/* Payment method selector */}
               <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-6">
-                <h2 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">{t('paymentMethod')}</h2>
+                <h2 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">{t('paymentMethod')}</h2>
+                <p className="text-xs text-slate-400 mb-4">Mobile Money is the fastest way to pay in Rwanda</p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {PAYMENT_METHODS.map(m => (
                     <label
                       key={m.id}
-                      className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer transition ${
+                      className={`relative flex items-center gap-3 rounded-xl border p-4 cursor-pointer transition ${
                         form.paymentMethod === m.id
                           ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20'
-                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                          : m.popular
+                            ? 'border-emerald-200 dark:border-emerald-800 hover:border-emerald-400 dark:hover:border-emerald-600'
+                            : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                       }`}
                     >
+                      {m.popular && (
+                        <span className="absolute -top-2.5 left-3 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                          Popular in Rwanda
+                        </span>
+                      )}
                       <input type="radio" name="payment" value={m.id} checked={form.paymentMethod === m.id} onChange={() => set('paymentMethod', m.id)} className="accent-sky-600" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">

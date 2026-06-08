@@ -161,22 +161,22 @@ export default function ProductCard({ product, onQuickView }) {
       </Link>
 
       {/* ── Body ── */}
-      <div className="flex flex-1 flex-col p-4">
+      <div className="flex flex-1 flex-col p-2.5 sm:p-4">
         {/* Category + brand */}
-        <div className="flex items-center justify-between gap-1 mb-1.5">
-          <TranslatedText text={product.category} className="text-[11px] font-bold uppercase tracking-widest text-sky-600" />
-          {product.brand && <p className="text-[11px] text-slate-400 font-medium truncate max-w-[50%]">{product.brand}</p>}
+        <div className="flex items-center justify-between gap-1 mb-1">
+          <TranslatedText text={product.category} className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-sky-600 truncate" />
+          {product.brand && <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate max-w-[45%] hidden sm:block">{product.brand}</p>}
         </div>
 
         <Link href={`/products/${product.id}`} className="no-underline">
-          <h2 className="font-semibold text-slate-900 dark:text-slate-100 leading-snug hover:text-sky-700 transition-colors line-clamp-2 text-[15px]">
+          <h2 className="font-semibold text-slate-900 dark:text-slate-100 leading-snug hover:text-sky-700 transition-colors line-clamp-2 text-[12px] sm:text-[15px]">
             <TranslatedText text={product.name} as={null} />
           </h2>
         </Link>
 
-        {/* Color swatches */}
+        {/* Color swatches — hide on very small mobile to save space */}
         {colors.length > 0 && (
-          <div className="mt-2.5 flex items-center gap-1.5">
+          <div className="mt-2 hidden sm:flex items-center gap-1.5">
             {colors.slice(0, 6).map((c) => (
               <span key={c} title={c} className="h-3.5 w-3.5 rounded-full border border-slate-200 dark:border-slate-600 shadow-sm ring-1 ring-white dark:ring-slate-800" style={{ backgroundColor: colorToHex(c) }} />
             ))}
@@ -188,31 +188,31 @@ export default function ProductCard({ product, onQuickView }) {
         )}
 
         {/* Spacer */}
-        <div className="flex-1 min-h-[6px]" />
+        <div className="flex-1 min-h-[4px]" />
 
         {/* Price + CTA */}
-        <div className="mt-3 flex items-end justify-between gap-2">
-          <div>
-            <div className="flex items-baseline gap-2">
-              <p className="text-[19px] font-extrabold text-slate-900 dark:text-slate-100">{format(product.price)}</p>
+        <div className="mt-2 flex items-end justify-between gap-1.5">
+          <div className="min-w-0">
+            <div className="flex items-baseline gap-1 flex-wrap">
+              <p className="text-[14px] sm:text-[19px] font-extrabold text-slate-900 dark:text-slate-100 leading-none">{format(product.price)}</p>
               {discount > 0 && (
-                <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-500">-{discount}%</span>
+                <span className="rounded-full bg-red-100 px-1 sm:px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-red-500">-{discount}%</span>
               )}
             </div>
             {product.comparePrice && product.comparePrice > product.price && (
-              <p className="text-[11px] text-slate-400 line-through">{format(product.comparePrice)}</p>
+              <p className="text-[10px] text-slate-400 line-through">{format(product.comparePrice)}</p>
             )}
           </div>
           <button
             onClick={handleAddToCart}
             disabled={product.stock === 0}
-            className={`flex-shrink-0 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition-all active:scale-95 ${
+            className={`flex-shrink-0 rounded-xl px-2.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white transition-all active:scale-95 ${
               product.stock === 0 ? 'bg-slate-300 dark:bg-slate-700 dark:text-slate-500 cursor-not-allowed'
               : added ? 'bg-emerald-500 scale-95'
               : 'bg-sky-600 hover:bg-sky-700 shadow-sm shadow-sky-200'
             }`}
           >
-            {product.stock === 0 ? 'Sold Out' : added ? '✓' : '+ Cart'}
+            {product.stock === 0 ? 'Out' : added ? '✓' : '+ Cart'}
           </button>
         </div>
       </div>

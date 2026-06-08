@@ -924,6 +924,19 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                   </button>
                 </div>
 
+                {/* WhatsApp Buy button */}
+                <a
+                  href={`https://wa.me/250786276555?text=${encodeURIComponent(`Hi KigaliTech! 👋\n\nI'd like to *buy* this product:\n*${product.name}*\n🔗 ${typeof window !== 'undefined' ? window.location.href : `https://electronics-shop-amber.vercel.app/products/${product.id}`}\n\nPlease help me place an order!`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex w-full items-center justify-center gap-2.5 rounded-full bg-[#25D366] hover:bg-[#20bf5b] active:scale-[0.98] py-3.5 font-semibold text-white shadow-lg shadow-green-200 dark:shadow-green-900/30 transition-all no-underline"
+                >
+                  <svg viewBox="0 0 32 32" className="h-5 w-5 fill-white flex-shrink-0">
+                    <path d="M16.004 2C8.276 2 2 8.268 2 15.986c0 2.458.64 4.866 1.856 6.98L2 30l7.236-1.822A14.022 14.022 0 0016.004 30C23.724 30 30 23.732 30 16.014 30 8.268 23.724 2 16.004 2zm7.414 19.878c-.316.886-1.564 1.622-2.56 1.836-.68.144-1.568.258-4.552-1.004C12.624 21.162 9.98 17.6 9.778 17.338c-.198-.26-1.664-2.21-1.664-4.222 0-2.012 1.048-2.992 1.42-3.402.37-.412.808-.514 1.078-.514.27 0 .542.002.78.014.248.012.584-.096.914.696l1.31 3.184c.13.314.216.682.04 1.098-.174.414-.26.67-.522.99-.258.32-.546.716-.778.962-.258.272-.526.566-.228 1.11.3.544 1.33 2.192 2.858 3.55 1.964 1.75 3.62 2.29 4.13 2.548.512.258.81.216 1.108-.13.298-.344 1.276-1.492 1.616-2.006.34-.512.68-.43 1.146-.258.466.174 2.974 1.4 3.484 1.656.51.258.85.386.974.6.126.214.126 1.104-.19 1.99z"/>
+                  </svg>
+                  Buy via WhatsApp
+                </a>
+
                 {/* Stock alert for out-of-stock products */}
                 {product.stock === 0 && (
                   <StockAlertButton productId={product.id} />
@@ -1031,26 +1044,28 @@ export default function ProductPage({ product, bundledProducts = [] }) {
       <Footer />
 
       {/* ── Sticky mobile Add to Cart bar ── */}
-      <div className="lg:hidden fixed bottom-16 inset-x-0 z-30 px-4 pb-2">
-        <div className="flex items-center gap-3 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 shadow-2xl backdrop-blur-md px-4 py-3">
+      <div className="lg:hidden fixed bottom-[4.25rem] inset-x-0 z-30 px-3 pb-2">
+        <div className="flex items-center gap-2 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 shadow-2xl backdrop-blur-md px-3 py-2.5">
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{product.name}</p>
-            <p className="text-lg font-extrabold text-slate-900 dark:text-slate-100 leading-tight">{format(displayPrice)}</p>
+            <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate">{product.name}</p>
+            <p className="text-base font-extrabold text-slate-900 dark:text-slate-100 leading-tight">{format(displayPrice)}</p>
           </div>
-          <button
-            onClick={handleWishlist}
-            className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border transition-all ${
-              isWished ? 'border-red-200 bg-red-50 dark:bg-red-900/20 text-red-500' : 'border-slate-200 dark:border-slate-700 text-slate-400 hover:border-red-200 hover:text-red-400'
-            } ${heartAnim ? 'scale-110' : ''}`}
+          {/* WhatsApp quick-buy */}
+          <a
+            href={`https://wa.me/250786276555?text=${encodeURIComponent(`Hi KigaliTech! 👋\n\nI'd like to *buy*:\n*${product.name}*\n🔗 https://electronics-shop-amber.vercel.app/products/${product.id}\n\nPlease help me order!`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-[#25D366] shadow-md shadow-green-200 dark:shadow-green-900/30 transition-all active:scale-95"
+            aria-label="Buy via WhatsApp"
           >
-            <svg className="h-5 w-5" fill={isWished ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            <svg viewBox="0 0 32 32" className="h-5 w-5 fill-white">
+              <path d="M16.004 2C8.276 2 2 8.268 2 15.986c0 2.458.64 4.866 1.856 6.98L2 30l7.236-1.822A14.022 14.022 0 0016.004 30C23.724 30 30 23.732 30 16.014 30 8.268 23.724 2 16.004 2zm7.414 19.878c-.316.886-1.564 1.622-2.56 1.836-.68.144-1.568.258-4.552-1.004C12.624 21.162 9.98 17.6 9.778 17.338c-.198-.26-1.664-2.21-1.664-4.222 0-2.012 1.048-2.992 1.42-3.402.37-.412.808-.514 1.078-.514.27 0 .542.002.78.014.248.012.584-.096.914.696l1.31 3.184c.13.314.216.682.04 1.098-.174.414-.26.67-.522.99-.258.32-.546.716-.778.962-.258.272-.526.566-.228 1.11.3.544 1.33 2.192 2.858 3.55 1.964 1.75 3.62 2.29 4.13 2.548.512.258.81.216 1.108-.13.298-.344 1.276-1.492 1.616-2.006.34-.512.68-.43 1.146-.258.466.174 2.974 1.4 3.484 1.656.51.258.85.386.974.6.126.214.126 1.104-.19 1.99z"/>
             </svg>
-          </button>
+          </a>
           <button
             onClick={handleAddToCart}
             disabled={product.stock === 0}
-            className={`flex-shrink-0 rounded-xl px-6 py-2.5 font-bold text-white text-sm transition-all ${
+            className={`flex-shrink-0 rounded-xl px-5 py-2.5 font-bold text-white text-sm transition-all ${
               product.stock === 0 ? 'bg-slate-300 cursor-not-allowed'
               : added ? 'bg-emerald-500 scale-95'
               : 'bg-sky-600 hover:bg-sky-700 active:scale-95 shadow-lg shadow-sky-200'
