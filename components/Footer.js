@@ -5,10 +5,8 @@ const LINKS = {
   Account: [
     { label: 'My Orders', href: '/account' },
     { label: 'Track Order', href: '/account' },
-    { label: 'Repair Center', href: '/repairs' },
-    { label: 'Trade-In', href: '/trade-in' },
-    { label: 'Bulk Orders', href: '/bulk-order' },
     { label: 'Gift Cards', href: '/gift-cards' },
+    { label: 'Loyalty Points', href: '/account/loyalty' },
     { label: 'Sign In', href: '/signin' },
   ],
   Company: [
@@ -24,7 +22,6 @@ const SOCIALS = [
     id: 'twitter',
     label: 'X (Twitter)',
     href: 'https://twitter.com',
-    // Solid black circle with white X logo
     bg: 'bg-black hover:bg-gray-800',
     icon: (
       <svg viewBox="0 0 24 24" fill="white" className="h-4 w-4">
@@ -36,7 +33,6 @@ const SOCIALS = [
     id: 'instagram',
     label: 'Instagram',
     href: 'https://www.instagram.com/kigalitechservices/',
-    // Official Instagram gradient
     bg: '',
     style: { background: 'linear-gradient(45deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D, #F56040, #F77737, #FCAF45)' },
     icon: (
@@ -49,7 +45,6 @@ const SOCIALS = [
     id: 'facebook',
     label: 'Facebook',
     href: 'https://www.facebook.com/kigalitechservices/',
-    // Official Facebook blue
     bg: 'hover:brightness-110',
     style: { background: '#1877F2' },
     icon: (
@@ -65,23 +60,23 @@ export default function Footer() {
   return (
     <footer className="bg-slate-900 text-slate-400">
       <div className="mx-auto max-w-7xl px-4 py-10 sm:py-16 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-8 lg:grid-cols-3">
           {/* Brand — full width on mobile */}
           <div className="col-span-2 lg:col-span-1">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600">
-                <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <span className="text-lg font-bold text-white">KigaliTech</span>
+            <div className="flex items-center gap-3">
+              <img
+                src="/logo.png"
+                alt="KigaliTech"
+                className="h-10 w-10 rounded-xl object-contain bg-white p-0.5 flex-shrink-0 shadow"
+                onError={e => { e.target.style.display = 'none'; }}
+              />
+              <span className="text-xl font-extrabold text-white tracking-tight">KigaliTech</span>
             </div>
             <p className="mt-4 text-sm leading-relaxed">{t('footerTagline')}</p>
             <div className="mt-4 space-y-1.5">
               <p className="text-sm text-slate-300">📞 +250 786 276 555</p>
               <p className="text-sm text-slate-300">📍 KN 74St, infront of Al madina mosque, Kigali Rwanda</p>
             </div>
-            {/* Social — brand colors */}
             <div className="mt-6 flex gap-3">
               {SOCIALS.map(({ id, label, href, bg, style, icon }) => (
                 <a
@@ -107,10 +102,7 @@ export default function Footer() {
               <ul className="space-y-3">
                 {links.map((link) => (
                   <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="text-sm no-underline hover:text-sky-400 transition-colors"
-                    >
+                    <Link href={link.href} className="text-sm no-underline hover:text-sky-400 transition-colors">
                       {link.label}
                     </Link>
                   </li>

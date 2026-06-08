@@ -3,7 +3,12 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
 import Link from 'next/link';
-import { useCurrency } from '../../context/CurrencyContext';
+
+const RWF_PER_POINT = 13.4; // 100 pts = RWF 1,340
+
+function rwfValue(points) {
+  return `RWF ${Math.round(points * RWF_PER_POINT).toLocaleString()}`;
+}
 
 function TransactionRow({ tx }) {
   const isEarn = tx.points > 0;
@@ -28,6 +33,32 @@ function TransactionRow({ tx }) {
       <p className={`text-sm font-extrabold tabular-nums ${isEarn ? 'text-emerald-600' : 'text-red-500'}`}>
         {isEarn ? '+' : ''}{tx.points} pts
       </p>
+    </div>
+  );
+}
+
+function TierProgress({ points }) {
+  const tiers = [
+    { name: 'Bronze', min: 0,    max: 499,  color: 'bg-amber-600', icon: '🥉' },
+    { name: 'Silver', min: 500,  max: 999,  color: 'bg-slate-400', icon: '🥈' },
+    { name: 'Gold',   min: 1000, max: null, color: 'bg-yellow-500', icon: '🥇' },
+  ];
+  const current = tiers.find(t => points >= t.min && (t.max === null || points <= t.max));
+  const next = tiers.find(t => t.min > (current?.min ?? 0));
+  const pct = next ? Math.min(100, ((points - current.min) / (next.min - current.min)) * 100) : 100;
+
+  return (
+    <div className="mt-5 pt-5 border-t border-sky-400/30">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs text-sky-200">{next ? `${next.min - points} pts to ${next.name}` : 'Top tier reached!'}</p>
+        <p className="text-xs font-semibold text-sky-100">{current?.name}</p>
+      </div>
+      <div className="h-2 rounded-full bg-white/20 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-white transition-all duration-700"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
     </div>
   );
 }
@@ -65,9 +96,9 @@ export default function LoyaltyPage() {
 
   if (!session) return null;
 
-  const { format } = useCurrency();
   const points = data?.points ?? 0;
   const transactions = data?.transactions ?? [];
+  const tier = points >= 1000 ? 'Gold' : points >= 500 ? 'Silver' : 'Bronze';
 
   return (
     <Layout>
@@ -94,16 +125,18 @@ export default function LoyaltyPage() {
               <p className="text-sky-200 text-sm mt-1">points</p>
             </div>
             <div className="text-right">
-              <div className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1.5 text-sm font-bold">
-                <span>🏆</span>
-                {points >= 1000 ? 'Gold' : points >= 500 ? 'Silver' : 'Bronze'}
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-sm font-bold">
+                <span>{tier === 'Gold' ? '🥇' : tier === 'Silver' ? '🥈' : '🥉'}</span>
+                {tier}
               </div>
+              <p className="mt-2 text-xs text-sky-200 text-right">≈ {rwfValue(points)}</p>
             </div>
           </div>
-          <div className="mt-5 pt-5 border-t border-sky-400/30 flex items-center justify-between">
+          <div className="mt-4 pt-4 border-t border-sky-400/30 flex items-center justify-between">
             <p className="text-sm text-sky-100">Redeemable value</p>
-            <p className="text-lg font-extrabold">{format(points)}</p>
+            <p className="text-lg font-extrabold">{rwfValue(points)}</p>
           </div>
+          <TierProgress points={points} />
         </div>
 
         {/* How to earn */}
@@ -113,10 +146,10 @@ export default function LoyaltyPage() {
           </h2>
           <div className="space-y-3">
             {[
-              { icon: '🛒', label: 'Purchase', desc: 'Earn 1 point per RWF 1,475 spent on any order', pts: '1 pt / RWF 1,475' },
-              { icon: '⭐', label: 'Write a Review', desc: 'Leave a verified product review', pts: '10 pts' },
-              { icon: '👥', label: 'Refer a Friend', desc: 'Your friend places their first order', pts: '50 pts' },
-              { icon: '🎂', label: 'Birthday Bonus', desc: 'Points bonus on your birthday month', pts: '100 pts' },
+              { icon: '🛒', label: 'Purchase',        desc: 'Earn 1.5 points per RWF 1,475 spent on any order', pts: '1.5 pts / RWF 1,475' },
+              { icon: '⭐', label: 'Write a Review',   desc: 'Leave a verified product review',               pts: '10 pts' },
+              { icon: '👥', label: 'Refer a Friend',   desc: 'Your friend places their first order',           pts: '50 pts' },
+              { icon: '🎂', label: 'Birthday Bonus',   desc: 'Points bonus on your birthday month',           pts: '100 pts' },
             ].map(item => (
               <div key={item.label} className="flex items-center justify-between py-2.5 border-b border-slate-50 dark:border-slate-700/50 last:border-0">
                 <div className="flex items-center gap-3">
@@ -126,7 +159,7 @@ export default function LoyaltyPage() {
                     <p className="text-xs text-slate-400 dark:text-slate-500">{item.desc}</p>
                   </div>
                 </div>
-                <span className="rounded-full bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 px-3 py-1 text-xs font-bold">
+                <span className="rounded-full bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 px-3 py-1 text-xs font-bold whitespace-nowrap">
                   {item.pts}
                 </span>
               </div>

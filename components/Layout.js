@@ -13,9 +13,10 @@ import LanguageSwitcher from './LanguageSwitcher';
 import CurrencySwitcher from './CurrencySwitcher';
 import BottomNav from './BottomNav';
 import AvatarWithBadge from './AvatarWithBadge';
+import AIChatWidget from './AIChatWidget';
 
 const ANNOUNCEMENTS = [
-  '🚚 Free delivery on orders over $50 — Rwanda-wide',
+  '🚚 Free delivery on orders over RWF 75,000 — Rwanda-wide',
   '🔒 Official warranties on every product',
   '♻️ Trade-in your old device for credit',
   '📞 Support: +250 786 276 555',
@@ -34,10 +35,14 @@ export default function Layout({ children }) {
   const [navProducts, setNavProducts] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [announcementIdx, setAnnouncementIdx] = useState(0);
+  const [logoUrl, setLogoUrl] = useState('/logo.png');
   const searchRef = useRef(null);
 
   useEffect(() => {
     fetch('/api/nav-products').then(r => r.json()).then(setNavProducts).catch(() => {});
+    fetch('/api/hero').then(r => r.json()).then(d => {
+      if (d.logoUrl) setLogoUrl(d.logoUrl);
+    }).catch(() => {});
   }, []);
 
   // Rotate announcements
@@ -96,7 +101,7 @@ export default function Layout({ children }) {
 
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 no-underline flex-shrink-0">
-              <img src="/logo.png" alt="KigaliTech" className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover shadow-sm" />
+              <img src={logoUrl} alt="KigaliTech" className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl object-contain bg-white dark:bg-slate-800 shadow-sm" />
               <div className="min-w-0">
                 <span className="block text-base sm:text-xl font-extrabold text-slate-900 dark:text-white leading-none tracking-tight whitespace-nowrap">KigaliTech</span>
                 <span className="hidden sm:block text-[10px] font-semibold uppercase tracking-widest text-sky-500 dark:text-sky-400 mt-0.5 whitespace-nowrap">Premium Electronics</span>
@@ -389,6 +394,7 @@ export default function Layout({ children }) {
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
       <CartDrawer />
       <BottomNav />
+      <AIChatWidget />
     </div>
   );
 }

@@ -401,6 +401,8 @@ export default function ProductPage({ product, bundledProducts = [] }) {
   const { setWhatsappCtx } = useWhatsAppCtx();
   const galleryRef = useRef(null);
   const [lightbox, setLightbox] = useState(false);
+  const [imgErrors, setImgErrors] = useState({});
+  const [showQR, setShowQR] = useState(false);
 
   useEffect(() => {
     setWhatsappCtx({ type: 'product', name: product.name, id: product.id });
@@ -416,7 +418,33 @@ export default function ProductPage({ product, bundledProducts = [] }) {
   const colorStock = (() => { try { return JSON.parse(product.colorStock || '{}'); } catch { return {}; } })();
   const storageStock = (() => { try { return JSON.parse(product.storageStock || '{}'); } catch { return {}; } })();
 
-  const [color, setColor] = useState(colors[0] || '');
+  // Per-color image map: { "Black": "url", "White": "url2", ... }
+  const colorImages = (() => { try { return JSON.parse(product.colorImages || '{}'); } catch { return {}; } })();
+  // Base product images (gallery)
+  const baseImages = Array.isArray(product.images) ? product.images : JSON.parse(product.images || '[]');
+
+  // Build the image array for a given color selection:
+  // color-specific image goes first, then remaining base images (deduped)
+  function imagesForColor(c) {
+    const specific = colorImages[c];
+    if (!specific) return baseImages;
+    const rest = baseImages.filter(u => u !== specific);
+    return [specific, ...rest];
+  }
+
+  const colorAvailable = (c) => colorStock[c] === undefined || colorStock[c] > 0;
+  const storageAvailable = (s) => storageStock[s] === undefined || storageStock[s] > 0;
+  const colorQty = (c) => colorStock[c];
+  const storageQty = (s) => storageStock[s];
+
+  // Pick the first available color as default
+  const defaultColor = colors.find(c => colorAvailable(c)) || colors[0] || '';
+  const [color, setColor] = useState(defaultColor);
+  const [activeImg, setActiveImg] = useState(0);
+
+  // Reactive gallery: recalculated every render from current color state
+  const images = imagesForColor(color);
+
   // Auto-select first available storage
   const firstAvailableStorage = storageOptions.find(s => {
     const sq = (() => { try { return JSON.parse(product.storageStock || '{}'); } catch { return {}; } })();
@@ -429,27 +457,19 @@ export default function ProductPage({ product, bundledProducts = [] }) {
   function handleColorChange(c) {
     if (!colorAvailable(c)) return;
     setColor(c);
-    // Switch to color's corresponding image by index
-    const colorIdx = colors.indexOf(c);
-    if (colorIdx >= 0 && colorIdx < images.length) {
-      scrollToImg(colorIdx);
-    }
+    setActiveImg(0);
+    setImgErrors({});
+    // Snap gallery scroll back to start
+    if (galleryRef.current) galleryRef.current.scrollLeft = 0;
   }
+
   const [warranty, setWarranty] = useState(warrantyOptions[0] || '');
   const [quantity, setQuantity] = useState(1);
-  const [activeImg, setActiveImg] = useState(0);
   const [added, setAdded] = useState(false);
   const [heartAnim, setHeartAnim] = useState(false);
   const [recs, setRecs] = useState([]);
   const hourOfDay = new Date().getHours();
   const [viewingCount] = useState(() => Math.floor(((product.id * 7 + hourOfDay * 13) % 15) + 4));
-
-  const colorAvailable = (c) => colorStock[c] === undefined || colorStock[c] > 0;
-  const storageAvailable = (s) => storageStock[s] === undefined || storageStock[s] > 0;
-  const colorQty = (c) => colorStock[c];
-  const storageQty = (s) => storageStock[s];
-
-  const images = Array.isArray(product.images) ? product.images : JSON.parse(product.images || '[]');
   const isTV = product.category === 'TVs' || product.hasTvInstall;
   const isWished = wishlistIds.has(product.id);
   const isCompared = inCompare(product.id);
@@ -460,7 +480,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
   }, [product.id]);
 
   function handleAddToCart() {
-    addItem({ id: product.id, name: product.name, price: product.price, image: images[0], color, storage, quantity });
+    addItem({ id: product.id, name: product.name, price: product.price, image: colorImages[color] || images[0], color, storage, quantity });
     setAdded(true);
     toast({ type: 'cart', title: 'Added to cart!', message: `${product.name}${color ? ` · ${color}` : ''}` });
     setTimeout(() => setAdded(false), 1500);
@@ -553,12 +573,19 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                   >
                     {images.map((src, i) => (
                       <div key={i} className="flex-shrink-0 w-full" style={{ scrollSnapAlign: 'start' }}>
-                        <img
-                          src={src}
-                          alt={`${product.name} — view ${i + 1}`}
-                          className="h-[340px] sm:h-[460px] w-full object-contain p-6 transition-transform duration-500 hover:scale-105"
-                          style={{ display: i === activeImg ? 'block' : 'none' }}
-                        />
+                        {imgErrors[i] ? (
+                          <div className="h-[340px] sm:h-[460px] w-full flex items-center justify-center" style={{ display: i === activeImg ? 'flex' : 'none' }}>
+                            <span className="text-6xl">📷</span>
+                          </div>
+                        ) : (
+                          <img
+                            src={src}
+                            alt={`${product.name} — view ${i + 1}`}
+                            className="h-[340px] sm:h-[460px] w-full object-contain p-6 transition-transform duration-500 hover:scale-105"
+                            style={{ display: i === activeImg ? 'block' : 'none' }}
+                            onError={() => setImgErrors(prev => ({ ...prev, [i]: true }))}
+                          />
+                        )}
                       </div>
                     ))}
                   </div>
@@ -652,6 +679,46 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                 </div>
               )}
 
+              {/* QR Share Modal */}
+              {showQR && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setShowQR(false)}>
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl p-7 max-w-xs w-full shadow-2xl text-center" onClick={e => e.stopPropagation()}>
+                    <h3 className="font-extrabold text-slate-900 dark:text-slate-100 text-lg mb-1">Share this product</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">Scan the QR code or copy the link</p>
+                    <div className="flex justify-center mb-5">
+                      <div className="rounded-2xl border-4 border-sky-100 dark:border-sky-900 p-2 bg-white shadow">
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://kigalitechservices.com/products/${product.id}`)}`}
+                          alt="QR Code"
+                          width={180} height={180}
+                          className="rounded-xl"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate mb-4 bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2">
+                      kigalitechservices.com/products/{product.id}
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => { navigator.clipboard?.writeText(`https://kigalitechservices.com/products/${product.id}`); toast({ type: 'info', title: 'Link copied!', message: 'Share it with friends' }); setShowQR(false); }}
+                        className="rounded-full border border-slate-200 dark:border-slate-700 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                      >
+                        Copy Link
+                      </button>
+                      <a
+                        href={`https://wa.me/?text=${encodeURIComponent(`Check this out on KigaliTech: ${product.name} — https://kigalitechservices.com/products/${product.id}`)}`}
+                        target="_blank" rel="noopener noreferrer"
+                        className="rounded-full bg-[#25D366] py-2.5 text-sm font-semibold text-white hover:bg-[#20bf5b] transition flex items-center justify-center gap-1.5"
+                      >
+                        <svg viewBox="0 0 32 32" className="h-4 w-4 fill-white"><path d="M16.004 2C8.276 2 2 8.268 2 15.986c0 2.458.64 4.866 1.856 6.98L2 30l7.236-1.822A14.022 14.022 0 0016.004 30C23.724 30 30 23.732 30 16.014 30 8.268 23.724 2 16.004 2zm7.414 19.878c-.316.886-1.564 1.622-2.56 1.836-.68.144-1.568.258-4.552-1.004C12.624 21.162 9.98 17.6 9.778 17.338c-.198-.26-1.664-2.21-1.664-4.222 0-2.012 1.048-2.992 1.42-3.402.37-.412.808-.514 1.078-.514.27 0 .542.002.78.014.248.012.584-.096.914.696l1.31 3.184c.13.314.216.682.04 1.098-.174.414-.26.67-.522.99-.258.32-.546.716-.778.962-.258.272-.526.566-.228 1.11.3.544 1.33 2.192 2.858 3.55 1.964 1.75 3.62 2.29 4.13 2.548.512.258.81.216 1.108-.13.298-.344 1.276-1.492 1.616-2.006.34-.512.68-.43 1.146-.258.466.174 2.974 1.4 3.484 1.656.51.258.85.386.974.6.126.214.126 1.104-.19 1.99z"/></svg>
+                        WhatsApp
+                      </a>
+                    </div>
+                    <button onClick={() => setShowQR(false)} className="mt-4 text-xs text-slate-400 hover:text-slate-600 transition">Close</button>
+                  </div>
+                </div>
+              )}
+
               {/* ── Details ── */}
               <div className="flex flex-col gap-5">
                 <div>
@@ -661,9 +728,9 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                       {product.subcategory && <span className="text-xs text-slate-400">· {product.subcategory}</span>}
                       {product.brand && <span className="rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-xs font-semibold text-slate-600 dark:text-slate-300">{product.brand}</span>}
                     </div>
-                    {/* Share button */}
+                    {/* Share + QR button */}
                     <button
-                      onClick={() => navigator.share ? navigator.share({ title: product.name, url: window.location.href }) : navigator.clipboard.writeText(window.location.href).then(() => toast({ type: 'info', title: 'Link copied!', message: 'Share it with friends' }))}
+                      onClick={() => setShowQR(true)}
                       className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors flex-shrink-0"
                     >
                       <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -714,30 +781,43 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                       {colors.map((c) => {
                         const avail = colorAvailable(c);
                         const qty = colorQty(c);
-                        const colorIdx = colors.indexOf(c);
-                        const hasImg = colorIdx < images.length;
+                        const variantImg = colorImages[c];
+                        const isSelected = color === c;
                         return (
                           <button
                             key={c}
                             onClick={() => handleColorChange(c)}
                             disabled={!avail}
-                            title={!avail ? 'Not available' : qty !== undefined ? `${qty} in stock` : (hasImg ? 'Click to preview' : undefined)}
-                            className={`relative rounded-xl border-2 px-4 py-2 text-sm font-medium transition-all ${
+                            title={!avail ? 'Out of stock' : qty !== undefined ? `${qty} in stock` : 'Click to preview'}
+                            className={`relative flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-medium transition-all ${
                               !avail
                                 ? 'border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-300 dark:text-slate-600 cursor-not-allowed opacity-60'
-                                : color === c
+                                : isSelected
                                   ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 shadow-md shadow-sky-100 dark:shadow-sky-900/20 scale-105'
                                   : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-sky-300 hover:bg-sky-50/50 dark:hover:border-sky-700'
                             }`}
                           >
-                            {!avail && (
-                              <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                <span className="block w-full h-[1.5px] bg-red-400/70 rotate-[-15deg] absolute" />
-                              </span>
+                            {/* Color-swatch thumbnail or dot */}
+                            {variantImg ? (
+                              <img
+                                src={variantImg}
+                                alt={c}
+                                className={`h-7 w-7 rounded-lg object-cover flex-shrink-0 transition-all ${isSelected ? 'ring-2 ring-sky-400' : 'opacity-80'}`}
+                              />
+                            ) : (
+                              <span
+                                className="h-4 w-4 rounded-full border border-slate-300 dark:border-slate-500 flex-shrink-0"
+                                style={{ background: c.toLowerCase().replace(/\s/g, '') }}
+                              />
                             )}
                             {c}
                             {!avail && (
-                              <span className="block text-[9px] font-semibold text-red-400 leading-tight mt-0.5">Not available</span>
+                              <>
+                                <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                  <span className="block w-full h-[1.5px] bg-red-400/70 rotate-[-15deg] absolute" />
+                                </span>
+                                <span className="block text-[9px] font-semibold text-red-400 leading-tight mt-0.5">Out of stock</span>
+                              </>
                             )}
                             {avail && qty !== undefined && qty <= 3 && (
                               <span className="absolute -top-2 -right-1 rounded-full bg-amber-400 px-1.5 text-[9px] font-bold text-white shadow-sm">
@@ -748,9 +828,9 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                         );
                       })}
                     </div>
-                    {colors.some(c => colorAvailable(c) && colors.indexOf(c) < images.length) && (
-                      <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500">
-                        Images update when you select a color
+                    {(Object.keys(colorImages).length > 0 || baseImages.length > 0) && (
+                      <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                        <span>🖼</span> Photo updates when you pick a color
                       </p>
                     )}
                   </div>
@@ -926,7 +1006,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
 
                 {/* WhatsApp Buy button */}
                 <a
-                  href={`https://wa.me/250786276555?text=${encodeURIComponent(`Hi KigaliTech! 👋\n\nI'd like to *buy* this product:\n*${product.name}*\n🔗 ${typeof window !== 'undefined' ? window.location.href : `https://electronics-shop-amber.vercel.app/products/${product.id}`}\n\nPlease help me place an order!`)}`}
+                  href={`https://wa.me/250786276555?text=${encodeURIComponent(`Hi KigaliTech! 👋\n\nI'd like to *buy* this product:\n*${product.name}*\n🔗 ${typeof window !== 'undefined' ? window.location.href : `https://kigalitechservices.com/products/${product.id}`}\n\nPlease help me place an order!`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex w-full items-center justify-center gap-2.5 rounded-full bg-[#25D366] hover:bg-[#20bf5b] active:scale-[0.98] py-3.5 font-semibold text-white shadow-lg shadow-green-200 dark:shadow-green-900/30 transition-all no-underline"
@@ -1052,7 +1132,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
           </div>
           {/* WhatsApp quick-buy */}
           <a
-            href={`https://wa.me/250786276555?text=${encodeURIComponent(`Hi KigaliTech! 👋\n\nI'd like to *buy*:\n*${product.name}*\n🔗 https://electronics-shop-amber.vercel.app/products/${product.id}\n\nPlease help me order!`)}`}
+            href={`https://wa.me/250786276555?text=${encodeURIComponent(`Hi KigaliTech! 👋\n\nI'd like to *buy*:\n*${product.name}*\n🔗 https://kigalitechservices.com/products/${product.id}\n\nPlease help me order!`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-[#25D366] shadow-md shadow-green-200 dark:shadow-green-900/30 transition-all active:scale-95"

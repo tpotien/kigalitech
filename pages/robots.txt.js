@@ -1,4 +1,4 @@
-const BASE_URL = 'https://electronics-shop-amber.vercel.app';
+const BASE_URL = 'https://kigalitechservices.com';
 
 export async function getServerSideProps({ res }) {
   const content = `User-agent: *

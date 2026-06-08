@@ -62,7 +62,7 @@ export default async function handler(req, res) {
       // Send SMS notification if customer has a phone number
       const shippingPhone = current.shippingPhone;
       if (shippingPhone) {
-        const siteUrl = process.env.NEXTAUTH_URL || 'https://electronics-shop-amber.vercel.app';
+        const siteUrl = process.env.NEXTAUTH_URL || 'https://kigalitechservices.com';
         const smsMessages = {
           confirmed: `KigaliTech: Your order #${order.id} is confirmed! We're preparing it now.`,
           shipped: `KigaliTech: Order #${order.id} has been shipped! Track at: ${siteUrl}/orders/${order.id}`,

@@ -129,13 +129,25 @@ export default function SiteConfig() {
           <h2 className="mb-4 font-semibold text-slate-900">Display Settings</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">Currency Symbol</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">Default Currency</label>
               <select value={config.currency} onChange={set('currency')} className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200">
-                <option value="USD">USD ($)</option>
                 <option value="RWF">RWF (Rwandan Franc)</option>
+                <option value="USD">USD ($)</option>
                 <option value="EUR">EUR (€)</option>
                 <option value="GBP">GBP (£)</option>
               </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">USD → RWF Rate</label>
+              <input
+                type="number"
+                value={config.usdToRwf || '1475'}
+                onChange={set('usdToRwf')}
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200"
+                placeholder="1475"
+                min="1"
+              />
+              <p className="mt-1 text-xs text-slate-400">1 USD = {config.usdToRwf || 1475} RWF — used across the whole site</p>
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-700">Primary Color (hex)</label>

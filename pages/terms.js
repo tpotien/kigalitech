@@ -67,7 +67,7 @@ export default function TermsPage() {
         </div>
 
         <div className="mt-10 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 text-sm text-slate-600 dark:text-slate-400">
-          Questions about these terms? <Link href="/contact" className="font-semibold text-sky-600 underline hover:text-sky-700">Contact us</Link> or email legal@kigalitech.com.
+          Questions about these terms? <Link href="/contact" className="font-semibold text-sky-600 underline hover:text-sky-700">Contact us</Link> or email legal@kigalitechservices.com.
         </div>
       </div>
     </Layout>

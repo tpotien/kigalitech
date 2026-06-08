@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const SITE_URL = 'https://electronics-shop-amber.vercel.app';
+const SITE_URL = 'https://kigalitechservices.com';
 
 export default function ReferralCard() {
   const [code, setCode] = useState('');

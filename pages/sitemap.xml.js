@@ -1,6 +1,6 @@
 import prisma from '../lib/prisma';
 
-const BASE_URL = 'https://electronics-shop-amber.vercel.app';
+const BASE_URL = 'https://kigalitechservices.com';
 
 const STATIC_PAGES = [
   { path: '/', priority: '1.0', changefreq: 'daily' },

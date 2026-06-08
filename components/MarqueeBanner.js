@@ -1,5 +1,5 @@
 const ITEMS = [
-  '⚡ Free Shipping on Orders $99+',
+  '⚡ Free Shipping on Orders over RWF 150,000',
   '🔥 Up to 40% Off Gaming Laptops',
   '🎧 New ANC Headphones In Stock',
   '📦 Same-Day Delivery Available',

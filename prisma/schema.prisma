@@ -105,6 +105,7 @@ model Product {
   condition         String      @default("new")
   bundledWith       String      @default("[]")
   storagePrice      String      @default("{}")
+  colorImages       String      @default("{}")
   flashSalePrice    Int?
   flashSaleEnd      DateTime?
   preOrder          Boolean   @default(false)

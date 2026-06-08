@@ -1,10 +1,12 @@
 import { getToken } from 'next-auth/jwt';
 import prisma from '../../../../lib/prisma';
+
+export const config = { api: { bodyParser: { sizeLimit: '15mb' } } };
 import { sendLowStockAlert } from '../../../../lib/email';
 
 function serialize(p) {
   const result = { ...p };
-  const jsonFields = ['images', 'colors', 'storageOptions', 'warrantyOptions', 'specs', 'serialNumbers', 'tags'];
+  const jsonFields = ['images', 'colors', 'storageOptions', 'warrantyOptions', 'specs', 'serialNumbers', 'tags', 'colorImages'];
   for (const f of jsonFields) {
     if (f in result && typeof result[f] !== 'string') {
       result[f] = JSON.stringify(result[f]);

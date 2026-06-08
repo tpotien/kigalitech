@@ -113,6 +113,8 @@ export default function ProductCard({ product, onQuickView }) {
               src={images[0]}
               alt={product.name}
               onError={() => setImgError(true)}
+              loading="lazy"
+              decoding="async"
               className="relative h-full w-full object-contain p-5 transition-transform duration-500 group-hover:scale-[1.07] drop-shadow-md"
             />
           ) : (

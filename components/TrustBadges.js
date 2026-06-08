@@ -35,10 +35,10 @@ function BrandCard({ brand }) {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="relative flex flex-col items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden cursor-default"
+      className="relative flex flex-col items-center justify-center rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden cursor-default"
       style={{
-        width: '9rem',
-        height: '6rem',
+        width: '100%',
+        height: 'clamp(3.5rem, 10vw, 5.5rem)',
         backgroundColor: hovered ? brand.bg : undefined,
         borderColor: hovered ? brand.bg : undefined,
         transform: hovered ? 'translateY(-6px) scale(1.07)' : 'translateY(0) scale(1)',
@@ -46,80 +46,53 @@ function BrandCard({ brand }) {
         transition: 'all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1)',
       }}
     >
-      {/* DEFAULT: brand name text */}
-      <span
-        style={{
-          fontFamily: brand.font,
-          color: '#64748b',
-          fontWeight: 800,
-          fontSize: brand.name.length > 6 ? '13px' : '16px',
-          letterSpacing: '0.02em',
-          position: 'absolute',
-          opacity: hovered ? 0 : 1,
-          transform: hovered ? 'translateY(6px) scale(0.85)' : 'translateY(0) scale(1)',
-          transition: 'all 0.22s ease',
-          pointerEvents: 'none',
-          userSelect: 'none',
-          textAlign: 'center',
-          padding: '0 8px',
-        }}
-      >
-        {brand.name}
-      </span>
-
-      {/* HOVER: official brand logo */}
-      {!imgFailed ? (
-        <img
-          src={logoSrc}
-          alt={brand.name}
-          style={{
-            opacity: hovered ? 1 : 0,
-            transform: hovered ? 'translateY(0) scale(1)' : 'translateY(-6px) scale(0.82)',
-            transition: 'all 0.28s ease',
-            pointerEvents: 'none',
-          }}
-          className="absolute h-10 w-auto max-w-[80%] object-contain"
-          loading="lazy"
-          onError={() => setImgFailed(true)}
-        />
-      ) : (
-        /* Fallback: brand name in brand color/style */
+      {/* Default state: brand name text only */}
+      {!hovered && (
         <span
           style={{
             fontFamily: brand.font,
-            color: hovered ? brand.text : 'transparent',
+            color: '#64748b',
             fontWeight: 800,
-            fontSize: brand.name.length > 6 ? '14px' : '18px',
-            letterSpacing: brand.slug === 'jbl' ? '0.12em' : '0.04em',
-            position: 'absolute',
-            opacity: hovered ? 1 : 0,
-            transform: hovered ? 'translateY(0)' : 'translateY(-6px)',
-            transition: 'all 0.28s ease',
+            fontSize: brand.name.length > 6 ? '13px' : '16px',
+            letterSpacing: '0.02em',
+            pointerEvents: 'none',
             userSelect: 'none',
+            textAlign: 'center',
+            padding: '0 8px',
           }}
         >
           {brand.name}
         </span>
       )}
 
-      {/* Brand name label at bottom on hover */}
-      <span
-        style={{
-          fontFamily: brand.font,
-          color: hovered ? (brand.text === '#ffffff' ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.45)') : 'transparent',
-          fontSize: '8px',
-          fontWeight: 700,
-          letterSpacing: '0.1em',
-          position: 'absolute',
-          bottom: '8px',
-          opacity: hovered ? 1 : 0,
-          transition: 'opacity 0.25s ease 0.05s',
-          userSelect: 'none',
-          textTransform: 'uppercase',
-        }}
-      >
-        {brand.name}
-      </span>
+      {/* Hover state: logo only, no text */}
+      {hovered && (
+        <>
+          {!imgFailed ? (
+            <img
+              src={logoSrc}
+              alt={brand.name}
+              style={{ pointerEvents: 'none' }}
+              className="h-10 w-auto max-w-[80%] object-contain"
+              loading="lazy"
+              onError={() => setImgFailed(true)}
+            />
+          ) : (
+            <span
+              style={{
+                fontFamily: brand.font,
+                color: brand.text,
+                fontWeight: 800,
+                fontSize: brand.name.length > 6 ? '14px' : '18px',
+                letterSpacing: brand.slug === 'jbl' ? '0.12em' : '0.04em',
+                userSelect: 'none',
+              }}
+            >
+              {brand.name}
+            </span>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -128,20 +101,13 @@ export default function TrustBadges() {
   const { t } = useLang();
 
   return (
-    <section className="bg-slate-50 dark:bg-slate-950 border-y border-slate-100 dark:border-slate-800 py-12">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <p className="mb-8 text-center text-xs font-semibold uppercase tracking-widest text-slate-400">
+    <section className="bg-slate-50 dark:bg-slate-950 border-y border-slate-100 dark:border-slate-800 py-5 sm:py-10">
+      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+        <p className="mb-4 sm:mb-7 text-center text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-slate-400">
           {t('trustedBy')}
         </p>
-        <div className="overflow-x-auto -mx-4 sm:mx-0 scrollbar-none">
-          <div className="flex flex-col gap-3 w-fit mx-auto px-4 sm:px-0">
-            <div className="flex gap-3">
-              {BRANDS.slice(0, 8).map(brand => <BrandCard key={brand.name} brand={brand} />)}
-            </div>
-            <div className="flex gap-3">
-              {BRANDS.slice(8).map(brand => <BrandCard key={brand.name} brand={brand} />)}
-            </div>
-          </div>
+        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 sm:gap-3">
+          {BRANDS.map(brand => <BrandCard key={brand.name} brand={brand} />)}
         </div>
       </div>
     </section>

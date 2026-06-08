@@ -24,7 +24,7 @@ const SECTIONS = [
   },
   {
     title: '6. Your Rights',
-    body: `You have the right to access your personal data, correct inaccurate information, request deletion of your account, and opt out of marketing emails at any time via the unsubscribe link in any email. To exercise these rights, contact us at privacy@kigalitech.com.`,
+    body: `You have the right to access your personal data, correct inaccurate information, request deletion of your account, and opt out of marketing emails at any time via the unsubscribe link in any email. To exercise these rights, contact us at privacy@kigalitechservices.com.`,
   },
   {
     title: '7. Security',

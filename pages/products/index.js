@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
 import Footer from '../../components/Footer';
@@ -33,13 +33,15 @@ export default function ProductsPage() {
   const [search, setSearch] = useState('');
   const [maxPrice, setMaxPrice] = useState(500000);
   const [inStockOnly, setInStockOnly] = useState(false);
+  const initialized = useRef(false);
 
-  // Sync from URL query params on load
+  // Sync from URL query params — only apply default on first load
   useEffect(() => {
     if (!router.isReady) return;
-    if (qCat) setActiveCategory(qCat);          // URL category wins
-    else if (!qSearch) setActiveCategory('Phones'); // default when no query
-    if (qSearch) { setSearch(qSearch); setActiveCategory('All'); } // search shows all
+    if (qCat) setActiveCategory(qCat);
+    else if (qSearch) { setSearch(qSearch); setActiveCategory('All'); }
+    else if (!initialized.current) setActiveCategory('Phones'); // default only once
+    initialized.current = true;
   }, [router.isReady, qCat, qSearch]);
 
   // Update URL when category changes so tabs are deep-linkable

@@ -1,14 +1,32 @@
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useLang } from '../context/LanguageContext';
+
+const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=85';
 
 export default function HeroSection({ config = {} }) {
   const { t } = useLang();
 
-  const badgeText  = config.heroBadgeText || 'New Arrivals Just Dropped';
-  const subtitle   = config.heroSubtitle  || 'Premium electronics — phones, laptops, audio, wearables — with fast delivery, real warranties, and zero compromise.';
-  const imageUrl   = config.heroImageUrl  || 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=85';
+  // SSR / ISR values from props (fast initial render)
+  const [liveConfig, setLiveConfig] = useState(config);
 
-  const rawTitle   = config.heroTitle || 'Tech That\nElevates\nYour Life';
+  // Client-side fetch so admin changes show immediately without waiting for ISR
+  useEffect(() => {
+    fetch('/api/hero')
+      .then(r => r.json())
+      .then(data => {
+        if (data && Object.keys(data).length > 0) {
+          setLiveConfig(prev => ({ ...prev, ...data }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const badgeText = liveConfig.heroBadgeText || 'New Arrivals Just Dropped';
+  const subtitle  = liveConfig.heroSubtitle  || 'Premium electronics — phones, laptops, audio, wearables — with fast delivery, real warranties, and zero compromise.';
+  const imageUrl  = liveConfig.heroImageUrl  || DEFAULT_IMAGE;
+
+  const rawTitle  = liveConfig.heroTitle || 'Tech That\nElevates\nYour Life';
   const titleLines = rawTitle.split('\\n').join('\n').split('\n');
   const line1 = titleLines[0] || 'Tech That';
   const line2 = titleLines[1] || 'Elevates';
@@ -33,7 +51,7 @@ export default function HeroSection({ config = {} }) {
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid min-h-[520px] sm:min-h-[580px] lg:min-h-[660px] items-center lg:grid-cols-[1fr_440px] xl:grid-cols-[1fr_520px]">
 
-          {/* ── Left: Text — completely separate from image on all sizes ── */}
+          {/* ── Left: Text ── */}
           <div className="py-12 sm:py-16 lg:py-20 relative z-10 max-w-xl">
 
             <span className="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-4 py-1.5 text-sm font-medium text-sky-300">
@@ -99,16 +117,17 @@ export default function HeroSection({ config = {} }) {
             </div>
           </div>
 
-          {/* ── Right: Image — desktop only, fully contained in this column ── */}
+          {/* ── Right: Image — desktop only ── */}
           <div className="relative hidden lg:block h-full self-stretch overflow-hidden" style={{ minHeight: '660px' }}>
             <img
+              key={imageUrl}
               src={imageUrl}
               alt="Premium electronics"
-              className="absolute inset-0 h-full w-full object-cover object-center"
+              className="absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-500"
               loading="eager"
               fetchpriority="high"
             />
-            {/* Seamless left blend — hard stop matches section bg, fades to transparent */}
+            {/* Seamless left blend */}
             <div
               className="absolute inset-0 pointer-events-none"
               style={{ background: 'linear-gradient(to right, #020617 0%, #020617 20%, rgba(2,6,23,0.85) 38%, rgba(2,6,23,0.3) 58%, transparent 78%)' }}

@@ -290,7 +290,7 @@ export default function OrderPage() {
 <div class="header">
   <div>
     <div class="brand">KigaliTech</div>
-    <div class="brand-sub">Kigali, Rwanda &middot; info@kigalitech.com &middot; +250 700 000 000</div>
+    <div class="brand-sub">Kigali, Rwanda &middot; info@kigalitechservices.com &middot; +250 786 276 555</div>
   </div>
   <div class="invoice-meta">
     <h2>INVOICE #${order.id}</h2>
@@ -351,7 +351,7 @@ export default function OrderPage() {
 </div>
 <div class="footer">
   <p>Thank you for shopping with <strong>KigaliTech</strong>. This is a computer-generated invoice.</p>
-  <p style="margin-top:4px;">For queries, contact us at info@kigalitech.com or call +250 700 000 000</p>
+  <p style="margin-top:4px;">For queries, contact us at info@kigalitechservices.com or call +250 786 276 555</p>
 </div>
 <script>window.onload = function() { window.print(); }<\/script>
 </body>
@@ -371,6 +371,29 @@ export default function OrderPage() {
           </div>
         </div>
 
+
+        {/* MoMo payment sent banner */}
+        {query.payment === 'momo_sent' && !order.paymentConfirmed && (
+          <div className="no-print mb-5 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-5">
+            <div className="flex items-start gap-4">
+              <div className="text-3xl">⏳</div>
+              <div className="flex-1">
+                <p className="font-semibold text-amber-800 dark:text-amber-300 mb-1">Payment sent — pending confirmation</p>
+                <p className="text-sm text-amber-700 dark:text-amber-400 mb-3">
+                  We'll verify your MoMo payment and confirm your order shortly. Send us the payment screenshot for faster processing.
+                </p>
+                <a
+                  href={`https://wa.me/250786276555?text=${encodeURIComponent(`Hi KigaliTech! I've sent payment for Order #${order.id}. Please confirm.`)}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#20bf5b] transition-all"
+                >
+                  <svg viewBox="0 0 32 32" className="h-4 w-4 fill-white flex-shrink-0"><path d="M16.004 2C8.276 2 2 8.268 2 15.986c0 2.458.64 4.866 1.856 6.98L2 30l7.236-1.822A14.022 14.022 0 0016.004 30C23.724 30 30 23.732 30 16.014 30 8.268 23.724 2 16.004 2zm7.414 19.878c-.316.886-1.564 1.622-2.56 1.836-.68.144-1.568.258-4.552-1.004C12.624 21.162 9.98 17.6 9.778 17.338c-.198-.26-1.664-2.21-1.664-4.222 0-2.012 1.048-2.992 1.42-3.402.37-.412.808-.514 1.078-.514.27 0 .542.002.78.014.248.012.584-.096.914.696l1.31 3.184c.13.314.216.682.04 1.098-.174.414-.26.67-.522.99-.258.32-.546.716-.778.962-.258.272-.526.566-.228 1.11.3.544 1.33 2.192 2.858 3.55 1.964 1.75 3.62 2.29 4.13 2.548.512.258.81.216 1.108-.13.298-.344 1.276-1.492 1.616-2.006.34-.512.68-.43 1.146-.258.466.174 2.974 1.4 3.484 1.656.51.258.85.386.974.6.126.214.126 1.104-.19 1.99z"/></svg>
+                  Send Payment Screenshot
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ===== RECEIPT CARD ===== */}
         <div className="receipt-card rounded-3xl bg-white dark:bg-slate-900 shadow-xl overflow-hidden">
@@ -536,7 +559,7 @@ export default function OrderPage() {
           {/* Footer */}
           <div className="bg-slate-900 px-8 py-5 text-center">
             <p className="text-xs text-slate-400">Thank you for shopping with <span className="text-sky-400 font-semibold">KigaliTech</span></p>
-            <p className="text-xs text-slate-500 mt-1">Kigali, Rwanda · info@kigalitech.com · +250 700 000 000</p>
+            <p className="text-xs text-slate-500 mt-1">Kigali, Rwanda · info@kigalitechservices.com · +250 786 276 555</p>
           </div>
         </div>
 

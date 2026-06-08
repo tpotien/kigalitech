@@ -22,7 +22,7 @@ export default async function handler(req, res) {
       amount: Math.ceil(amount / 100), // convert from cents to RWF units
       currency,
       network: network === 'mtn' ? 'MTN' : 'AIRTEL',
-      email: email || 'customer@kigalitech.com',
+      email: email || 'customer@kigalitechservices.com',
       phone_number: phone.replace(/\s+/g, '').replace(/^\+/, ''),
       fullname: name || 'Customer',
       redirect_url: `${process.env.NEXTAUTH_URL}/orders/confirm`,

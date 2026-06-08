@@ -1,6 +1,6 @@
 import Head from 'next/head';
 
-const DEFAULT_IMAGE = 'https://electronics-shop-amber.vercel.app/logo.png';
+const DEFAULT_IMAGE = 'https://kigalitechservices.com/logo.png';
 const DEFAULT_DESCRIPTION =
   'Premium electronics in Rwanda — phones, laptops, TVs, audio and more. Fast delivery, real warranties.';
 const SITE_NAME = 'KigaliTech';

@@ -131,14 +131,31 @@ export default function AdminOrderDetail() {
               View Receipt Page <span>→</span>
             </Link>
             {order.shippingPhone && (
-              <a
-                href={`https://wa.me/${order.shippingPhone.replace(/\D/g, '')}?text=Hi%20${encodeURIComponent(order.shippingName || '')}%2C%20your%20order%20%23${order.id}%20is%20${order.status}.`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between rounded-xl bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700 hover:bg-emerald-100 no-underline"
-              >
-                📱 WhatsApp Customer <span>→</span>
-              </a>
+              <>
+                <a
+                  href={(() => {
+                    const name = order.shippingName || 'Customer';
+                    const msgs = {
+                      confirmed: `Hi ${name}! ✅ Your KigaliTech order #${order.id} has been *confirmed* and is being prepared. We'll notify you when it's shipped! 🚀`,
+                      processing: `Hi ${name}! 📦 Your KigaliTech order #${order.id} is now being *processed* and packed. Stay tuned!`,
+                      shipped: `Hi ${name}! 🚚 Great news — your KigaliTech order #${order.id} is on its way! Our delivery team will contact you shortly. Track your order: https://kigalitechservices.com/orders/${order.id}`,
+                      delivered: `Hi ${name}! 🎉 Your KigaliTech order #${order.id} has been *delivered*. Enjoy your new product! If you have any questions, we're here to help.`,
+                      cancelled: `Hi ${name}, your KigaliTech order #${order.id} has been *cancelled*. Please contact us at +250 786 276 555 if you have questions.`,
+                    };
+                    const msg = msgs[order.status] || `Hi ${name}, your KigaliTech order #${order.id} status is now: *${order.status}*. View: https://kigalitechservices.com/orders/${order.id}`;
+                    return `https://wa.me/${order.shippingPhone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
+                  })()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between rounded-xl bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 no-underline"
+                >
+                  <span className="flex items-center gap-2">
+                    <svg viewBox="0 0 32 32" className="h-4 w-4 fill-emerald-600 flex-shrink-0"><path d="M16.004 2C8.276 2 2 8.268 2 15.986c0 2.458.64 4.866 1.856 6.98L2 30l7.236-1.822A14.022 14.022 0 0016.004 30C23.724 30 30 23.732 30 16.014 30 8.268 23.724 2 16.004 2zm7.414 19.878c-.316.886-1.564 1.622-2.56 1.836-.68.144-1.568.258-4.552-1.004C12.624 21.162 9.98 17.6 9.778 17.338c-.198-.26-1.664-2.21-1.664-4.222 0-2.012 1.048-2.992 1.42-3.402.37-.412.808-.514 1.078-.514.27 0 .542.002.78.014.248.012.584-.096.914.696l1.31 3.184c.13.314.216.682.04 1.098-.174.414-.26.67-.522.99-.258.32-.546.716-.778.962-.258.272-.526.566-.228 1.11.3.544 1.33 2.192 2.858 3.55 1.964 1.75 3.62 2.29 4.13 2.548.512.258.81.216 1.108-.13.298-.344 1.276-1.492 1.616-2.006.34-.512.68-.43 1.146-.258.466.174 2.974 1.4 3.484 1.656.51.258.85.386.974.6.126.214.126 1.104-.19 1.99z"/></svg>
+                    Notify Customer — {order.status}
+                  </span>
+                  <span>→</span>
+                </a>
+              </>
             )}
           </div>
         </div>

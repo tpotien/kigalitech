@@ -33,7 +33,7 @@ export default function AdminLayout({ children, title }) {
       <aside className="hidden lg:flex lg:flex-col w-64 bg-slate-900 dark:bg-slate-950 border-r border-slate-800 dark:border-slate-800 min-h-screen">
         {/* Logo */}
         <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-800">
-          <img src="/logo.png" alt="KigaliTech" className="h-11 w-11 rounded-full object-cover border-2 border-orange-400/40 flex-shrink-0" />
+          <img src="/logo.png" alt="KigaliTech" className="h-11 w-11 rounded-xl object-contain bg-white p-0.5 flex-shrink-0" />
           <div>
             <p className="font-bold text-white text-sm">KigaliTech</p>
             <p className="text-xs text-slate-400">Admin Panel</p>

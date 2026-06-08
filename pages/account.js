@@ -5,6 +5,7 @@ import Layout from '../components/Layout';
 import { useLang } from '../context/LanguageContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useWishlist } from '../context/WishlistContext';
+import { useCart } from '../context/CartContext';
 import ReferralCard from '../components/ReferralCard';
 import VerifiedBadge from '../components/VerifiedBadge';
 import AvatarWithBadge from '../components/AvatarWithBadge';
@@ -195,6 +196,8 @@ export default function AccountPage() {
   const { t } = useLang();
   const { format } = useCurrency();
   const { ids: wishlistIds, toggle: toggleWishlist } = useWishlist();
+  const { add: addToCart } = useCart();
+  const [reorderingId, setReorderingId] = useState(null);
   const [tab, setTab] = useState('orders');
   const [wishlistItems, setWishlistItems] = useState([]);
   const [loadingWishlist, setLoadingWishlist] = useState(false);
@@ -309,6 +312,24 @@ export default function AccountPage() {
       setProfileMsg({ text: data.error || 'Failed to update', ok: false });
     }
     setSavingProfile(false);
+  }
+
+  async function handleReorder(order) {
+    setReorderingId(order.id);
+    const items = order.items || [];
+    for (const item of items) {
+      addToCart({
+        id: item.productId || item.id,
+        name: item.name,
+        price: item.price,
+        image: item.image || '',
+        color: item.color || '',
+        storage: item.storage || '',
+        quantity: item.quantity || 1,
+      });
+    }
+    await new Promise(r => setTimeout(r, 600));
+    setReorderingId(null);
   }
 
   async function confirmReceipt(orderId) {
@@ -814,6 +835,17 @@ export default function AccountPage() {
                           >
                             {t('viewDetails')}
                           </Link>
+                          <button
+                            onClick={() => handleReorder(order)}
+                            disabled={reorderingId === order.id}
+                            className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60 flex items-center gap-1.5 transition"
+                          >
+                            {reorderingId === order.id ? (
+                              <><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" /> Adding…</>
+                            ) : (
+                              <><svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Reorder</>
+                            )}
+                          </button>
                           <Link
                             href={`/orders/${order.id}/receipt`}
                             className="rounded-full border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 no-underline flex items-center gap-1.5"

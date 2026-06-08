@@ -26,7 +26,7 @@ const SITE_DEFAULTS = {
 
 export async function getStaticProps() {
   const [products, configRows] = await Promise.all([
-    prisma.product.findMany({ where: { active: true } }),
+    prisma.product.findMany({ where: { active: true }, take: 24 }),
     prisma.siteConfig.findMany(),
   ]);
   const siteConfig = { ...SITE_DEFAULTS };
@@ -77,7 +77,7 @@ export default function Home({ products, siteConfig = {} }) {
     <Layout>
       <SEOMeta
         title="KigaliTech — Premium Electronics in Rwanda"
-        url="https://electronics-shop-amber.vercel.app"
+        url="https://kigalitechservices.com"
       />
       <FlashSaleBanner />
       <MarqueeBanner />
@@ -93,7 +93,7 @@ export default function Home({ products, siteConfig = {} }) {
       />
 
       {/* Product Grid */}
-      <section id="products" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <section id="products" className="mx-auto max-w-7xl px-4 py-6 sm:py-16 sm:px-6 lg:px-8">
         <div className="mb-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-4">
             <div>
@@ -170,24 +170,25 @@ export default function Home({ products, siteConfig = {} }) {
             <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">{t('reviews')}</p>
             <h2 className="mt-1 text-3xl font-extrabold text-slate-900 dark:text-slate-100">{t('customersReviews')}</h2>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
             {REVIEWS.map((r) => (
-              <div key={r.name} className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 p-6">
-                <div className="flex text-amber-400">
+              <div key={r.name} className="relative rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 p-3.5 sm:p-6 shadow-sm flex flex-col">
+                <span className="absolute top-2.5 right-3.5 text-3xl leading-none text-sky-100 dark:text-sky-900/60 font-serif select-none">&ldquo;</span>
+                <div className="flex gap-0.5 text-amber-400">
                   {Array.from({ length: r.stars }).map((_, i) => (
-                    <svg key={i} className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                    <svg key={i} className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
                   ))}
                 </div>
-                <p className="mt-3 text-slate-700 dark:text-slate-300 leading-relaxed">"{r.text}"</p>
-                <div className="mt-4 flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/40 text-sm font-bold text-sky-600 dark:text-sky-400">
+                <p className="mt-2 sm:mt-3 text-[11px] sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-4 flex-1">"{r.text}"</p>
+                <div className="mt-3 sm:mt-4 flex items-center gap-2 sm:gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                  <div className="flex h-7 w-7 sm:h-9 sm:w-9 flex-shrink-0 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/40 text-xs sm:text-sm font-bold text-sky-600 dark:text-sky-400">
                     {r.name[0]}
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{r.name}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{r.product}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{r.name}</p>
+                    <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 truncate">{r.product}</p>
                   </div>
                 </div>
               </div>

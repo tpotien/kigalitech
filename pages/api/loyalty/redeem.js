@@ -1,6 +1,9 @@
 import prisma from '../../../lib/prisma';
 import { getToken } from 'next-auth/jwt';
 
+const RWF_PER_POINT = 13.4; // 100 points = RWF 1,340 discount
+const RWF_RATE = 1475;       // 1 USD = 1475 RWF (matches site default)
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
@@ -27,8 +30,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: `Insufficient points. You have ${user.loyaltyPoints} points.` });
   }
 
-  // 100 points = $1 = 100 cents
-  const discountCents = Math.floor(points / 100) * 100;
+  // 100 points = RWF 1,340 discount → convert to cents for cart
+  const rwfDiscount = Math.round(points * RWF_PER_POINT);
+  const discountCents = Math.round((rwfDiscount / RWF_RATE) * 100);
 
   await prisma.$transaction([
     prisma.user.update({
@@ -40,7 +44,7 @@ export default async function handler(req, res) {
         userId,
         points: -points,
         action: 'redeem',
-        reason: `Redeemed ${points} points for RWF ${Math.round((discountCents / 100) * 1475).toLocaleString()} discount`,
+        reason: `Redeemed ${points} points for RWF ${rwfDiscount.toLocaleString()} discount`,
         orderId: orderId ? Number(orderId) : null,
       },
     }),

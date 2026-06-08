@@ -1,6 +1,8 @@
 import { getToken } from 'next-auth/jwt';
 import prisma from '../../../lib/prisma';
 
+export const config = { api: { bodyParser: { sizeLimit: '15mb' } } };
+
 function serialize(p) {
   return {
     ...p,
@@ -11,6 +13,7 @@ function serialize(p) {
     specs: JSON.stringify(p.specs),
     serialNumbers: JSON.stringify(p.serialNumbers),
     tags: JSON.stringify(p.tags || []),
+    colorImages: typeof p.colorImages === 'string' ? p.colorImages : JSON.stringify(p.colorImages || {}),
   };
 }
 

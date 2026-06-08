@@ -1,6 +1,6 @@
 import prisma from '../../../lib/prisma';
 
-const SITE = process.env.NEXTAUTH_URL || 'https://electronics-shop-amber.vercel.app';
+const SITE = process.env.NEXTAUTH_URL || 'https://kigalitechservices.com';
 
 export default async function handler(req, res) {
   const { token, email } = req.query;

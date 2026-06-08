@@ -86,6 +86,13 @@ export default function ProductForm({ initial }) {
       : '',
     preOrderDeposit: initial?.preOrderDeposit ?? 0,
     preOrderDepositRwf: initial?.preOrderDeposit ? (initial.preOrderDeposit / 100).toString() : '',
+    colorImages: (() => {
+      try {
+        const v = initial?.colorImages;
+        if (!v) return '{}';
+        return typeof v === 'string' ? v : JSON.stringify(v);
+      } catch { return '{}'; }
+    })(),
   });
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -168,6 +175,7 @@ export default function ProductForm({ initial }) {
             tags: Array.isArray(data.tags) ? data.tags.join(', ') : f.tags,
             specs: data.specs ? JSON.stringify(data.specs, null, 2) : f.specs,
             price: data.suggestedPrice && !f.price ? (data.suggestedPrice / 100).toFixed(2) : f.price,
+            images: f.images ? f.images : dataUrl,
           }));
           setAiStatus('📷 Product scanned — review all fields before saving.');
           setTimeout(() => setAiStatus(''), 6000);
@@ -250,6 +258,47 @@ export default function ProductForm({ initial }) {
     reader.readAsDataURL(file);
   }
 
+  async function handleColorImageUpload(file, colorName) {
+    if (!file) return;
+    setUploading(true);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new window.Image();
+      img.onload = async () => {
+        const MAX = 1000;
+        const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        try {
+          const res = await fetch('/api/admin/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageDataUrl: dataUrl }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Upload failed');
+          setForm(f => {
+            try {
+              const existing = JSON.parse(f.colorImages || '{}');
+              return { ...f, colorImages: JSON.stringify({ ...existing, [colorName]: data.url }) };
+            } catch {
+              return { ...f, colorImages: JSON.stringify({ [colorName]: data.url }) };
+            }
+          });
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setUploading(false);
+        }
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setSaving(true);
@@ -280,6 +329,7 @@ export default function ProductForm({ initial }) {
         preOrderDate: form.preOrderDate ? new Date(form.preOrderDate).toISOString() : null,
         preOrderDeposit: form.preOrderDeposit || 0,
         specs: (() => { try { return JSON.parse(form.specs); } catch { return {}; } })(),
+        colorImages: (() => { try { return JSON.parse(form.colorImages || '{}'); } catch { return {}; } })(),
       };
 
       const url = initial?.id ? `/api/admin/products/${initial.id}` : '/api/admin/products';
@@ -501,6 +551,73 @@ export default function ProductForm({ initial }) {
               </div>
             )}
           </Field>
+          {/* Per-color variant images — spans full width */}
+          {form.colors && form.colors.trim() && (
+            <div className="sm:col-span-2 mt-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/40 p-4">
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1 flex items-center gap-2">
+                <span>🎨</span> Color Variant Images
+              </p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">
+                Upload a specific photo for each color — customers see the exact variant they pick.
+              </p>
+              <div className="space-y-3">
+                {form.colors.split(',').map(c => c.trim()).filter(Boolean).map(colorName => {
+                  const colorImgMap = (() => { try { return JSON.parse(form.colorImages || '{}'); } catch { return {}; } })();
+                  const img = colorImgMap[colorName];
+                  return (
+                    <div key={colorName} className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 w-28 flex-shrink-0">
+                        <span className="h-3.5 w-3.5 rounded-full border border-slate-300 dark:border-slate-500 flex-shrink-0" style={{ background: colorName.toLowerCase().replace(/\s/g, '') }} />
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{colorName}</span>
+                      </div>
+                      {img ? (
+                        <div className="relative flex-shrink-0">
+                          <img src={img} alt={colorName} className="h-14 w-14 rounded-xl object-cover border-2 border-sky-300 shadow-sm" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setForm(f => {
+                                try {
+                                  const m = JSON.parse(f.colorImages || '{}');
+                                  delete m[colorName];
+                                  return { ...f, colorImages: JSON.stringify(m) };
+                                } catch { return f; }
+                              });
+                            }}
+                            className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center hover:bg-red-600 shadow-sm"
+                          >×</button>
+                        </div>
+                      ) : (
+                        <div className="h-14 w-14 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center flex-shrink-0">
+                          <span className="text-slate-300 dark:text-slate-600 text-xl">+</span>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        disabled={uploading}
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.onchange = (e) => handleColorImageUpload(e.target.files[0], colorName);
+                          input.click();
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors"
+                      >
+                        <svg className="h-3.5 w-3.5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        {img ? 'Replace' : 'Upload'}
+                      </button>
+                      {img && (
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">✓ Set</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <Field label="Storage Options" help="Comma-separated. e.g. 128GB, 256GB, 512GB">
             <input value={form.storageOptions} onChange={(e) => set('storageOptions', e.target.value)} className={inp} placeholder="128GB, 256GB, 1TB" />
           </Field>
@@ -624,8 +741,8 @@ export default function ProductForm({ initial }) {
       </div>
 
       <div className="flex items-center gap-4">
-        <button type="submit" disabled={saving} className="rounded-xl bg-sky-600 px-8 py-3 font-semibold text-white hover:bg-sky-700 disabled:opacity-50">
-          {saving ? 'Saving...' : initial?.id ? 'Save Changes' : 'Create Product'}
+        <button type="submit" disabled={saving || uploading} className="rounded-xl bg-sky-600 px-8 py-3 font-semibold text-white hover:bg-sky-700 disabled:opacity-50">
+          {uploading ? 'Uploading image...' : saving ? 'Saving...' : initial?.id ? 'Save Changes' : 'Create Product'}
         </button>
         <button type="button" onClick={() => router.push('/admin/products')} className="rounded-xl border border-slate-200 px-6 py-3 text-sm text-slate-600 hover:bg-slate-50">
           Cancel
