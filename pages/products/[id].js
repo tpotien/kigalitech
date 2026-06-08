@@ -505,7 +505,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
         url={canonicalUrl}
         type="product"
       />
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 px-4 py-10 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 px-3 py-4 sm:px-6 sm:py-10 lg:px-8">
         <div className="mx-auto max-w-6xl">
           {/* Breadcrumb */}
           <nav className="mb-6 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
@@ -516,7 +516,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
             <span className="text-slate-700 dark:text-slate-300 font-medium">{product.name}</span>
           </nav>
 
-          <div className="rounded-3xl bg-white dark:bg-slate-900 p-5 shadow-sm lg:p-8">
+          <div className="rounded-2xl bg-white dark:bg-slate-900 p-3 shadow-sm sm:p-5 lg:p-8">
             <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr]">
               {/* ── Images + Video ── */}
               <div className="lg:sticky lg:top-6 lg:self-start">

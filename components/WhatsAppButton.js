@@ -59,8 +59,11 @@ export default function WhatsAppButton() {
   const message = buildMessage(router.pathname, router.asPath, whatsappCtx);
   const url = `https://wa.me/${NUMBER}?text=${encodeURIComponent(message)}`;
 
+  // On product pages mobile, the sticky bar already has a WhatsApp button — hide this one
+  const isProductPage = router.pathname === '/products/[id]';
+
   return (
-    <div className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 flex flex-col items-end gap-2">
+    <div className={`fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 flex-col items-end gap-2 ${isProductPage ? 'hidden sm:flex' : 'flex'}`}>
       {showTooltip && (
         <div className="bg-gray-900 text-white text-xs px-3 py-2 rounded-xl shadow-xl whitespace-nowrap pointer-events-none">
           <span className="font-semibold">Chat with us</span>

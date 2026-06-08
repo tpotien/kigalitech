@@ -6,7 +6,7 @@ export default function HeroSection({ config = {} }) {
 
   const badgeText = config.heroBadgeText || 'New Arrivals Just Dropped';
   const subtitle = config.heroSubtitle || 'Premium electronics — phones, laptops, audio, wearables — with fast delivery, real warranties, and zero compromise.';
-  const imageUrl = config.heroImageUrl || 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=900&q=85';
+  const imageUrl = config.heroImageUrl || 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=85';
   const priceLabel = config.heroPriceLabel || 'Starting from';
   const heroPrice = config.heroPrice || '$129.99';
 
@@ -37,32 +37,32 @@ export default function HeroSection({ config = {} }) {
       {/* ── Full-bleed image — mobile: tighter fade, desktop: wider fade ── */}
       {/* Both use the same absolute layer; CSS mask differs via inline style per breakpoint via wrapper classes */}
 
-      {/* Mobile */}
+      {/* Mobile — image right half visible, fades to transparent over text */}
       <div className="lg:hidden absolute inset-0 pointer-events-none">
         <div
           className="absolute inset-0"
           style={{
-            WebkitMaskImage: 'linear-gradient(to left, black 20%, rgba(0,0,0,0.55) 48%, rgba(0,0,0,0.1) 68%, transparent 88%)',
-            maskImage: 'linear-gradient(to left, black 20%, rgba(0,0,0,0.55) 48%, rgba(0,0,0,0.1) 68%, transparent 88%)',
+            WebkitMaskImage: 'linear-gradient(to left, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.85) 35%, rgba(0,0,0,0.3) 60%, transparent 82%)',
+            maskImage: 'linear-gradient(to left, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.85) 35%, rgba(0,0,0,0.3) 60%, transparent 82%)',
           }}
         >
-          <img src={imageUrl} alt="" className="w-full h-full object-cover object-right" loading="eager" />
+          <img src={imageUrl} alt="" className="w-full h-full object-cover object-center" loading="eager" />
         </div>
       </div>
 
-      {/* Desktop — spans the entire section, fades out over the text side */}
+      {/* Desktop — full-section image, strongly visible right side, fades behind text */}
       <div className="hidden lg:block absolute inset-0 pointer-events-none">
         <div
           className="absolute inset-0"
           style={{
-            WebkitMaskImage: 'linear-gradient(to left, black 28%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.15) 68%, transparent 84%)',
-            maskImage: 'linear-gradient(to left, black 28%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.15) 68%, transparent 84%)',
+            WebkitMaskImage: 'linear-gradient(to left, rgba(0,0,0,0.95) 0%, black 30%, rgba(0,0,0,0.75) 52%, rgba(0,0,0,0.2) 68%, transparent 82%)',
+            maskImage: 'linear-gradient(to left, rgba(0,0,0,0.95) 0%, black 30%, rgba(0,0,0,0.75) 52%, rgba(0,0,0,0.2) 68%, transparent 82%)',
           }}
         >
           <img
             src={imageUrl}
             alt="New Arrival"
-            className="w-full h-full object-cover object-right"
+            className="w-full h-full object-cover object-center"
             loading="eager"
             fetchpriority="high"
           />
