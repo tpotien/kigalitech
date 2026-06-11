@@ -2,18 +2,45 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useSession, signOut } from 'next-auth/react';
+
+async function doSignOut() {
+  // Clear all client-side state so nothing leaks back
+  try {
+    localStorage.removeItem('cart');
+    localStorage.removeItem('kt_rv');
+    localStorage.removeItem('referralCode');
+    localStorage.removeItem('currency');
+    sessionStorage.clear();
+  } catch {}
+  await signOut({ redirect: false });
+  // replace() removes this page from browser history — back button skips it
+  window.location.replace('/');
+}
 import { useCart } from '../context/CartContext';
 import { useLang } from '../context/LanguageContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useTheme } from '../context/ThemeContext';
-import CartDrawer from './CartDrawer';
+import dynamic from 'next/dynamic';
 import SearchModal from './SearchModal';
+import SearchAutocomplete from './SearchAutocomplete';
 import NotificationBell from './NotificationBell';
-import LanguageSwitcher from './LanguageSwitcher';
 import CurrencySwitcher from './CurrencySwitcher';
+import LanguageSwitcher from './LanguageSwitcher';
 import BottomNav from './BottomNav';
 import AvatarWithBadge from './AvatarWithBadge';
-import AIChatWidget from './AIChatWidget';
+const CartDrawer = dynamic(() => import('./CartDrawer'), { ssr: false });
+const AIChatWidget = dynamic(() => import('./AIChatWidget'), { ssr: false });
+
+// Module-level cache: survives re-mounts and route changes within the same tab.
+// Keys are URL strings, values are { data, expiresAt }.
+const _cache = {};
+async function cachedFetch(url, ttlMs) {
+  const now = Date.now();
+  if (_cache[url] && _cache[url].expiresAt > now) return _cache[url].data;
+  const data = await fetch(url).then(r => r.json());
+  _cache[url] = { data, expiresAt: now + ttlMs };
+  return data;
+}
 
 const ANNOUNCEMENTS = [
   '🚚 Free delivery on orders over RWF 75,000 — Rwanda-wide',
@@ -33,19 +60,12 @@ export default function Layout({ children }) {
   const [megaActive, setMegaActive] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [navProducts, setNavProducts] = useState({});
-  const [searchQuery, setSearchQuery] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [announcementIdx, setAnnouncementIdx] = useState(0);
   const [logoUrl, setLogoUrl] = useState('/logo.png');
-  const searchRef = useRef(null);
-  const suggestRef = useRef(null);
 
   useEffect(() => {
-    fetch('/api/nav-products').then(r => r.json()).then(setNavProducts).catch(() => {});
-    fetch('/api/hero').then(r => r.json()).then(d => {
-      if (d.logoUrl) setLogoUrl(d.logoUrl);
-    }).catch(() => {});
+    cachedFetch('/api/nav-products', 5 * 60_000).then(setNavProducts).catch(() => {});
+    cachedFetch('/api/hero', 5 * 60_000).then(d => { if (d.logoUrl) setLogoUrl(d.logoUrl); }).catch(() => {});
   }, []);
 
   // Rotate announcements
@@ -65,29 +85,6 @@ export default function Layout({ children }) {
     { label: t('deals'),     href: '/deals', cat: null, red: true },
   ];
 
-  useEffect(() => {
-    const q = searchQuery.trim();
-    if (q.length < 2) { setSuggestions([]); return; }
-    const t = setTimeout(() => {
-      fetch(`/api/search/autocomplete?q=${encodeURIComponent(q)}`)
-        .then(r => r.json()).then(setSuggestions).catch(() => {});
-    }, 200);
-    return () => clearTimeout(t);
-  }, [searchQuery]);
-
-  function handleSearch(e) {
-    e.preventDefault();
-    setShowSuggestions(false);
-    if (searchQuery.trim()) {
-      router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  }
-
-  function pickSuggestion(p) {
-    setShowSuggestions(false);
-    router.push(`/products/${p.id}`);
-  }
-
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
       {/* ── Tier 1: Announcement bar ── */}
@@ -104,8 +101,8 @@ export default function Layout({ children }) {
               <Link href="/repairs" className="text-slate-400 hover:text-white no-underline transition-colors">Repairs</Link>
               <Link href="/bulk-order" className="text-slate-400 hover:text-white no-underline transition-colors">Bulk Order</Link>
               <div className="text-slate-600">|</div>
-              <LanguageSwitcher compact />
               <CurrencySwitcher compact />
+              <LanguageSwitcher compact />
             </div>
           </div>
         </div>
@@ -120,7 +117,7 @@ export default function Layout({ children }) {
 
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 no-underline flex-shrink-0">
-              <img src={logoUrl} alt="KigaliTech" className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl object-contain bg-white dark:bg-slate-800 shadow-sm" />
+              <img src={logoUrl} alt="KigaliTech" className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover shadow-sm" />
               <div className="min-w-0">
                 <span className="block text-base sm:text-xl font-extrabold text-slate-900 dark:text-white leading-none tracking-tight whitespace-nowrap">KigaliTech</span>
                 <span className="hidden sm:block text-[10px] font-semibold uppercase tracking-widest text-sky-500 dark:text-sky-400 mt-0.5 whitespace-nowrap">Premium Electronics</span>
@@ -128,41 +125,10 @@ export default function Layout({ children }) {
             </Link>
 
             {/* ── Inline search bar (desktop) ── */}
-            <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-2xl relative" ref={suggestRef}>
-              <div className="flex w-full rounded-full border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus-within:border-sky-500 focus-within:bg-white dark:focus-within:bg-slate-700 transition-all overflow-hidden shadow-sm">
-                <input
-                  ref={searchRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => { setSearchQuery(e.target.value); setShowSuggestions(true); }}
-                  onFocus={() => setShowSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                  placeholder="Search phones, laptops, earbuds, TVs…"
-                  className="flex-1 bg-transparent px-5 py-3 text-sm font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none"
-                />
-                <button type="submit" className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 px-6 text-white text-sm font-bold transition-colors flex-shrink-0">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <span className="hidden xl:inline">Search</span>
-                </button>
-              </div>
-              {/* Autocomplete dropdown */}
-              {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden z-50">
-                  {suggestions.map(p => (
-                    <button key={p.id} type="button" onMouseDown={() => pickSuggestion(p)}
-                      className="w-full flex items-center justify-between px-5 py-3 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition text-left">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900 dark:text-white">{p.name}</p>
-                        <p className="text-xs text-slate-400">{p.brand} · {p.category}</p>
-                      </div>
-                      <p className="text-sm font-bold text-sky-700 dark:text-sky-400 flex-shrink-0">RWF {Number(p.price).toLocaleString()}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </form>
+            <SearchAutocomplete
+              className="hidden lg:block flex-1 max-w-2xl"
+              placeholder="Search phones, laptops, earbuds, TVs…"
+            />
 
             {/* ── Right icons ── */}
             <div className="flex items-center gap-1 ml-auto lg:ml-0 flex-shrink-0">
@@ -222,7 +188,7 @@ export default function Layout({ children }) {
                       </Link>
                     )}
                     <hr className="my-1 border-slate-100 dark:border-slate-700" />
-                    <button onClick={() => signOut({ callbackUrl: '/' })} className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50">
+                    <button onClick={doSignOut} className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                       {t('signOut')}
                     </button>
@@ -313,9 +279,9 @@ export default function Layout({ children }) {
                                 <Link key={p.id} href={`/products/${p.id}`}
                                   className="group flex flex-col items-center gap-2 rounded-xl p-2.5 no-underline hover:bg-sky-50 transition-colors">
                                   <div className="h-20 w-20 rounded-xl bg-slate-50 dark:bg-slate-700 overflow-hidden flex items-center justify-center border border-slate-100 dark:border-slate-600">
-                                    {p.image
-                                      ? <img src={p.image} alt={p.name} className="h-full w-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
-                                      : <span className="text-2xl">📦</span>}
+                                    <span className="text-2xl">
+                                      {link.label === 'Phones' ? '📱' : link.label === 'Laptops' ? '💻' : link.label === 'TVs' ? '📺' : link.label === 'Headphones' ? '🎧' : link.label === 'Wearables' ? '⌚' : link.label === 'Gaming' ? '🎮' : '📦'}
+                                    </span>
                                   </div>
                                   <div className="text-center">
                                     <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-tight line-clamp-2 group-hover:text-sky-700 dark:group-hover:text-sky-400">{p.name}</p>
@@ -356,22 +322,12 @@ export default function Layout({ children }) {
         {mobileOpen && (
           <div className="xl:hidden border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-y-auto max-h-[calc(100svh-5rem)]">
             {/* Mobile search */}
-            <form onSubmit={handleSearch} className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-10">
-              <div className="flex rounded-full border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-800">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Search products…"
-                  className="flex-1 bg-transparent px-4 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none"
-                />
-                <button type="submit" className="px-4 bg-sky-600 text-white flex-shrink-0">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </button>
-              </div>
-            </form>
+            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-10">
+              <SearchAutocomplete
+                placeholder="Search products…"
+                onNavigate={() => setMobileOpen(false)}
+              />
+            </div>
 
             {/* All nav links */}
             <div className="px-4 py-1">

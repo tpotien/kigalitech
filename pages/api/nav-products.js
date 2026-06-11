@@ -7,7 +7,7 @@ export default async function handler(req, res) {
 
   const products = await prisma.product.findMany({
     where: { active: true },
-    select: { id: true, name: true, price: true, images: true, category: true, featured: true },
+    select: { id: true, name: true, price: true, category: true, featured: true },
     orderBy: [{ featured: 'desc' }, { id: 'desc' }],
     take: 100,
   });
@@ -19,9 +19,7 @@ export default async function handler(req, res) {
     const key = categories.find((c) => c.toLowerCase() === p.category.toLowerCase()) || 'Others';
     if (!byCategory[key]) byCategory[key] = [];
     if (byCategory[key].length < 4) {
-      let img = '';
-      try { img = JSON.parse(p.images)[0] || ''; } catch {}
-      byCategory[key].push({ id: p.id, name: p.name, price: p.price, image: img });
+      byCategory[key].push({ id: p.id, name: p.name, price: p.price });
     }
   });
 
