@@ -9,6 +9,7 @@ export default async function handler(req, res) {
     include: {
       items: { include: { product: { select: { name: true, images: true, category: true } } } },
       user: { select: { name: true, email: true, image: true } },
+      returnRequest: { select: { id: true, status: true, reason: true, createdAt: true } },
     },
   });
   if (!order) return res.status(404).json({ error: 'Not found' });

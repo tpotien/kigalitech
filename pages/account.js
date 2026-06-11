@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSession, signIn, getSession } from 'next-auth/react';
+import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Layout from '../components/Layout';
 import { useLang } from '../context/LanguageContext';
@@ -9,6 +10,7 @@ import { useCart } from '../context/CartContext';
 import ReferralCard from '../components/ReferralCard';
 import VerifiedBadge from '../components/VerifiedBadge';
 import AvatarWithBadge from '../components/AvatarWithBadge';
+import { usePushNotification } from '../hooks/usePushNotification';
 
 const STATUS_COLORS = {
   pending: 'bg-amber-100 text-amber-700',
@@ -127,10 +129,10 @@ const TRADEIN_STATUS = {
 // Tier rules: admin=Platinum, staff=Gold, regular users capped at Silver
 function LoyaltyTierCard({ points, role }) {
   const ALL_TIERS = [
-    { name: 'Bronze',   icon: '🥉', min: 0,     max: 999,      color: 'from-amber-600 to-amber-700',   bg: 'bg-amber-50 dark:bg-amber-900/20',   border: 'border-amber-200 dark:border-amber-800',   perks: ['1 point per $1 spent', 'Member discounts'] },
-    { name: 'Silver',   icon: '🥈', min: 1000,  max: 4999,     color: 'from-slate-400 to-slate-500',   bg: 'bg-slate-50 dark:bg-slate-800/50',   border: 'border-slate-200 dark:border-slate-600',   perks: ['1.5 points per $1', 'Free standard delivery', 'Early sale access'] },
-    { name: 'Gold',     icon: '🥇', min: 5000,  max: 14999,    color: 'from-yellow-400 to-amber-500',  bg: 'bg-yellow-50 dark:bg-yellow-900/20', border: 'border-yellow-200 dark:border-yellow-700', perks: ['2 points per $1', 'Free delivery always', 'Priority support', 'Birthday bonus'] },
-    { name: 'Platinum', icon: '💎', min: 15000, max: Infinity,  color: 'from-violet-500 to-purple-600', bg: 'bg-violet-50 dark:bg-violet-900/20', border: 'border-violet-200 dark:border-violet-700', perks: ['3 points per $1', '5% extra discount', 'Dedicated account manager', 'VIP events'] },
+    { name: 'Bronze',   icon: '🥉', min: 0,     max: 999,      color: 'from-amber-600 to-amber-700',   bg: 'bg-amber-50 dark:bg-amber-900/20',   border: 'border-amber-200 dark:border-amber-800',   perks: ['1 pt per RWF 1,000 spent', 'Member discounts'] },
+    { name: 'Silver',   icon: '🥈', min: 1000,  max: 4999,     color: 'from-slate-400 to-slate-500',   bg: 'bg-slate-50 dark:bg-slate-800/50',   border: 'border-slate-200 dark:border-slate-600',   perks: ['1.5 pts per RWF 1,000', 'Free standard delivery', 'Early sale access'] },
+    { name: 'Gold',     icon: '🥇', min: 5000,  max: 14999,    color: 'from-yellow-400 to-amber-500',  bg: 'bg-yellow-50 dark:bg-yellow-900/20', border: 'border-yellow-200 dark:border-yellow-700', perks: ['2 pts per RWF 1,000', 'Free delivery always', 'Priority support', 'Birthday bonus'] },
+    { name: 'Platinum', icon: '💎', min: 15000, max: Infinity,  color: 'from-violet-500 to-purple-600', bg: 'bg-violet-50 dark:bg-violet-900/20', border: 'border-violet-200 dark:border-violet-700', perks: ['3 pts per RWF 1,000', '5% extra discount', 'Dedicated account manager', 'VIP events'] },
   ];
 
   const tiers = role === 'admin'
@@ -192,6 +194,117 @@ function LoyaltyTierCard({ points, role }) {
   );
 }
 
+function AddressBook() {
+  const [addresses, setAddresses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({ label: 'Home', name: '', phone: '', address: '', isDefault: false });
+  const [adding, setAdding] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  useEffect(() => {
+    fetch('/api/account/addresses')
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d)) setAddresses(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  async function handleAdd(e) {
+    e.preventDefault();
+    setAdding(true); setMsg('');
+    const r = await fetch('/api/account/addresses', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    });
+    const data = await r.json();
+    if (r.ok) {
+      setAddresses(prev => form.isDefault ? [data, ...prev.map(a => ({ ...a, isDefault: false }))] : [...prev, data]);
+      setForm({ label: 'Home', name: '', phone: '', address: '', isDefault: false });
+      setMsg('Address saved!');
+    } else setMsg(data.error || 'Failed');
+    setAdding(false);
+  }
+
+  async function handleDelete(id) {
+    if (!confirm('Delete this address?')) return;
+    await fetch('/api/account/addresses', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    setAddresses(prev => prev.filter(a => a.id !== id));
+  }
+
+  async function setDefault(id) {
+    await fetch('/api/account/addresses', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, isDefault: true }) });
+    setAddresses(prev => prev.map(a => ({ ...a, isDefault: a.id === id })));
+  }
+
+  const inp = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100';
+
+  return (
+    <div className="space-y-6">
+      {/* Saved addresses */}
+      <div className="rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm">
+        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">Saved Addresses</h2>
+        {loading ? <div className="text-slate-400 text-sm">Loading…</div> : addresses.length === 0 ? (
+          <p className="text-sm text-slate-400">No saved addresses yet. Add one below.</p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {addresses.map(addr => (
+              <div key={addr.id} className={`rounded-2xl border p-4 ${addr.isDefault ? 'border-sky-400 bg-sky-50 dark:bg-sky-900/20' : 'border-slate-200 dark:border-slate-700'}`}>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <span className="text-xs font-bold text-sky-600 uppercase">{addr.label}</span>
+                  {addr.isDefault && <span className="text-xs font-semibold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">Default</span>}
+                </div>
+                <p className="font-semibold text-sm text-slate-800 dark:text-slate-200">{addr.name}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{addr.phone}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{addr.address}</p>
+                <div className="flex gap-2 mt-3">
+                  {!addr.isDefault && (
+                    <button onClick={() => setDefault(addr.id)} className="text-xs font-semibold text-sky-600 hover:text-sky-700">Set default</button>
+                  )}
+                  <button onClick={() => handleDelete(addr.id)} className="text-xs font-semibold text-red-500 hover:text-red-700 ml-auto">Delete</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Add address form */}
+      <div className="rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm">
+        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">Add New Address</h2>
+        <form onSubmit={handleAdd} className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">Label</label>
+              <select value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))} className={inp}>
+                {['Home', 'Work', 'Other'].map(l => <option key={l}>{l}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">Name *</label>
+              <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inp} placeholder="Full name" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">Phone *</label>
+              <input required value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className={inp} placeholder="+250 7XX XXX XXX" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">Address *</label>
+              <input required value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} className={inp} placeholder="Street, area, city" />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700 dark:text-slate-300">
+            <input type="checkbox" checked={form.isDefault} onChange={e => setForm(f => ({ ...f, isDefault: e.target.checked }))} className="rounded" />
+            Set as default address
+          </label>
+          {msg && <p className={`text-sm ${msg.includes('Failed') || msg.includes('error') ? 'text-red-600' : 'text-emerald-600'}`}>{msg}</p>}
+          <button type="submit" disabled={adding} className="rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold px-6 py-2.5 text-sm">
+            {adding ? 'Saving…' : 'Save Address'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function CopyButton({ text }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -204,12 +317,16 @@ function CopyButton({ text }) {
   );
 }
 
+const TAB_MAP = { repairs: 'repairs', 'trade-ins': 'trade-ins', tradein: 'trade-ins', wishlist: 'wishlist', profile: 'profile', orders: 'orders' };
+
 export default function AccountPage() {
   const { data: session, status } = useSession();
   const { t } = useLang();
   const { format } = useCurrency();
+  const router = useRouter();
   const { ids: wishlistIds, toggle: toggleWishlist } = useWishlist();
   const { add: addToCart } = useCart();
+  const push = usePushNotification();
   const [reorderingId, setReorderingId] = useState(null);
   const [tab, setTab] = useState('orders');
   const [wishlistItems, setWishlistItems] = useState([]);
@@ -251,10 +368,18 @@ export default function AccountPage() {
   // Loyalty points state
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
 
+  // Read ?tab= from URL (e.g. from /repairs → /account?tab=repairs)
+  useEffect(() => {
+    const t = router.query.tab;
+    const hash = window.location.hash.replace('#', '');
+    const key = t || hash;
+    if (key && TAB_MAP[key]) setTab(TAB_MAP[key]);
+  }, [router.query.tab]);
+
   useEffect(() => {
     if (status !== 'authenticated') return;
     setLoadingOrders(true);
-    fetch('/api/account/orders').then(r => r.json()).then(data => { setOrders(data); setLoadingOrders(false); });
+    fetch('/api/account/orders').then(r => r.json()).then(data => { setOrders(Array.isArray(data) ? data : []); setLoadingOrders(false); });
     setProfileName(session?.user?.name || '');
     setProfileImagePreview(session?.user?.image || null);
     fetch('/api/account/badge').then(r => r.ok ? r.json() : null).then(data => { if (data) setBadgeInfo(data); });
@@ -264,13 +389,13 @@ export default function AccountPage() {
   useEffect(() => {
     if (status !== 'authenticated' || tab !== 'repairs') return;
     setLoadingTickets(true);
-    fetch('/api/repairs').then(r => r.json()).then(data => { setTickets(data); setLoadingTickets(false); });
+    fetch('/api/repairs').then(r => r.json()).then(data => { setTickets(Array.isArray(data) ? data : []); setLoadingTickets(false); }).catch(() => setLoadingTickets(false));
   }, [status, tab]);
 
   useEffect(() => {
     if (status !== 'authenticated' || tab !== 'wishlist') return;
     setLoadingWishlist(true);
-    fetch('/api/account/wishlist').then(r => r.json()).then(data => { setWishlistItems(data); setLoadingWishlist(false); });
+    fetch('/api/account/wishlist').then(r => r.json()).then(data => { setWishlistItems(Array.isArray(data) ? data : []); setLoadingWishlist(false); }).catch(() => setLoadingWishlist(false));
   }, [status, tab]);
 
   useEffect(() => {
@@ -456,29 +581,17 @@ export default function AccountPage() {
     );
   }
 
-  if (!session) {
+  if (status === 'unauthenticated' || !session) {
+    if (typeof window !== 'undefined') window.location.replace('/signin?callbackUrl=/account');
     return (
       <Layout>
-        <div className="flex min-h-screen flex-col items-center justify-center gap-6 px-4">
-          <div className="text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-sky-100">
-              <svg className="h-8 w-8 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Sign in to your account</h1>
-            <p className="mt-2 text-slate-500 dark:text-slate-400">Access your orders, repair tickets, and profile</p>
-          </div>
-          <button
-            onClick={() => signIn()}
-            className="rounded-full bg-sky-600 px-8 py-3 font-semibold text-white shadow-lg shadow-sky-200 hover:bg-sky-700"
-          >
-            Sign In
-          </button>
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
         </div>
       </Layout>
     );
   }
+
 
   return (
     <Layout>
@@ -507,6 +620,7 @@ export default function AccountPage() {
               { id: 'wishlist', label: `Wishlist${wishlistIds.size > 0 ? ` (${wishlistIds.size})` : ''}` },
               { id: 'trade-ins', label: `Trade-Ins${tradeIns.filter(t => t.status === 'offer_made').length > 0 ? ' 🔔' : ''}` },
               { id: 'repairs', label: t('repairTickets') },
+              { id: 'addresses', label: 'Addresses' },
               { id: 'profile', label: 'Profile' },
             ].map(tab_ => (
               <button
@@ -940,6 +1054,9 @@ export default function AccountPage() {
             </div>
           )}
 
+          {/* ── Addresses Tab ── */}
+          {tab === 'addresses' && <AddressBook />}
+
           {/* ── Profile Tab ── */}
           {tab === 'profile' && (
             <div className="space-y-5">
@@ -1002,6 +1119,28 @@ export default function AccountPage() {
                 {savingProfile ? 'Saving…' : 'Save Profile'}
               </button>
             </form>
+
+            {push.supported && (
+              <div className="rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Order Notifications</p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {push.subscribed ? 'You\'ll be notified when your order status changes.' : 'Get notified about order updates, delivery status, and more.'}
+                  </p>
+                </div>
+                <button
+                  onClick={push.subscribed ? push.unsubscribe : push.subscribe}
+                  disabled={push.loading}
+                  className={`flex-shrink-0 rounded-full px-5 py-2 text-sm font-semibold transition-all disabled:opacity-50 ${
+                    push.subscribed
+                      ? 'border border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
+                      : 'bg-sky-600 text-white hover:bg-sky-700 shadow-sm'
+                  }`}
+                >
+                  {push.loading ? '…' : push.subscribed ? 'Turn Off' : 'Enable'}
+                </button>
+              </div>
+            )}
             </div>
           )}
 
