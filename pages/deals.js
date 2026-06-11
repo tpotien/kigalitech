@@ -6,19 +6,60 @@ import ProductCard from '../components/ProductCard';
 import CountdownTimer from '../components/CountdownTimer';
 import QuickViewModal from '../components/QuickViewModal';
 import Footer from '../components/Footer';
+import TrendingInTech from '../components/TrendingInTech';
 import { useLang } from '../context/LanguageContext';
 
-export async function getStaticProps() {
-  const products = await prisma.product.findMany({ where: { active: true } });
-  return { props: { products: JSON.parse(JSON.stringify(products)) }, revalidate: 60 };
+function trimImages(products) {
+  return products.map(p => {
+    let firstImg = '';
+    try { firstImg = JSON.parse(p.images)?.[0] || ''; } catch {}
+    // Strip base64 data URIs — too large to embed in static HTML (~130 KB each)
+    if (firstImg.startsWith('data:')) firstImg = '';
+    return { ...p, images: JSON.stringify([firstImg]) };
+  });
 }
 
-export default function DealsPage({ products }) {
+export async function getStaticProps() {
+  const SELECT = {
+    id: true, name: true, price: true, comparePrice: true,
+    images: true, category: true, brand: true, stock: true,
+    featured: true, flashSalePrice: true, flashSaleEnd: true,
+    genuine: true, lowStockThreshold: true,
+  };
+
+  const [saleProducts, flashProducts] = await Promise.all([
+    prisma.product.findMany({
+      where: { active: true, comparePrice: { gt: 0 } },
+      select: SELECT,
+      orderBy: { featured: 'desc' },
+      take: 48,
+    }),
+    prisma.product.findMany({
+      where: { active: true, OR: [{ name: { contains: 'XM6' } }, { flashSalePrice: { gt: 0 } }] },
+      select: SELECT,
+      take: 3,
+    }),
+  ]);
+
+  const seen = new Set(saleProducts.map(p => p.id));
+  const flashDeal = flashProducts.find(p => !seen.has(p.id)) || saleProducts[0] || null;
+  const products = [...saleProducts, ...(flashDeal && !seen.has(flashDeal.id) ? [flashDeal] : [])];
+
+  return {
+    props: {
+      products: JSON.parse(JSON.stringify(trimImages(products))),
+      flashDealId: flashDeal?.id || null,
+    },
+    revalidate: 60,
+  };
+}
+
+export default function DealsPage({ products, flashDealId }) {
   const { t } = useLang();
   const [quickViewProduct, setQuickViewProduct] = useState(null);
 
   const saleProducts = products.filter(p => p.comparePrice && p.comparePrice > p.price);
-  const flashDeal = products.find(p => p.name && p.name.includes('XM6')) || saleProducts[0] || null;
+  const flashDeal = (flashDealId ? products.find(p => p.id === flashDealId) : null) || saleProducts[0] || null;
 
   return (
     <Layout>
@@ -80,6 +121,7 @@ export default function DealsPage({ products }) {
           )}
         </section>
 
+        <TrendingInTech />
         <Footer />
       </div>
 

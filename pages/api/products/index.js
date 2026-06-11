@@ -32,10 +32,11 @@ export default async function handler(req, res) {
     take: limit ? Number(limit) : 48,
   });
 
-  // Strip images to first only to reduce payload size
+  // Strip images to first only; skip base64 data URIs (~130 KB each)
   const trimmed = products.map((p) => {
     let firstImg = '';
     try { firstImg = JSON.parse(p.images || '[]')[0] || ''; } catch {}
+    if (firstImg.startsWith('data:')) firstImg = '';
     return { ...p, images: JSON.stringify([firstImg]) };
   });
 

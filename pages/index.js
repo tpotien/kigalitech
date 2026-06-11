@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 import { useLang } from '../context/LanguageContext';
 import prisma from '../lib/prisma';
 import Layout from '../components/Layout';
@@ -9,14 +10,25 @@ import MarqueeBanner from '../components/MarqueeBanner';
 import HeroSection from '../components/HeroSection';
 import FeaturedCategories from '../components/FeaturedCategories';
 import ProductCard from '../components/ProductCard';
+import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import QuickViewModal from '../components/QuickViewModal';
 import CountdownTimer from '../components/CountdownTimer';
-import TrustBadges from '../components/TrustBadges';
 import TrendingInTech from '../components/TrendingInTech';
 import Newsletter from '../components/Newsletter';
 import Footer from '../components/Footer';
+import RecentlyViewed from '../components/RecentlyViewed';
 
 function parse(val) { try { return typeof val === 'string' ? JSON.parse(val) : val; } catch { return []; } }
+
+function trimImages(products) {
+  return products.map(p => {
+    let firstImg = '';
+    try { firstImg = JSON.parse(p.images)?.[0] || ''; } catch {}
+    // Strip base64 data URIs — too large to embed in static HTML (~130 KB each)
+    if (firstImg.startsWith('data:')) firstImg = '';
+    return { ...p, images: JSON.stringify([firstImg]) };
+  });
+}
 
 const SITE_DEFAULTS = {
   flashDealProductId: '', flashDealDiscount: '25', flashDealHours: '8', flashDealLabel: 'Flash Deal — Ends Soon',
@@ -26,23 +38,54 @@ const SITE_DEFAULTS = {
 };
 
 export async function getStaticProps() {
-  const [products, configRows] = await Promise.all([
-    prisma.product.findMany({ where: { active: true }, take: 24 }),
-    prisma.siteConfig.findMany(),
+  const [products, configRows, dbReviews] = await Promise.all([
+    prisma.product.findMany({
+      where: { active: true }, take: 24,
+      select: {
+        id: true, name: true, price: true, comparePrice: true,
+        images: true, category: true, brand: true, stock: true,
+        featured: true, colors: true, flashSalePrice: true, flashSaleEnd: true,
+        genuine: true, lowStockThreshold: true,
+      },
+    }),
+    prisma.siteConfig.findMany({
+      where: {
+        key: { in: [
+          'flashDealProductId', 'flashDealDiscount', 'flashDealHours', 'flashDealLabel',
+          'heroBadgeText', 'heroTitle', 'heroSubtitle', 'heroImageUrl',
+          'heroProductId', 'heroPriceLabel', 'heroPrice',
+        ]},
+      },
+    }),
+    prisma.review.findMany({
+      where: { approved: true },
+      orderBy: { createdAt: 'desc' },
+      take: 6,
+      select: {
+        id: true, rating: true, comment: true, createdAt: true,
+        user: { select: { name: true } },
+        product: { select: { name: true } },
+      },
+    }).catch(() => []),
   ]);
   const siteConfig = { ...SITE_DEFAULTS };
   configRows.forEach(r => { siteConfig[r.key] = r.value; });
   return {
-    props: { products: JSON.parse(JSON.stringify(products)), siteConfig },
-    revalidate: 15,
+    props: {
+      products: JSON.parse(JSON.stringify(trimImages(products))),
+      siteConfig,
+      reviews: JSON.parse(JSON.stringify(dbReviews)),
+    },
+    revalidate: 60,
   };
 }
 
-export default function Home({ products, siteConfig = {} }) {
+export default function Home({ products, siteConfig = {}, reviews = [] }) {
   const { t } = useLang();
   const router = useRouter();
   const [quickViewProduct, setQuickViewProduct] = useState(null);
   const [activeColor, setActiveColor] = useState('All');
+  const [sort, setSort] = useState('default');
 
   // Capture referral code from ?ref= query param
   useEffect(() => {
@@ -67,14 +110,30 @@ export default function Home({ products, siteConfig = {} }) {
     || products.find(p => p.comparePrice && p.comparePrice > p.price)
     || products[0];
 
-  const filtered = useMemo(() => products.filter((p) => {
-    const catOk = activeCategory === 'All' || p.category === activeCategory;
-    const colorOk = activeColor === 'All' || parse(p.colors).includes(activeColor);
-    return catOk && colorOk;
-  }), [products, activeCategory, activeColor]);
+  const filtered = useMemo(() => {
+    let list = products.filter((p) => {
+      const catOk = activeCategory === 'All' || p.category === activeCategory;
+      const colorOk = activeColor === 'All' || parse(p.colors).includes(activeColor);
+      return catOk && colorOk;
+    });
+    if (sort === 'price_asc') list = [...list].sort((a, b) => a.price - b.price);
+    else if (sort === 'price_desc') list = [...list].sort((a, b) => b.price - a.price);
+    else if (sort === 'newest') list = [...list].sort((a, b) => b.id - a.id);
+    else if (sort === 'discount') list = [...list].sort((a, b) => {
+      const da = a.comparePrice > a.price ? (a.comparePrice - a.price) / a.comparePrice : 0;
+      const db = b.comparePrice > b.price ? (b.comparePrice - b.price) / b.comparePrice : 0;
+      return db - da;
+    });
+    return list;
+  }, [products, activeCategory, activeColor, sort]);
+
+  const heroImageUrl = siteConfig.heroImageUrl || '/hero-robot.png';
 
   return (
     <Layout>
+      <Head>
+        <link rel="preload" as="image" href={heroImageUrl} fetchpriority="high" />
+      </Head>
       <SEOMeta
         title="KigaliTech — Premium Electronics in Rwanda"
         url="https://kigalitechservices.com"
@@ -82,7 +141,6 @@ export default function Home({ products, siteConfig = {} }) {
       <FlashSaleBanner />
       <MarqueeBanner />
       <HeroSection config={siteConfig} />
-      <TrustBadges />
       <FeaturedCategories />
 
       <CountdownTimer
@@ -95,12 +153,26 @@ export default function Home({ products, siteConfig = {} }) {
       {/* Product Grid */}
       <section id="products" className="mx-auto max-w-7xl px-3 py-5 sm:py-16 sm:px-6 lg:px-8">
         <div className="mb-4 sm:mb-6">
-          <div className="flex items-end justify-between mb-3 sm:mb-4">
+          {/* Header row */}
+          <div className="flex items-end justify-between mb-3 sm:mb-4 gap-3 flex-wrap">
             <div>
               <p className="text-[10px] sm:text-sm font-semibold uppercase tracking-widest text-sky-600">{t('categories')}</p>
               <h2 className="mt-0.5 text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100">{t('featuredProducts')}</h2>
             </div>
-            <p className="text-[11px] sm:text-sm text-slate-500">{filtered.length} item{filtered.length !== 1 ? 's' : ''}</p>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="text-[11px] sm:text-sm text-slate-400 hidden sm:inline">{filtered.length} item{filtered.length !== 1 ? 's' : ''}</span>
+              <select
+                value={sort}
+                onChange={e => setSort(e.target.value)}
+                className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs sm:text-sm text-slate-700 dark:text-slate-200 outline-none focus:border-sky-400 cursor-pointer"
+              >
+                <option value="default">Featured</option>
+                <option value="price_asc">Price: Low → High</option>
+                <option value="price_desc">Price: High → Low</option>
+                <option value="newest">Newest First</option>
+                <option value="discount">Biggest Discount</option>
+              </select>
+            </div>
           </div>
 
           {/* Category filter */}
@@ -111,7 +183,7 @@ export default function Home({ products, siteConfig = {} }) {
               return (
                 <button
                   key={cat}
-                  onClick={() => setActiveCategory(cat)}
+                  onClick={() => { setActiveCategory(cat); setSort('default'); }}
                   className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                     active
                       ? 'bg-sky-600 text-white shadow-sm shadow-sky-200'
@@ -148,18 +220,28 @@ export default function Home({ products, siteConfig = {} }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onQuickView={setQuickViewProduct}
-            />
-          ))}
-        </div>
-
-        {filtered.length === 0 && (
-          <div className="py-20 text-center text-slate-400">{t('noResults')}</div>
+        {filtered.length === 0 ? (
+          <div className="py-20 text-center">
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-4xl">🔍</div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{t('noResults')}</h3>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">No products match the selected filters.</p>
+            <button
+              onClick={() => { setActiveCategory('All'); setActiveColor('All'); setSort('default'); }}
+              className="mt-5 rounded-full bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 transition-colors"
+            >
+              Clear Filters
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filtered.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onQuickView={setQuickViewProduct}
+              />
+            ))}
+          </div>
         )}
       </section>
 
@@ -173,32 +255,41 @@ export default function Home({ products, siteConfig = {} }) {
             <h2 className="mt-0.5 text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100">{t('customersReviews')}</h2>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
-            {REVIEWS.map((r) => (
-              <div key={r.name} className="relative rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 p-3.5 sm:p-6 shadow-sm flex flex-col">
-                <span className="absolute top-2.5 right-3.5 text-3xl leading-none text-sky-100 dark:text-sky-900/60 font-serif select-none">&ldquo;</span>
-                <div className="flex gap-0.5 text-amber-400">
-                  {Array.from({ length: r.stars }).map((_, i) => (
-                    <svg key={i} className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-                <p className="mt-2 sm:mt-3 text-[11px] sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-4 flex-1">"{r.text}"</p>
-                <div className="mt-3 sm:mt-4 flex items-center gap-2 sm:gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
-                  <div className="flex h-7 w-7 sm:h-9 sm:w-9 flex-shrink-0 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/40 text-xs sm:text-sm font-bold text-sky-600 dark:text-sky-400">
-                    {r.name[0]}
+            {(reviews.length > 0 ? reviews : FALLBACK_REVIEWS).slice(0, 6).map((r, i) => {
+              const name = r.name || r.user?.name || 'Customer';
+              const stars = r.stars || r.rating || 5;
+              const text = r.text || r.comment || '';
+              const product = r.product || (r.product?.name) || '';
+              return (
+                <div key={r.id || r.name || i} className="relative rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 p-3.5 sm:p-6 shadow-sm flex flex-col">
+                  <span className="absolute top-2.5 right-3.5 text-3xl leading-none text-sky-100 dark:text-sky-900/60 font-serif select-none">&ldquo;</span>
+                  <div className="flex gap-0.5 text-amber-400">
+                    {Array.from({ length: Math.min(5, Math.round(stars)) }).map((_, i) => (
+                      <svg key={i} className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{r.name}</p>
-                    <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 truncate">{r.product}</p>
+                  <p className="mt-2 sm:mt-3 text-[11px] sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-4 flex-1">&ldquo;{text}&rdquo;</p>
+                  <div className="mt-3 sm:mt-4 flex items-center gap-2 sm:gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                    <div className="flex h-7 w-7 sm:h-9 sm:w-9 flex-shrink-0 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/40 text-xs sm:text-sm font-bold text-sky-600 dark:text-sky-400">
+                      {name[0]?.toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{name}</p>
+                      <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 truncate">{typeof product === 'object' ? product?.name : product}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
 
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <RecentlyViewed />
+      </div>
       <Newsletter />
       <Footer />
 
@@ -212,7 +303,7 @@ export default function Home({ products, siteConfig = {} }) {
   );
 }
 
-const REVIEWS = [
+const FALLBACK_REVIEWS = [
   { name: 'Alex M.', stars: 5, text: 'MacBook Pro arrived perfectly packaged. The M3 chip is insanely fast — my whole workflow changed overnight.', product: 'Apple MacBook Pro 14"' },
   { name: 'Sarah K.', stars: 5, text: 'The Sony WH-1000XM5 noise canceling is on another level. I can finally work from home without distractions.', product: 'Sony WH-1000XM5 Headphones' },
   { name: 'James O.', stars: 5, text: 'Galaxy S24 Ultra camera blew me away. The S Pen is a bonus I didn\'t know I needed. Delivery was same day!', product: 'Samsung Galaxy S24 Ultra' },
