@@ -1,4 +1,24 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+
+function useCountdown(endDate) {
+  const calc = useCallback(() => {
+    if (!endDate) return null;
+    const diff = new Date(endDate).getTime() - Date.now();
+    if (diff <= 0) return null;
+    return {
+      hours: Math.floor(diff / (1000 * 60 * 60)),
+      mins: Math.floor((diff / 1000 / 60) % 60),
+      secs: Math.floor((diff / 1000) % 60),
+    };
+  }, [endDate]);
+  const [t, setT] = useState(calc);
+  useEffect(() => {
+    if (!endDate) return;
+    const id = setInterval(() => setT(calc()), 1000);
+    return () => clearInterval(id);
+  }, [endDate, calc]);
+  return t;
+}
 import prisma from '../../lib/prisma';
 import SEOMeta from '../../components/SEOMeta';
 import Link from 'next/link';
@@ -19,6 +39,8 @@ import ProductQA from '../../components/ProductQA';
 import VerifiedBadge from '../../components/VerifiedBadge';
 import PreOrderButton from '../../components/PreOrderButton';
 import BundleSection from '../../components/BundleSection';
+import TrendingInTech from '../../components/TrendingInTech';
+import RecentlyViewed, { trackView } from '../../components/RecentlyViewed';
 
 export async function getStaticPaths() {
   const products = await prisma.product.findMany({ where: { active: true } });
@@ -26,7 +48,9 @@ export async function getStaticPaths() {
 }
 
 export async function getStaticProps({ params }) {
-  const product = await prisma.product.findUnique({ where: { id: Number(params.id) } });
+  const id = Number(params.id);
+  if (!Number.isFinite(id)) return { redirect: { destination: '/', permanent: false } };
+  const product = await prisma.product.findUnique({ where: { id } });
   if (!product) return { notFound: true };
 
   // Fetch bundled products
@@ -41,18 +65,43 @@ export async function getStaticProps({ params }) {
     }
   } catch {}
 
+  // Strip base64 images from ISR HTML — loaded client-side instead
+  function stripBase64(imagesJson) {
+    try {
+      const imgs = JSON.parse(imagesJson || '[]');
+      const cleaned = imgs.map(img => (img && !img.startsWith('data:') ? img : ''));
+      return JSON.stringify(cleaned);
+    } catch { return '[]'; }
+  }
+  const cleanProduct = {
+    ...product,
+    images: stripBase64(product.images),
+    colorImages: (() => {
+      try {
+        const map = JSON.parse(product.colorImages || '{}');
+        const clean = {};
+        for (const [k, v] of Object.entries(map)) {
+          clean[k] = v && !v.startsWith('data:') ? v : '';
+        }
+        return JSON.stringify(clean);
+      } catch { return '{}'; }
+    })(),
+  };
+  const cleanBundled = bundledProducts.map(p => ({ ...p, images: stripBase64(p.images) }));
+
   return {
     props: {
-      product: JSON.parse(JSON.stringify(product)),
-      bundledProducts: JSON.parse(JSON.stringify(bundledProducts)),
+      product: JSON.parse(JSON.stringify(cleanProduct)),
+      bundledProducts: JSON.parse(JSON.stringify(cleanBundled)),
     },
     revalidate: 60,
   };
 }
 
 function parseField(val) {
-  if (Array.isArray(val)) return val;
-  try { return JSON.parse(val); } catch { return []; }
+  const normalize = arr => arr.map(s => (typeof s === 'object' && s !== null ? s.value || '' : s)).filter(Boolean);
+  if (Array.isArray(val)) return normalize(val);
+  try { const p = JSON.parse(val); return Array.isArray(p) ? normalize(p) : []; } catch { return []; }
 }
 
 function getYouTubeId(url) {
@@ -400,13 +449,35 @@ export default function ProductPage({ product, bundledProducts = [] }) {
   const { data: session } = useSession();
   const { setWhatsappCtx } = useWhatsAppCtx();
   const galleryRef = useRef(null);
+  const touchStartX = useRef(null);
+  const didSwipe = useRef(false);
   const [lightbox, setLightbox] = useState(false);
   const [imgErrors, setImgErrors] = useState({});
   const [showQR, setShowQR] = useState(false);
+  const [liveImages, setLiveImages] = useState(null);
+  const [liveColorImages, setLiveColorImages] = useState(null);
 
   useEffect(() => {
     setWhatsappCtx({ type: 'product', name: product.name, id: product.id });
+    trackView(product);
     return () => setWhatsappCtx(null);
+  }, [product.id]);
+
+  // Load full images client-side if static props had base64 stripped
+  useEffect(() => {
+    const imgs = Array.isArray(product.images)
+      ? product.images
+      : (() => { try { return JSON.parse(product.images || '[]'); } catch { return []; } })();
+    const hasImages = imgs.some(img => img && img.length > 10);
+    if (!hasImages) {
+      fetch(`/api/products/${product.id}/images`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.images) setLiveImages(d.images);
+          if (d.colorImages) setLiveColorImages(d.colorImages);
+        })
+        .catch(() => {});
+    }
   }, [product.id]);
 
   const colors = parseField(product.colors);
@@ -419,9 +490,16 @@ export default function ProductPage({ product, bundledProducts = [] }) {
   const storageStock = (() => { try { return JSON.parse(product.storageStock || '{}'); } catch { return {}; } })();
 
   // Per-color image map: { "Black": "url", "White": "url2", ... }
-  const colorImages = (() => { try { return JSON.parse(product.colorImages || '{}'); } catch { return {}; } })();
-  // Base product images (gallery)
-  const baseImages = Array.isArray(product.images) ? product.images : JSON.parse(product.images || '[]');
+  // Prefer live (client-fetched) images if available (base64 was stripped from ISR props)
+  const colorImages = (() => {
+    const src = liveColorImages || product.colorImages;
+    try { return JSON.parse(typeof src === 'string' ? src : '{}'); } catch { return {}; }
+  })();
+  const baseImages = (() => {
+    const src = liveImages || product.images;
+    const arr = Array.isArray(src) ? src : (() => { try { return JSON.parse(src || '[]'); } catch { return []; } })();
+    return arr.filter(img => img && img.length > 5);
+  })();
 
   // Build the image array for a given color selection:
   // color-specific image goes first, then remaining base images (deduped)
@@ -434,6 +512,25 @@ export default function ProductPage({ product, bundledProducts = [] }) {
 
   const colorAvailable = (c) => colorStock[c] === undefined || colorStock[c] > 0;
   const storageAvailable = (s) => storageStock[s] === undefined || storageStock[s] > 0;
+
+  const [priceAlertSubscribed, setPriceAlertSubscribed] = useState(false);
+  const [priceAlertLoading, setPriceAlertLoading] = useState(false);
+  useEffect(() => {
+    fetch(`/api/price-alerts?productId=${product.id}`).then(r => r.json()).then(d => setPriceAlertSubscribed(d.subscribed)).catch(() => {});
+  }, [product.id]);
+  async function togglePriceAlert() {
+    setPriceAlertLoading(true);
+    try {
+      if (priceAlertSubscribed) {
+        await fetch(`/api/price-alerts?productId=${product.id}`, { method: 'DELETE' });
+        setPriceAlertSubscribed(false);
+      } else {
+        await fetch(`/api/price-alerts?productId=${product.id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+        setPriceAlertSubscribed(true);
+      }
+    } catch {}
+    setPriceAlertLoading(false);
+  }
   const colorQty = (c) => colorStock[c];
   const storageQty = (s) => storageStock[s];
 
@@ -452,7 +549,10 @@ export default function ProductPage({ product, bundledProducts = [] }) {
   }) || storageOptions[0] || '';
   const [storage, setStorage] = useState(firstAvailableStorage);
   const storagePrices = (() => { try { return JSON.parse(product.storagePrice || '{}'); } catch { return {}; } })();
-  const displayPrice = (storageOptions.length > 1 && storagePrices[storage]) ? storagePrices[storage] : product.price;
+  const displayPrice = product.price + (storagePrices[storage] || 0);
+  const flashActive = product.flashSalePrice && product.flashSaleEnd && new Date(product.flashSaleEnd) > new Date();
+  const flashPrice = flashActive ? product.flashSalePrice : null;
+  const flashCountdown = useCountdown(flashActive ? product.flashSaleEnd : null);
 
   function handleColorChange(c) {
     if (!colorAvailable(c)) return;
@@ -480,7 +580,8 @@ export default function ProductPage({ product, bundledProducts = [] }) {
   }, [product.id]);
 
   function handleAddToCart() {
-    addItem({ id: product.id, name: product.name, price: product.price, image: colorImages[color] || images[0], color, storage, quantity });
+    const itemPrice = product.preOrder && product.preOrderDeposit > 0 ? product.preOrderDeposit : (flashPrice || displayPrice);
+    addItem({ id: product.id, name: product.name, price: itemPrice, image: colorImages[color] || images[0], color, storage, quantity, isPreOrder: product.preOrder || false });
     setAdded(true);
     toast({ type: 'cart', title: 'Added to cart!', message: `${product.name}${color ? ` · ${color}` : ''}` });
     setTimeout(() => setAdded(false), 1500);
@@ -510,11 +611,41 @@ export default function ProductPage({ product, bundledProducts = [] }) {
     if (idx !== activeImg) setActiveImg(idx);
   }
 
+  function handleTouchStart(e) {
+    touchStartX.current = e.touches[0].clientX;
+    didSwipe.current = false;
+  }
+
+  function handleTouchEnd(e) {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 10) didSwipe.current = true;
+    touchStartX.current = null;
+  }
+
   // SEO
   const metaTitle = `${product.name} — KigaliTech`;
   const metaDesc = product.description?.slice(0, 155) || `Buy ${product.name} at KigaliTech Rwanda. ${product.category} products at the best prices.`;
   const metaImage = images[0] || '';
   const canonicalUrl = `${process.env.NEXTAUTH_URL || 'https://kigalitech.com'}/products/${product.id}`;
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: product.description || metaDesc,
+    image: images,
+    brand: { '@type': 'Brand', name: product.brand || 'KigaliTech' },
+    sku: String(product.id),
+    offers: {
+      '@type': 'Offer',
+      price: Math.round(displayPrice),
+      priceCurrency: 'RWF',
+      availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      url: canonicalUrl,
+      seller: { '@type': 'Organization', name: 'KigaliTech' },
+    },
+  };
 
   return (
     <Layout>
@@ -524,6 +655,10 @@ export default function ProductPage({ product, bundledProducts = [] }) {
         image={metaImage}
         url={canonicalUrl}
         type="product"
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 px-3 py-4 sm:px-6 sm:py-10 lg:px-8">
         <div className="mx-auto max-w-6xl">
@@ -567,22 +702,29 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                   <div
                     ref={galleryRef}
                     onScroll={handleGalleryScroll}
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={handleTouchEnd}
                     className="gallery-scroll flex overflow-x-auto lg:overflow-x-hidden cursor-zoom-in"
-                    style={{ scrollSnapType: 'x mandatory' }}
-                    onClick={() => setLightbox(true)}
+                    style={{ scrollSnapType: 'x mandatory', scrollBehavior: 'smooth' }}
+                    onClick={() => { if (!didSwipe.current) setLightbox(true); }}
                   >
-                    {images.map((src, i) => (
+                    {images.length === 0 ? (
+                      <div className="flex-shrink-0 w-full" style={{ scrollSnapAlign: 'start' }}>
+                        <div className="h-[340px] sm:h-[460px] w-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 animate-pulse">
+                          <span className="text-6xl opacity-30">📷</span>
+                        </div>
+                      </div>
+                    ) : images.map((src, i) => (
                       <div key={i} className="flex-shrink-0 w-full" style={{ scrollSnapAlign: 'start' }}>
                         {imgErrors[i] ? (
-                          <div className="h-[340px] sm:h-[460px] w-full flex items-center justify-center" style={{ display: i === activeImg ? 'flex' : 'none' }}>
+                          <div className="h-[340px] sm:h-[460px] w-full flex items-center justify-center">
                             <span className="text-6xl">📷</span>
                           </div>
                         ) : (
                           <img
                             src={src}
                             alt={`${product.name} — view ${i + 1}`}
-                            className="h-[340px] sm:h-[460px] w-full object-contain p-6 transition-transform duration-500 hover:scale-105"
-                            style={{ display: i === activeImg ? 'block' : 'none' }}
+                            className="h-[340px] sm:h-[460px] w-full object-contain bg-white dark:bg-slate-900"
                             onError={() => setImgErrors(prev => ({ ...prev, [i]: true }))}
                           />
                         )}
@@ -645,7 +787,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                         <img
                           src={src}
                           alt=""
-                          className="h-full w-full object-contain p-1.5 bg-[radial-gradient(ellipse_at_center,#f8fafc_0%,#f1f5f9_100%)] dark:bg-[radial-gradient(ellipse_at_center,#1e293b_0%,#0f172a_100%)]"
+                          className="h-full w-full object-contain bg-white dark:bg-slate-900"
                         />
                       </button>
                     ))}
@@ -658,7 +800,20 @@ export default function ProductPage({ product, bundledProducts = [] }) {
 
               {/* ── Lightbox ── */}
               {lightbox && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm" onClick={() => setLightbox(false)}>
+                <div
+                  className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+                  onClick={() => setLightbox(false)}
+                  onTouchStart={e => { touchStartX.current = e.touches[0].clientX; didSwipe.current = false; }}
+                  onTouchEnd={e => {
+                    const dx = e.changedTouches[0].clientX - (touchStartX.current ?? e.changedTouches[0].clientX);
+                    if (Math.abs(dx) > 40) {
+                      didSwipe.current = true;
+                      if (dx < 0) setActiveImg(i => Math.min(images.length - 1, i + 1));
+                      else setActiveImg(i => Math.max(0, i - 1));
+                    }
+                    touchStartX.current = null;
+                  }}
+                >
                   <button className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition">
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                   </button>
@@ -669,12 +824,22 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                     onClick={(e) => e.stopPropagation()}
                   />
                   {images.length > 1 && (
-                    <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2">
-                      {images.map((_, i) => (
-                        <button key={i} onClick={(e) => { e.stopPropagation(); setActiveImg(i); }}
-                          className={`h-2 rounded-full transition-all ${i === activeImg ? 'w-6 bg-white' : 'w-2 bg-white/40'}`} />
-                      ))}
-                    </div>
+                    <>
+                      <button onClick={e => { e.stopPropagation(); setActiveImg(i => Math.max(0, i - 1)); }}
+                        className={`absolute left-4 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/25 transition ${activeImg === 0 ? 'opacity-30 pointer-events-none' : ''}`}>
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                      </button>
+                      <button onClick={e => { e.stopPropagation(); setActiveImg(i => Math.min(images.length - 1, i + 1)); }}
+                        className={`absolute right-4 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/25 transition ${activeImg === images.length - 1 ? 'opacity-30 pointer-events-none' : ''}`}>
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                      </button>
+                      <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2">
+                        {images.map((_, i) => (
+                          <button key={i} onClick={(e) => { e.stopPropagation(); setActiveImg(i); }}
+                            className={`h-2 rounded-full transition-all ${i === activeImg ? 'w-6 bg-white' : 'w-2 bg-white/40'}`} />
+                        ))}
+                      </div>
+                    </>
                   )}
                 </div>
               )}
@@ -750,12 +915,30 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                 </div>
 
                 {/* Price + stock */}
-                <div className="rounded-2xl bg-slate-50 dark:bg-slate-800 p-4 flex items-center justify-between">
+                <div className={`rounded-2xl p-4 flex items-center justify-between ${flashActive ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' : 'bg-slate-50 dark:bg-slate-800'}`}>
                   <div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Price</p>
-                    <p className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">{format(displayPrice)}</p>
-                    {product.comparePrice && (
-                      <p className="text-sm text-slate-400 line-through">{format(product.comparePrice)}</p>
+                    {flashActive ? (
+                      <>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="rounded-full bg-red-500 px-2.5 py-0.5 text-[11px] font-bold text-white uppercase tracking-wide">⚡ Flash Sale</span>
+                          {flashCountdown && (
+                            <span className="text-xs font-mono font-bold text-red-600 dark:text-red-400">
+                              {String(flashCountdown.hours).padStart(2,'0')}:{String(flashCountdown.mins).padStart(2,'0')}:{String(flashCountdown.secs).padStart(2,'0')}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-3xl font-extrabold text-red-600 dark:text-red-400">{format(flashPrice)}</p>
+                        <p className="text-sm text-slate-400 line-through">{format(displayPrice)}</p>
+                        <p className="text-xs text-red-500 font-semibold mt-0.5">Save {Math.round((1 - flashPrice / displayPrice) * 100)}%</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Price</p>
+                        <p className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">{format(displayPrice)}</p>
+                        {product.comparePrice && (
+                          <p className="text-sm text-slate-400 line-through">{format(product.comparePrice)}</p>
+                        )}
+                      </>
                     )}
                   </div>
                   <div className={`rounded-full px-3 py-1.5 text-xs font-bold ${
@@ -844,8 +1027,8 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                       {storageOptions.map((s) => {
                         const avail = storageAvailable(s);
                         const qty = storageQty(s);
-                        const sPrice = storagePrices[s];
-                        const priceDiff = sPrice && product.price ? sPrice - product.price : 0;
+                        const sPrice = storagePrices[s] || 0;
+                        const priceDiff = sPrice;
                         return (
                           <button
                             key={s}
@@ -868,12 +1051,15 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                             <span>{s}</span>
                             {!avail ? (
                               <span className="text-[9px] font-semibold text-red-400 leading-tight">Not available</span>
-                            ) : sPrice ? (
-                              <span className={`text-[10px] font-semibold leading-tight ${storage === s ? 'text-sky-500' : 'text-slate-400'}`}>
-                                {format(sPrice)}
-                                {priceDiff > 0 && <span className="text-emerald-500 ml-0.5">+{format(priceDiff)}</span>}
+                            ) : priceDiff > 0 ? (
+                              <span className={`text-[10px] font-semibold leading-tight ${storage === s ? 'text-sky-500 dark:text-sky-300' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                +{format(priceDiff)}
                               </span>
-                            ) : null}
+                            ) : (
+                              <span className="text-[10px] font-semibold leading-tight text-slate-400 dark:text-slate-500">
+                                base
+                              </span>
+                            )}
                             {avail && qty !== undefined && qty <= 3 && (
                               <span className="absolute -top-2 -right-1 rounded-full bg-amber-400 px-1.5 text-[9px] font-bold text-white shadow-sm">
                                 {qty} left
@@ -1022,6 +1208,22 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                   <StockAlertButton productId={product.id} />
                 )}
 
+                {/* Price drop alert */}
+                {product.stock > 0 && (
+                  <button
+                    onClick={togglePriceAlert}
+                    disabled={priceAlertLoading}
+                    className={`w-full flex items-center justify-center gap-2 rounded-full border py-2.5 text-sm font-semibold transition-all ${
+                      priceAlertSubscribed
+                        ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-700 dark:text-emerald-400'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-sky-300 hover:text-sky-700 hover:bg-sky-50'
+                    }`}
+                  >
+                    <span>{priceAlertSubscribed ? '🔔' : '🔕'}</span>
+                    {priceAlertSubscribed ? 'Notified on price drop ✓' : 'Notify me if price drops'}
+                  </button>
+                )}
+
                 {/* Wishlist + Compare row */}
                 <div className="flex items-center gap-3 pt-1">
                   <button
@@ -1120,6 +1322,10 @@ export default function ProductPage({ product, bundledProducts = [] }) {
             </div>
           )}
         </div>
+      </div>
+      <TrendingInTech />
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <RecentlyViewed currentId={product.id} />
       </div>
       <Footer />
 

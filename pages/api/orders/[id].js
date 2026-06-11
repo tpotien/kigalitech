@@ -12,5 +12,17 @@ export default async function handler(req, res) {
     },
   });
   if (!order) return res.status(404).json({ error: 'Not found' });
-  res.json(order);
+
+  // Strip base64 images from order item products to keep response small
+  const stripped = {
+    ...order,
+    items: order.items.map(item => {
+      if (!item.product?.images) return item;
+      let firstImg = '';
+      try { firstImg = JSON.parse(item.product.images)[0] || ''; } catch {}
+      if (firstImg.startsWith('data:')) firstImg = '';
+      return { ...item, product: { ...item.product, images: JSON.stringify([firstImg]) } };
+    }),
+  };
+  res.json(stripped);
 }

@@ -6,8 +6,12 @@ import Layout from '../../components/Layout';
 import { useLang } from '../../context/LanguageContext';
 import { useCurrency } from '../../context/CurrencyContext';
 import { useWhatsAppCtx } from '../../context/WhatsAppContext';
+import { useCart } from '../../context/CartContext';
 
 function parse(val) { try { return typeof val === 'string' ? JSON.parse(val) : val; } catch { return {}; } }
+function toRwf(n) { return Math.round(n); }
+function rwf(n) { return `RWF ${Math.round(n).toLocaleString()}`; }
+function parseImages(val) { try { return JSON.parse(val || '[]'); } catch { return []; } }
 
 const STATUS_STEPS = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
 
@@ -169,6 +173,9 @@ export default function OrderPage() {
   const { format } = useCurrency();
   const { setWhatsappCtx } = useWhatsAppCtx();
   const [order, setOrder] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [reordering, setReordering] = useState(false);
+  const { addItem, toggleDrawer } = useCart();
   const eventRef = useRef(null);
 
   useEffect(() => {
@@ -197,7 +204,27 @@ export default function OrderPage() {
     };
     eventRef.current = sse;
     return () => sse.close();
-  }, [query.id]);
+  }, [query.id, authStatus]);
+
+  async function handleReorder() {
+    if (!order?.items?.length) return;
+    setReordering(true);
+    order.items.forEach(item => {
+      const imgs = (() => { try { return JSON.parse(item.product?.images || '[]'); } catch { return []; } })();
+      addItem({ id: item.productId, name: item.name, price: item.price, image: imgs[0] || '', color: item.color, storage: item.storage, quantity: item.quantity || 1 });
+    });
+    setReordering(false);
+    toggleDrawer();
+  }
+
+  async function handleCancel() {
+    if (!confirm('Cancel this order? This cannot be undone.')) return;
+    setCancelling(true);
+    const res = await fetch(`/api/orders/${order.id}/cancel`, { method: 'POST' });
+    if (res.ok) setOrder(prev => ({ ...prev, status: 'cancelled' }));
+    else alert('Could not cancel order. Contact support.');
+    setCancelling(false);
+  }
 
   if (authStatus === 'loading' || !order) return (
     <Layout>
@@ -235,7 +262,19 @@ export default function OrderPage() {
         @page { margin: 12mm; size: A4; }
       ` }} />
 
-      <div className="print-area mx-auto max-w-2xl px-4 py-8 sm:px-6">
+      <div className="print-area mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+
+        {/* Receipt blocked notice */}
+        {query.receipt === 'blocked' && (
+          <div className="no-print mb-5 rounded-2xl bg-amber-50 border border-amber-200 px-5 py-4 flex items-start gap-3">
+            <span className="text-xl flex-shrink-0">🔒</span>
+            <div>
+              <p className="font-semibold text-amber-800 text-sm">Receipt not available yet</p>
+              <p className="text-xs text-amber-600 mt-0.5">Your payment has not been confirmed. The receipt will be available once KigaliTech confirms your payment. For help, WhatsApp <a href="https://wa.me/250786276555" className="font-semibold underline">+250 786 276 555</a>.</p>
+            </div>
+          </div>
+        )}
+
         {/* Back + Print */}
         <div className="no-print mb-6 flex items-center justify-between">
           <Link href="/account" className="flex items-center gap-2 text-sm text-slate-500 hover:text-sky-600 no-underline">
@@ -244,7 +283,23 @@ export default function OrderPage() {
             </svg>
             My Orders
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {['pending', 'confirmed'].includes(order.status) && (
+              <button onClick={handleCancel} disabled={cancelling}
+                className="flex items-center gap-1.5 rounded-full border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 active:scale-95 transition-all disabled:opacity-50">
+                {cancelling ? 'Cancelling…' : '✕ Cancel'}
+              </button>
+            )}
+            <button onClick={handleReorder} disabled={reordering}
+              className="flex items-center gap-1.5 rounded-full border border-sky-200 px-4 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-50 active:scale-95 transition-all disabled:opacity-50">
+              {reordering ? 'Adding…' : '↺ Reorder'}
+            </button>
+            <a href={`/api/orders/${order.id}/pdf`} download className="flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-700 shadow-lg shadow-emerald-100 active:scale-95 transition-all no-underline">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              PDF
+            </a>
             <button onClick={() => window.print()} className="flex items-center gap-2 rounded-full bg-sky-600 px-5 py-2 text-sm font-semibold text-white hover:bg-sky-700 shadow-lg shadow-sky-200 active:scale-95 transition-all">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -255,6 +310,7 @@ export default function OrderPage() {
               onClick={() => {
                 const orderItems = order.items || [];
                 const sub = orderItems.reduce((s, i) => s + i.price * i.quantity, 0);
+                const toR = (n) => Math.round(n);
                 const win = window.open('', '_blank');
                 win.document.write(`<!DOCTYPE html>
 <html lang="en">
@@ -336,17 +392,17 @@ export default function OrderPage() {
       <td><strong>${item.name}</strong>${item.serial && item.serial !== 'TBD' ? '<br/><small style="color:#94a3b8;">S/N: ' + item.serial + '</small>' : ''}</td>
       <td style="color:#64748b;">${[item.color, item.storage, item.warranty ? 'Warranty: ' + item.warranty : ''].filter(Boolean).join(' · ')}</td>
       <td style="text-align:right;">${item.quantity}</td>
-      <td style="text-align:right;">RWF ${(item.price).toLocaleString()}</td>
-      <td style="text-align:right;font-weight:600;">RWF ${(item.price * item.quantity).toLocaleString()}</td>
+      <td style="text-align:right;">RWF ${toR(item.price).toLocaleString()}</td>
+      <td style="text-align:right;font-weight:600;">RWF ${toR(item.price * item.quantity).toLocaleString()}</td>
     </tr>`).join('')}
   </tbody>
 </table>
 <div class="totals">
   <table>
-    <tr><td>Subtotal</td><td style="text-align:right;">RWF ${sub.toLocaleString()}</td></tr>
-    ${order.discountAmount > 0 ? `<tr><td style="color:#16a34a;">Discount${order.couponCode ? ' (' + order.couponCode + ')' : ''}</td><td style="text-align:right;color:#16a34a;">−RWF ${order.discountAmount.toLocaleString()}</td></tr>` : ''}
-    ${order.tvInstallation ? `<tr><td>TV Installation</td><td style="text-align:right;">RWF 5,000</td></tr>` : ''}
-    <tr class="grand"><td>TOTAL</td><td style="text-align:right;">RWF ${(order.total).toLocaleString()}</td></tr>
+    <tr><td>Subtotal</td><td style="text-align:right;">RWF ${toR(sub).toLocaleString()}</td></tr>
+    ${order.discountAmount > 0 ? `<tr><td style="color:#16a34a;">Discount${order.couponCode ? ' (' + order.couponCode + ')' : ''}</td><td style="text-align:right;color:#16a34a;">−RWF ${toR(order.discountAmount).toLocaleString()}</td></tr>` : ''}
+    ${order.tvInstallation ? `<tr><td>TV Installation</td><td style="text-align:right;">Negotiable</td></tr>` : ''}
+    <tr class="grand"><td>TOTAL</td><td style="text-align:right;">RWF ${toR(order.total).toLocaleString()}</td></tr>
   </table>
 </div>
 <div class="footer">
@@ -398,7 +454,7 @@ export default function OrderPage() {
         {/* ===== RECEIPT CARD ===== */}
         <div className="receipt-card rounded-3xl bg-white dark:bg-slate-900 shadow-xl overflow-hidden">
           {/* Header stripe */}
-          <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-sky-900 px-8 py-7 text-white">
+          <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-sky-900 px-4 sm:px-6 md:px-8 py-7 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img src="/logo.png" alt="KigaliTech" className="h-14 w-14 rounded-full object-cover border-2 border-orange-400/50 shadow-lg" />
@@ -416,7 +472,7 @@ export default function OrderPage() {
 
           {/* Status tracker */}
           {order.status !== 'cancelled' && (
-            <div className="bg-slate-50 dark:bg-slate-800 px-8 py-5 no-print">
+            <div className="bg-slate-50 dark:bg-slate-800 px-4 sm:px-6 md:px-8 py-5 no-print">
               <div className="flex items-center justify-between">
                 {STATUS_STEPS.map((step, i) => (
                   <div key={step} className="flex flex-1 flex-col items-center">
@@ -444,13 +500,13 @@ export default function OrderPage() {
           )}
 
           {order.status === 'cancelled' && (
-            <div className="bg-red-50 dark:bg-red-900/20 px-8 py-4 text-center">
+            <div className="bg-red-50 dark:bg-red-900/20 px-4 sm:px-8 py-4 text-center">
               <span className="font-semibold text-red-600">Order Cancelled</span>
             </div>
           )}
 
           {/* Receipt body */}
-          <div className="px-8 py-6 space-y-6">
+          <div className="px-4 sm:px-6 md:px-8 py-6 space-y-6">
             {/* Date + payment */}
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
@@ -496,26 +552,29 @@ export default function OrderPage() {
             <div>
               <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Items</p>
               <div className="space-y-3">
-                {items.map((item, i) => (
+                {items.map((item, i) => {
+                  const itemImgs = parseImages(item.product?.images);
+                  return (
                   <div key={i} className="flex items-start gap-3 rounded-2xl bg-slate-50 dark:bg-slate-800 p-3">
-                    {item.product?.images && (
-                      <img src={JSON.parse(item.product.images || '[]')[0]} alt={item.name} className="h-12 w-12 rounded-xl object-cover flex-shrink-0" />
+                    {itemImgs[0] && (
+                      <img src={itemImgs[0]} alt={item.name} className="h-12 w-12 rounded-xl object-cover flex-shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{item.name}</p>
                       <div className="flex flex-wrap gap-1 mt-0.5">
                         {item.color && <span className="rounded-full bg-slate-200 dark:bg-slate-700 px-2 py-0.5 text-xs text-slate-600 dark:text-slate-300">{item.color}</span>}
                         {item.storage && <span className="rounded-full bg-slate-200 dark:bg-slate-700 px-2 py-0.5 text-xs text-slate-600 dark:text-slate-300">{item.storage}</span>}
-                        <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs text-sky-700">Warranty: {item.warranty}</span>
+                        {item.warranty && <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs text-sky-700">Warranty: {item.warranty}</span>}
                       </div>
                       {item.serial && item.serial !== 'TBD' && <p className="text-xs text-slate-400 mt-0.5">S/N: {item.serial}</p>}
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-xs text-slate-400">× {item.quantity}</p>
+                    <div className="text-right flex-shrink-0 space-y-0.5">
+                      <p className="text-xs text-slate-400">Qty: {item.quantity}</p>
                       <p className="font-bold text-slate-900 dark:text-slate-100">{format(item.price * item.quantity)}</p>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -535,7 +594,7 @@ export default function OrderPage() {
                 {order.tvInstallation && (
                   <div className="flex justify-between px-4 py-3 text-sm">
                     <span className="text-slate-600 dark:text-slate-400">TV Installation</span>
-                    <span className="font-semibold dark:text-slate-200">{format(5000)}</span>
+                    <span className="font-semibold dark:text-slate-200">Negotiable</span>
                   </div>
                 )}
                 <div className="flex justify-between px-4 py-4 bg-slate-900">
@@ -557,7 +616,7 @@ export default function OrderPage() {
           </div>
 
           {/* Footer */}
-          <div className="bg-slate-900 px-8 py-5 text-center">
+          <div className="bg-slate-900 px-4 sm:px-8 py-5 text-center">
             <p className="text-xs text-slate-400">Thank you for shopping with <span className="text-sky-400 font-semibold">KigaliTech</span></p>
             <p className="text-xs text-slate-500 mt-1">Kigali, Rwanda · info@kigalitechservices.com · +250 786 276 555</p>
           </div>
@@ -565,19 +624,6 @@ export default function OrderPage() {
 
         {/* Delivery Tracker — outside receipt card, hidden on print */}
         <div className="no-print mt-6 space-y-4">
-          {order.status === 'delivered' && !order.returnRequest && (
-            <div className="flex justify-end">
-              <Link
-                href={`/returns/${order.id}`}
-                className="flex items-center gap-2 rounded-full border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-5 py-2 text-sm font-semibold text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 no-underline transition-all"
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                </svg>
-                Request Return
-              </Link>
-            </div>
-          )}
           <DeliveryTracker order={order} />
           <InstallmentCard order={order} />
         </div>
