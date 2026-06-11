@@ -1,10 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-arm64-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")        // pooler URL — use for all app queries
+  directUrl = env("DIRECT_URL")          // non-pooled — used only by prisma migrate/db push
 }
 
 model User {
@@ -31,15 +33,22 @@ model User {
   wishlist              Wishlist[]
   loyaltyTransactions   LoyaltyTransaction[]
   stockAlerts           StockAlert[]
+  priceAlerts           PriceAlert[]
   referralCode          String?              @unique
   referralsMade         Referral[]           @relation("referrer")
   referredBy            Referral?            @relation("referred")
   returns               Return[]
+  savedAddresses        SavedAddress[]
   newsletterSub         Newsletter?
   verifiedBuyer         Boolean              @default(false)
   preOrders             PreOrder[]
   storeCredit           Int                  @default(0)
   loyaltyCard           LoyaltyCard?
+  bio                   String               @default("")
+  sellerStatus          String               @default("active")
+  sellerSuspendedReason String               @default("")
+  sellerSubscriptionExp DateTime?
+  sellerFirstListingAt  DateTime?
   createdAt             DateTime             @default(now())
   mustChangePassword    Boolean              @default(false)
 }
@@ -117,11 +126,15 @@ model Product {
   reviews           Review[]
   wishlistItems     Wishlist[]
   stockAlerts       StockAlert[]
+  priceAlerts       PriceAlert[]
   qaItems           ProductQA[]
   preOrders         PreOrder[]
   @@index([category])
   @@index([active, featured])
   @@index([active, category])
+  @@index([active, stock])
+  @@index([active, flashSaleEnd])
+  @@index([active, price])
 }
 
 model Order {
@@ -157,12 +170,34 @@ model Order {
   stripePaymentIntentId    String?
   deliverySlot             String        @default("")
   deliveryDate             String        @default("")
+  adminNote                String        @default("")
+  whatsappUpdates          Boolean       @default(false)
+  guestEmail               String?
+  cancelledAt              DateTime?
+  cancelReason             String        @default("")
+  deliveryFee              Int           @default(0)
+  reviewRequestSent        Boolean       @default(false)
   items                    OrderItem[]
   repairTickets            RepairTicket[]
   returnRequest            Return?
+  savedAddresses           SavedAddress[]
   @@index([userId])
   @@index([status])
   @@index([createdAt(sort: Desc)])
+}
+
+model SavedAddress {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  label     String   @default("Home")
+  name      String
+  phone     String
+  address   String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  orders    Order[]
+  @@index([userId])
 }
 
 model OrderItem {
@@ -327,12 +362,35 @@ model StockAlert {
   @@index([productId, notified])
 }
 
+model PriceAlert {
+  id        Int      @id @default(autoincrement())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int?
+  email     String?
+  notified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  @@index([productId, notified])
+}
+
 model DeliveryZone {
-  id       Int     @id @default(autoincrement())
-  name     String
-  fee      Int     @default(0)
-  active   Boolean @default(true)
-  sortOrder Int    @default(0)
+  id            Int     @id @default(autoincrement())
+  name          String
+  fee           Int     @default(0)
+  active        Boolean @default(true)
+  sortOrder     Int     @default(0)
+  estimatedDays Int     @default(1)
+}
+
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  @@index([userId])
 }
 
 model SmsLog {
@@ -464,4 +522,13 @@ model GiftCard {
   redeemedAt DateTime?
   expiresAt  DateTime?
   createdAt  DateTime  @default(now())
+}
+
+model PageView {
+  id        Int      @id @default(autoincrement())
+  path      String
+  createdAt DateTime @default(now())
+
+  @@index([path])
+  @@index([createdAt])
 }
