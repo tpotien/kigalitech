@@ -107,7 +107,7 @@ providers.push(CredentialsProvider({
   },
 }));
 
-export default NextAuth({
+export const authOptions = {
   adapter: PrismaAdapter(prisma),
   providers,
   secret: process.env.NEXTAUTH_SECRET,
@@ -153,4 +153,6 @@ export default NextAuth({
       return session;
     },
   },
-});
+};
+
+export default NextAuth(authOptions);
