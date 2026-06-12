@@ -454,7 +454,7 @@ export default function Checkout() {
                           <div>
                             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{zone.name}</span>
                             {zone.estimatedDays && (
-                              <p className="text-xs text-slate-400 mt-0.5">Est. {zone.estimatedDays === 1 ? 'same day' : `${zone.estimatedDays} days`}</p>
+                              <p className="text-xs text-slate-400 mt-0.5">Est. {zone.estimatedDays <= 2 ? `${zone.estimatedDays}h` : `${zone.estimatedDays} hours`}</p>
                             )}
                           </div>
                         </div>
