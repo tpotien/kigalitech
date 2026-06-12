@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
+import FallbackImg from '../../components/FallbackImg';
 import { useLang } from '../../context/LanguageContext';
 import { useCurrency } from '../../context/CurrencyContext';
 
@@ -404,7 +405,11 @@ export default function OrderPage() {
                 {items.map((item, i) => (
                   <div key={i} className="flex items-start gap-3 rounded-2xl bg-slate-50 p-3">
                     {item.product?.images && (
-                      <img src={JSON.parse(item.product.images || '[]')[0]} alt={item.name} className="h-12 w-12 rounded-xl object-cover flex-shrink-0" />
+                      <FallbackImg
+                        images={(() => { try { return JSON.parse(item.product.images || '[]'); } catch { return []; } })()}
+                        alt={item.name}
+                        className="h-12 w-12 rounded-xl object-cover flex-shrink-0"
+                      />
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-slate-900 text-sm">{item.name}</p>

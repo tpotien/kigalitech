@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { useImageFallback } from '../hooks/useImageFallback';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useCart } from '../context/CartContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -26,10 +28,11 @@ function colorToHex(name) {
 
 function ImagePlaceholder() {
   return (
-    <div className="flex h-full items-center justify-center">
-      <svg className="h-16 w-16 text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+    <div className="flex h-full flex-col items-center justify-center gap-2">
+      <svg className="h-12 w-12 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
       </svg>
+      <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">No image</span>
     </div>
   );
 }
@@ -43,12 +46,17 @@ export default function ProductCard({ product, onQuickView }) {
   const { data: session } = useSession();
   const [added, setAdded] = useState(false);
   const [heartAnim, setHeartAnim] = useState(false);
-  const [imgError, setImgError] = useState(false);
+  const { src: imgSrc, onError: onImgError } = useImageFallback(images);
 
   const badge = getBadge(product);
-  const images = Array.isArray(product.images) ? product.images : JSON.parse(product.images || '[]');
-  const colors = Array.isArray(product.colors) ? product.colors : JSON.parse(product.colors || '[]');
-  const storageOptions = Array.isArray(product.storageOptions) ? product.storageOptions : JSON.parse(product.storageOptions || '[]');
+  function parseField(val) {
+    const normalize = arr => arr.map(s => (typeof s === 'object' && s !== null ? s.value || '' : s)).filter(Boolean);
+    if (Array.isArray(val)) return normalize(val);
+    try { const p = JSON.parse(val || '[]'); return Array.isArray(p) ? normalize(p) : []; } catch { return []; }
+  }
+  const images = parseField(product.images).filter(img => typeof img === 'string' && img.trim().length > 5);
+  const colors = parseField(product.colors);
+  const storageOptions = parseField(product.storageOptions);
   const isWished = wishlistIds.has(product.id);
   const isCompared = inCompare(product.id);
   const discount = product.comparePrice && product.comparePrice > product.price
@@ -104,19 +112,28 @@ export default function ProductCard({ product, onQuickView }) {
 
       {/* ── Image ── */}
       <Link href={`/products/${product.id}`} className="block overflow-hidden">
-        <div className="relative aspect-square w-full overflow-hidden bg-white dark:bg-slate-800">
+        <div className="relative w-full overflow-hidden bg-white dark:bg-slate-800" style={{ aspectRatio: '1 / 1' }}>
           {/* Subtle radial bg to make product pop */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#f8fafc_0%,_#f1f5f9_100%)] dark:bg-[radial-gradient(ellipse_at_center,_#1e293b_0%,_#0f172a_100%)]" />
 
-          {images[0] && !imgError ? (
-            <img
-              src={images[0]}
-              alt={product.name}
-              onError={() => setImgError(true)}
-              loading="lazy"
-              decoding="async"
-              className="relative h-full w-full object-contain p-5 transition-transform duration-500 group-hover:scale-[1.07] drop-shadow-md"
-            />
+          {imgSrc ? (
+            imgSrc.startsWith('data:') ? (
+              <img
+                src={imgSrc}
+                alt={product.name}
+                onError={onImgError}
+                className="relative h-full w-full object-cover scale-[1.08] group-hover:scale-100 transition-transform duration-500"
+              />
+            ) : (
+              <Image
+                src={imgSrc}
+                alt={product.name}
+                fill
+                sizes="(max-width: 480px) 50vw, (max-width: 768px) 33vw, (max-width: 1280px) 25vw, 20vw"
+                className="object-cover scale-[1.08] group-hover:scale-100 transition-transform duration-500"
+                onError={onImgError}
+              />
+            )
           ) : (
             <ImagePlaceholder />
           )}
@@ -193,28 +210,34 @@ export default function ProductCard({ product, onQuickView }) {
         <div className="flex-1 min-h-[4px]" />
 
         {/* Price + CTA */}
-        <div className="mt-2 flex items-end justify-between gap-1.5">
+        <div className="mt-2 flex items-end justify-between gap-2">
           <div className="min-w-0">
-            <div className="flex items-baseline gap-1 flex-wrap">
-              <p className="text-[14px] sm:text-[19px] font-extrabold text-slate-900 dark:text-slate-100 leading-none">{format(product.price)}</p>
-              {discount > 0 && (
-                <span className="rounded-full bg-red-100 px-1 sm:px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-red-500">-{discount}%</span>
-              )}
-            </div>
+            <p className="text-[11px] sm:text-[15px] font-extrabold text-slate-900 dark:text-slate-100 leading-none">{format(product.price)}</p>
             {product.comparePrice && product.comparePrice > product.price && (
-              <p className="text-[10px] text-slate-400 line-through">{format(product.comparePrice)}</p>
+              <div className="flex items-center gap-1 mt-1">
+                <p className="text-[11px] text-slate-400 line-through whitespace-nowrap">{format(product.comparePrice)}</p>
+                {discount > 0 && (
+                  <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-500">-{discount}%</span>
+                )}
+              </div>
+            )}
+            {product.price >= 6780 && (
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 hidden sm:block whitespace-nowrap">
+                3× {format(Math.round(product.price / 3))}
+              </p>
             )}
           </div>
           <button
             onClick={handleAddToCart}
             disabled={product.stock === 0}
-            className={`flex-shrink-0 rounded-xl px-2.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white transition-all active:scale-95 ${
-              product.stock === 0 ? 'bg-slate-300 dark:bg-slate-700 dark:text-slate-500 cursor-not-allowed'
+            className={`flex-shrink-0 rounded-xl font-bold text-white transition-all active:scale-95
+              h-8 w-8 sm:h-auto sm:w-auto sm:px-4 sm:py-2.5 sm:text-sm flex items-center justify-center
+              ${product.stock === 0 ? 'bg-slate-300 dark:bg-slate-700 dark:text-slate-500 cursor-not-allowed'
               : added ? 'bg-emerald-500 scale-95'
-              : 'bg-sky-600 hover:bg-sky-700 shadow-sm shadow-sky-200'
-            }`}
+              : 'bg-sky-600 hover:bg-sky-700 shadow-sm shadow-sky-200'}`}
           >
-            {product.stock === 0 ? 'Out' : added ? '✓' : '+ Cart'}
+            <span className="sm:hidden text-base leading-none">{product.stock === 0 ? '✕' : added ? '✓' : '+'}</span>
+            <span className="hidden sm:inline text-sm">{product.stock === 0 ? 'Out' : added ? '✓' : '+ Cart'}</span>
           </button>
         </div>
       </div>
