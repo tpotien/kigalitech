@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import prisma from '../../lib/prisma';
 import { sendWhatsAppText, sendWhatsAppImage } from '../../lib/whatsapp';
 
@@ -269,6 +270,18 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== 'POST') return res.status(405).end();
+
+  // Validate X-Hub-Signature-256 if app secret is configured
+  const appSecret = process.env.WHATSAPP_APP_SECRET;
+  if (appSecret) {
+    const sig = req.headers['x-hub-signature-256'];
+    if (!sig) return res.status(401).end('Missing signature');
+    const expected = 'sha256=' + crypto
+      .createHmac('sha256', appSecret)
+      .update(JSON.stringify(req.body))
+      .digest('hex');
+    if (sig !== expected) return res.status(401).end('Invalid signature');
+  }
 
   // Always 200 Meta immediately — they retry on anything else
   res.status(200).json({ status: 'ok' });
