@@ -50,6 +50,23 @@ export default function AdminCustomers() {
     !search || [c.name, c.email, c.phoneNumber].some(v => v?.toLowerCase().includes(search.toLowerCase()))
   );
 
+  function exportCSV() {
+    const headers = ['ID', 'Name', 'Email', 'Phone', 'Role', 'Orders', 'Store Credit', 'Joined'];
+    const rows = filtered.map(c => [
+      c.id, c.name || '', c.email || '', c.phoneNumber || '',
+      c.role || 'customer',
+      c._count?.orders ?? '',
+      c.storeCredit ?? 0,
+      c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '',
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })),
+      download: `customers-${new Date().toISOString().slice(0, 10)}.csv`,
+    });
+    a.click();
+  }
+
   if (status === 'loading' || loading) {
     return (
       <AdminLayout title="Customers">
@@ -76,6 +93,9 @@ export default function AdminCustomers() {
           />
         </div>
         <span className="text-sm text-slate-500">{filtered.length} customers</span>
+        <button onClick={exportCSV} className="ml-auto rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-1.5">
+          ↓ Export CSV
+        </button>
       </div>
 
       <div className="rounded-2xl bg-white border border-slate-200 overflow-hidden">

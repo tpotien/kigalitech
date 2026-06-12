@@ -6,6 +6,40 @@ function parse(val) {
   try { return typeof val === 'string' ? JSON.parse(val) : val; } catch { return []; }
 }
 
+function StockCell({ product, onUpdate }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(product.stock);
+
+  async function save() {
+    setEditing(false);
+    if (Number(val) === product.stock) return;
+    await fetch(`/api/admin/products/${product.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stock: Number(val) }),
+    });
+    onUpdate(product.id, Number(val));
+  }
+
+  if (editing) {
+    return (
+      <input
+        type="number" min="0" value={val} autoFocus
+        onChange={e => setVal(e.target.value)}
+        onBlur={save}
+        onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false); }}
+        className="w-16 rounded-lg border border-sky-300 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-sky-100"
+      />
+    );
+  }
+  return (
+    <button onClick={() => setEditing(true)} title="Click to edit stock"
+      className={`font-semibold hover:underline ${product.stock <= (product.lowStockThreshold || 5) ? 'text-amber-600' : 'text-emerald-600'}`}>
+      {product.stock}
+    </button>
+  );
+}
+
 export default function AdminProductsList() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,7 +47,7 @@ export default function AdminProductsList() {
   const [catFilter, setCatFilter] = useState('All');
 
   useEffect(() => {
-    fetch('/api/admin/products').then((r) => r.json()).then((data) => { setProducts(data); setLoading(false); });
+    fetch('/api/admin/products').then((r) => r.json()).then((data) => { setProducts(Array.isArray(data) ? data : []); setLoading(false); });
   }, []);
 
   const categories = ['All', ...Array.from(new Set(products.map((p) => p.category)))];
@@ -26,6 +60,51 @@ export default function AdminProductsList() {
   async function toggleActive(id, current) {
     await fetch(`/api/admin/products/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: !current }) });
     setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, active: !current } : p)));
+  }
+
+  async function deleteProduct(id, name) {
+    if (!confirm(`Delete "${name}"?\n\nThis hides the product from the store. It can be restored by editing the product.`)) return;
+    await fetch(`/api/admin/products/${id}`, { method: 'DELETE' });
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+  }
+
+  async function hardDelete(id, name) {
+    if (!confirm(`PERMANENTLY delete "${name}"?\n\nThis cannot be undone and will remove all data for this product.`)) return;
+    await fetch(`/api/admin/products/${id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hard: true }) });
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+  }
+
+  async function duplicateProduct(id, name) {
+    if (!confirm(`Duplicate "${name}"?\n\nA hidden copy will be created with stock set to 0.`)) return;
+    const res = await fetch(`/api/admin/products/${id}?action=duplicate`, { method: 'POST' });
+    const dup = await res.json();
+    if (dup.id) {
+      setProducts(prev => [dup, ...prev]);
+    }
+  }
+
+  async function activateAllHidden() {
+    const hidden = products.filter(p => !p.active);
+    if (!hidden.length) return alert('No hidden products.');
+    if (!confirm(`Activate all ${hidden.length} hidden product(s)?`)) return;
+    await fetch('/api/admin/products?action=activate_all', { method: 'POST' });
+    setProducts(prev => prev.map(p => ({ ...p, active: true })));
+  }
+
+  function exportCSV() {
+    const headers = ['ID', 'Name', 'Brand', 'Category', 'Price (RWF)', 'Stock', 'Active', 'Featured'];
+    const rows = filtered.map(p => [
+      p.id, p.name || '', p.brand || '', p.category || '',
+      p.price ?? '', p.stock ?? '',
+      p.active ? 'Yes' : 'No',
+      p.featured ? 'Yes' : 'No',
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })),
+      download: `products-${new Date().toISOString().slice(0, 10)}.csv`,
+    });
+    a.click();
   }
 
   return (
@@ -47,9 +126,19 @@ export default function AdminProductsList() {
             ))}
           </div>
         </div>
-        <Link href="/admin/products/new" className="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 no-underline">
-          + Add Product
-        </Link>
+        <div className="flex gap-2">
+          <button onClick={exportCSV} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+            ↓ Export CSV
+          </button>
+          {products.some(p => !p.active) && (
+            <button onClick={activateAllHidden} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
+              Activate All Hidden ({products.filter(p => !p.active).length})
+            </button>
+          )}
+          <Link href="/admin/products/new" className="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 no-underline">
+            + Add Product
+          </Link>
+        </div>
       </div>
 
       {loading ? (
@@ -95,11 +184,11 @@ export default function AdminProductsList() {
                       </div>
                     </td>
                     <td className="px-4 py-3 font-semibold text-slate-900">
-                      RWF {Math.round((p.price / 100) * 1475).toLocaleString()}
-                      {p.comparePrice && <p className="text-xs text-slate-400 line-through">RWF {Math.round((p.comparePrice / 100) * 1475).toLocaleString()}</p>}
+                      RWF {Math.round(p.price).toLocaleString()}
+                      {p.comparePrice && <p className="text-xs text-slate-400 line-through">RWF {Math.round(p.comparePrice).toLocaleString()}</p>}
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
-                      <span className={`font-semibold ${p.stock <= p.lowStockThreshold ? 'text-amber-600' : 'text-emerald-600'}`}>{p.stock}</span>
+                      <StockCell product={p} onUpdate={(id, stock) => setProducts(prev => prev.map(x => x.id === id ? { ...x, stock } : x))} />
                     </td>
                     <td className="px-4 py-3">
                       <button
@@ -110,9 +199,11 @@ export default function AdminProductsList() {
                       </button>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <Link href={`/admin/products/${p.id}`} className="rounded-lg bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700 hover:bg-sky-100 no-underline">Edit</Link>
                         <Link href={`/products/${p.id}`} target="_blank" className="rounded-lg bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 no-underline">View</Link>
+                        <button onClick={() => duplicateProduct(p.id, p.name)} className="rounded-lg bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-100">Copy</button>
+                        <button onClick={() => deleteProduct(p.id, p.name)} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100">Delete</button>
                       </div>
                     </td>
                   </tr>
