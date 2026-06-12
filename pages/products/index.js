@@ -39,27 +39,42 @@ export default function ProductsPage() {
   const [inStockOnly, setInStockOnly]   = useState(false);
   const initialized = useRef(false);
 
-  // ── 0. Load categories from DB ────────────────────────────────────────────
+  // Natural display order for category tabs
+  const PREFERRED_ORDER = ['Phones','Laptops','TVs','Audio','Wearables','Gaming','Tablets','Cameras','Smart Home','Headphones','Routers','Storage','Accessories','Others'];
+
+  // ── 0. Load categories from DB in preferred display order ─────────────────
   useEffect(() => {
     fetch('/api/products/categories')
       .then(r => r.json())
-      .then(data => setCategories(Array.isArray(data) ? data.map(d => d.name) : []))
+      .then(data => {
+        if (!Array.isArray(data)) return;
+        const names = data.map(d => d.name);
+        const sorted = [
+          ...PREFERRED_ORDER.filter(c => names.includes(c)),
+          ...names.filter(c => !PREFERRED_ORDER.includes(c)),
+        ];
+        setCategories(sorted);
+      })
       .catch(() => {});
   }, []);
 
-  // ── 1. Sync activeCategory/search from URL once router is ready ──────────
+  // ── 1. Sync from URL ONCE on initial mount only ───────────────────────────
+  //    Do NOT add qCat/qSearch to deps — tab clicks update the URL via
+  //    router.replace, which would re-fire this effect and overwrite
+  //    the local activeCategory state (causing the "always Accessories" bug).
   useEffect(() => {
-    if (!router.isReady) return;
+    if (!router.isReady || initialized.current) return;
     if (qCat) {
       setActiveCategory(qCat);
     } else if (qSearch) {
       setSearch(qSearch);
       setActiveCategory('All');
-    } else if (!initialized.current) {
-      setActiveCategory('Phones');
+    } else {
+      setActiveCategory('All');
     }
     initialized.current = true;
-  }, [router.isReady, qCat, qSearch]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady]);
 
   // ── 2. Reset price filter whenever category changes ───────────────────────
   useEffect(() => {
@@ -142,7 +157,7 @@ export default function ProductsPage() {
   }
 
   function clearAllFilters() {
-    selectCategory('Phones');
+    selectCategory('All');
     setSearch('');
     setInStockOnly(false);
     setMaxPrice(null);
@@ -171,10 +186,10 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* Category tabs */}
+      {/* Category tabs — full-width scroll container (no max-w constraint) */}
       <div className="sticky top-16 z-20 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 py-2.5 overflow-x-auto">
-          <div className="flex items-center gap-2 min-w-max">
+        <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex items-center gap-2 px-4 py-2.5 min-w-max">
             {/* Show All tab */}
             <button
               onClick={() => selectCategory('All')}
