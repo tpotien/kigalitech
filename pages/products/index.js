@@ -8,7 +8,7 @@ import ProductCardSkeleton from '../../components/ProductCardSkeleton';
 import { useLang } from '../../context/LanguageContext';
 import { useCurrency } from '../../context/CurrencyContext';
 
-const CATEGORIES = ['All', 'Phones', 'Laptops', 'TVs', 'Audio', 'Wearables', 'Gaming', 'Tablets', 'Cameras', 'Accessories', 'Smart Home', 'Headphones', 'Routers', 'Storage'];
+// Categories are loaded dynamically from the DB — see useEffect below
 
 function getSortOptions(t) {
   return [
@@ -27,6 +27,7 @@ export default function ProductsPage() {
   const SORT_OPTIONS = getSortOptions(t);
   const { category: qCat, sub: qSub, search: qSearch } = router.query;
 
+  const [categories, setCategories]     = useState([]);
   const [products, setProducts]         = useState([]);
   const [loading, setLoading]           = useState(true);
   // null = not yet synced from URL (prevents premature fetch)
@@ -37,6 +38,14 @@ export default function ProductsPage() {
   const [maxPrice, setMaxPrice]         = useState(null);
   const [inStockOnly, setInStockOnly]   = useState(false);
   const initialized = useRef(false);
+
+  // ── 0. Load categories from DB ────────────────────────────────────────────
+  useEffect(() => {
+    fetch('/api/products/categories')
+      .then(r => r.json())
+      .then(data => setCategories(Array.isArray(data) ? data.map(d => d.name) : []))
+      .catch(() => {});
+  }, []);
 
   // ── 1. Sync activeCategory/search from URL once router is ready ──────────
   useEffect(() => {
@@ -166,25 +175,30 @@ export default function ProductsPage() {
       <div className="sticky top-16 z-20 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-2.5 overflow-x-auto">
           <div className="flex items-center gap-2 min-w-max">
-            {CATEGORIES.map(cat => {
-              const isAll = cat === 'All';
-              const active = activeCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => selectCategory(cat)}
-                  className={`rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-                    active
-                      ? 'bg-sky-600 text-white'
-                      : isAll
-                        ? 'border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-sky-400 hover:text-sky-600 dark:hover:text-sky-400'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  {isAll ? 'Show All' : cat}
-                </button>
-              );
-            })}
+            {/* Show All tab */}
+            <button
+              onClick={() => selectCategory('All')}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                activeCategory === 'All'
+                  ? 'bg-sky-600 text-white'
+                  : 'border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-sky-400 hover:text-sky-600 dark:hover:text-sky-400'
+              }`}
+            >
+              Show All
+            </button>
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => selectCategory(cat)}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                  activeCategory === cat
+                    ? 'bg-sky-600 text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
         </div>
       </div>
