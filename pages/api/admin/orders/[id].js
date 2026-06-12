@@ -74,15 +74,26 @@ export default async function handler(req, res) {
       update.deliveryTracking = JSON.stringify({ ...existing, ...deliveryTracking });
     }
 
-    // Auto-stamp step timestamp when status changes
-    if (status && status !== current.status && STATUS_TO_STEP[status]) {
+    // Auto-stamp step timestamp + auto-generate tracking number when status changes
+    if (status && status !== current.status) {
       let existing = {};
       try { existing = JSON.parse(update.deliveryTracking || current.deliveryTracking || '{}'); } catch {}
-      const stepKey = STATUS_TO_STEP[status];
-      if (!existing[stepKey]?.time) {
-        existing[stepKey] = { ...existing[stepKey], time: new Date().toISOString() };
-        update.deliveryTracking = JSON.stringify(existing);
+
+      // Generate tracking number on first confirmation if not already set
+      if (status === 'confirmed' && !existing.trackingNumber) {
+        const d = new Date();
+        const datePart = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+        existing.trackingNumber = `KT-${datePart}-${String(id).padStart(5,'0')}`;
       }
+
+      if (STATUS_TO_STEP[status]) {
+        const stepKey = STATUS_TO_STEP[status];
+        if (!existing[stepKey]?.time) {
+          existing[stepKey] = { ...existing[stepKey], time: new Date().toISOString() };
+        }
+      }
+
+      update.deliveryTracking = JSON.stringify(existing);
     }
 
     const newAdminConfirmed = adminConfirmed !== undefined ? adminConfirmed : current.adminConfirmed;

@@ -21,6 +21,13 @@ const DELIVERY_STEPS = [
 function fiDeliveryTracker({ order }) {
   const tracking = parse(order.deliveryTracking || '{}');
   const status = order.status;
+  const [copied, setCopied] = useState(false);
+
+  function copyTrackingNumber() {
+    navigator.clipboard?.writeText(tracking.trackingNumber);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   const statusToStep = {
     pending: 0, confirmed: 1, processing: 2, shipped: 3, delivered: 4,
@@ -30,15 +37,22 @@ function fiDeliveryTracker({ order }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">🚚</span>
-          <h3 className="font-semibold text-slate-900">Delivery Tracking</h3>
+      <div className="px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🚚</span>
+            <h3 className="font-semibold text-slate-900">Delivery Tracking</h3>
+          </div>
+          {tracking.trackingNumber && (
+            <button onClick={copyTrackingNumber}
+              className="flex items-center gap-2 rounded-full bg-sky-50 border border-sky-200 px-3 py-1.5 hover:bg-sky-100 transition">
+              <span className="text-xs font-mono font-bold text-sky-700">{tracking.trackingNumber}</span>
+              <span className="text-[10px] text-sky-500">{copied ? '✓ Copied' : '⧉'}</span>
+            </button>
+          )}
         </div>
-        {tracking.trackingNumber && (
-          <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-mono font-semibold text-sky-700">
-            {tracking.trackingNumber}
-          </span>
+        {!tracking.trackingNumber && status === 'pending' && (
+          <p className="text-xs text-slate-400 mt-1">Tracking number will appear once your order is confirmed.</p>
         )}
       </div>
 
