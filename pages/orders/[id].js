@@ -90,8 +90,32 @@ function fiDeliveryTracker({ order }) {
         </div>
       </div>
 
+      {/* Out for delivery — time window highlight */}
+      {status === 'shipped' && tracking.estimatedDelivery && (
+        <div className="mx-6 mb-4 rounded-xl bg-sky-50 border border-sky-200 px-4 py-3 flex items-center gap-3">
+          <span className="text-2xl">🚚</span>
+          <div>
+            <p className="text-sm font-bold text-sky-800">Your order is out for delivery!</p>
+            <p className="text-xs text-sky-600 mt-0.5">Estimated window: <strong>{tracking.estimatedDelivery}</strong></p>
+          </div>
+        </div>
+      )}
+
+      {/* Attempted delivery notice */}
+      {tracking.attempted && (
+        <div className="mx-6 mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+          <p className="text-sm font-bold text-amber-800">We Missed You!</p>
+          <p className="text-xs text-amber-700 mt-1">{tracking.attempted.note || 'A delivery was attempted but we couldn\'t reach you. Please contact us to reschedule.'}</p>
+          {tracking.driverPhone && (
+            <a href={`tel:${tracking.driverPhone}`} className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-4 py-1.5 text-xs font-semibold text-white no-underline hover:bg-amber-600">
+              📞 Call Driver to Reschedule
+            </a>
+          )}
+        </div>
+      )}
+
       {/* Courier info */}
-      {(tracking.courier || tracking.estimatedDelivery) && (
+      {(tracking.courier || tracking.estimatedDelivery || tracking.trackingNumber) && (
         <div className="border-t border-slate-100 px-6 py-4 bg-slate-50 flex flex-wrap gap-4 text-sm">
           {tracking.courier && (
             <div>

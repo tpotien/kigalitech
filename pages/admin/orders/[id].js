@@ -9,6 +9,109 @@ const STATUS_COLOR = { pending: 'bg-amber-100 text-amber-700', confirmed: 'bg-sk
 function parse(val) { try { return typeof val === 'string' ? JSON.parse(val) : val; } catch { return []; } }
 function rwf(n) { return `RWF ${Math.round(n).toLocaleString()}`; }
 
+const STATUS_TO_STEP = {
+  pending: 'order_placed', confirmed: 'confirmed',
+  processing: 'packed', shipped: 'out_for_delivery', delivered: 'delivered',
+};
+const STEP_LABELS = {
+  order_placed: 'Order Placed', confirmed: 'Confirmed', packed: 'Packed',
+  out_for_delivery: 'Out for Delivery', delivered: 'Delivered',
+};
+
+function DeliveryTrackingPanel({ order, onSave }) {
+  const raw = (() => { try { return JSON.parse(order.deliveryTracking || '{}'); } catch { return {}; } })();
+  const [tracking, setTracking] = useState(raw);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [currentNote, setCurrentNote] = useState('');
+  const [currentLocation, setCurrentLocation] = useState('');
+
+  const inp = 'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100';
+  const currentStepKey = STATUS_TO_STEP[order.status];
+
+  function set(key, val) { setTracking(t => ({ ...t, [key]: val })); }
+
+  async function save() {
+    setSaving(true);
+    const payload = {
+      ...tracking,
+      ...(currentStepKey ? {
+        [currentStepKey]: {
+          ...tracking[currentStepKey],
+          time: tracking[currentStepKey]?.time || new Date().toISOString(),
+          ...(currentNote ? { note: currentNote } : {}),
+          ...(currentLocation ? { location: currentLocation } : {}),
+        },
+      } : {}),
+    };
+    await fetch(`/api/admin/orders/${order.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deliveryTracking: payload }),
+    });
+    setSaving(false); setSaved(true);
+    onSave(JSON.stringify(payload));
+    setTimeout(() => setSaved(false), 2000);
+  }
+
+  return (
+    <div className="rounded-2xl bg-white border border-slate-200 p-5 space-y-4">
+      <h2 className="font-semibold text-slate-900 flex items-center gap-2">🚚 Delivery Tracking</h2>
+
+      {/* Courier info */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Tracking No.</label>
+          <input value={tracking.trackingNumber || ''} onChange={e => set('trackingNumber', e.target.value)} placeholder="e.g. KT-2024-001" className={inp} />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Courier</label>
+          <input value={tracking.courier || ''} onChange={e => set('courier', e.target.value)} placeholder="e.g. KigaliTech Delivery" className={inp} />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Driver Name</label>
+          <input value={tracking.driverName || ''} onChange={e => set('driverName', e.target.value)} placeholder="Driver full name" className={inp} />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Driver Phone</label>
+          <input value={tracking.driverPhone || ''} onChange={e => set('driverPhone', e.target.value)} placeholder="+250 7XX XXX XXX" className={inp} />
+        </div>
+        <div className="col-span-2">
+          <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Estimated Delivery</label>
+          <input value={tracking.estimatedDelivery || ''} onChange={e => set('estimatedDelivery', e.target.value)} placeholder="e.g. Today 2:00 PM – 4:00 PM" className={inp} />
+        </div>
+      </div>
+
+      {/* Current step note + location */}
+      {currentStepKey && (
+        <div className="rounded-xl border border-sky-100 bg-sky-50 p-3 space-y-2">
+          <p className="text-xs font-bold text-sky-700 uppercase">Current step: {STEP_LABELS[currentStepKey]}</p>
+          <input value={currentNote} onChange={e => setCurrentNote(e.target.value)} placeholder="Note for this step (e.g. 'Driver will call 30 mins before')" className={inp} />
+          <input value={currentLocation} onChange={e => setCurrentLocation(e.target.value)} placeholder="Current location (e.g. 'Kimihurura, Kigali')" className={inp} />
+        </div>
+      )}
+
+      {/* Step timestamps */}
+      <div className="space-y-1">
+        <p className="text-xs font-semibold text-slate-400 uppercase">Step Timestamps</p>
+        {Object.entries(STEP_LABELS).map(([key, label]) => (
+          <div key={key} className="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg bg-slate-50">
+            <span className={`font-semibold ${tracking[key]?.time ? 'text-emerald-700' : 'text-slate-400'}`}>{label}</span>
+            <span className="text-slate-400">
+              {tracking[key]?.time ? new Date(tracking[key].time).toLocaleString('en-RW') : '—'}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <button onClick={save} disabled={saving}
+        className="w-full rounded-xl bg-sky-600 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50 transition">
+        {saved ? '✓ Saved!' : saving ? 'Saving…' : 'Save Tracking Info'}
+      </button>
+    </div>
+  );
+}
+
 function AdminNoteBox({ order, onSave }) {
   const [note, setNote] = useState(order?.adminNote || '');
   const [saving, setSaving] = useState(false);
@@ -314,6 +417,8 @@ export default function AdminOrderDetail() {
               </div>
             )}
           </div>
+
+          <DeliveryTrackingPanel order={order} onSave={dt => setOrder(o => ({ ...o, deliveryTracking: dt }))} />
 
           <AdminNoteBox order={order} onSave={note => setOrder(o => ({ ...o, adminNote: note }))} />
 

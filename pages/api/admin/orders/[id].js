@@ -44,8 +44,17 @@ export default async function handler(req, res) {
     return res.json(order);
   }
 
+  // Map order status → deliveryTracking step key
+  const STATUS_TO_STEP = {
+    pending:   'order_placed',
+    confirmed: 'confirmed',
+    processing:'packed',
+    shipped:   'out_for_delivery',
+    delivered: 'delivered',
+  };
+
   if (req.method === 'PATCH') {
-    const { status, adminConfirmed, paymentConfirmed } = req.body;
+    const { status, adminConfirmed, paymentConfirmed, deliveryTracking } = req.body;
     const current = await prisma.order.findUnique({
       where: { id },
       include: { user: { select: { name: true, email: true, verifiedBuyer: true } } },
@@ -57,6 +66,24 @@ export default async function handler(req, res) {
     if (adminConfirmed !== undefined) update.adminConfirmed = adminConfirmed;
     if (paymentConfirmed !== undefined) update.paymentConfirmed = paymentConfirmed;
     if (req.body.adminNote !== undefined) update.adminNote = req.body.adminNote;
+
+    // Merge deliveryTracking update
+    if (deliveryTracking !== undefined) {
+      let existing = {};
+      try { existing = JSON.parse(current.deliveryTracking || '{}'); } catch {}
+      update.deliveryTracking = JSON.stringify({ ...existing, ...deliveryTracking });
+    }
+
+    // Auto-stamp step timestamp when status changes
+    if (status && status !== current.status && STATUS_TO_STEP[status]) {
+      let existing = {};
+      try { existing = JSON.parse(update.deliveryTracking || current.deliveryTracking || '{}'); } catch {}
+      const stepKey = STATUS_TO_STEP[status];
+      if (!existing[stepKey]?.time) {
+        existing[stepKey] = { ...existing[stepKey], time: new Date().toISOString() };
+        update.deliveryTracking = JSON.stringify(existing);
+      }
+    }
 
     const newAdminConfirmed = adminConfirmed !== undefined ? adminConfirmed : current.adminConfirmed;
     const newPaymentConfirmed = paymentConfirmed !== undefined ? paymentConfirmed : current.paymentConfirmed;
