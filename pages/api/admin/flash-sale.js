@@ -12,12 +12,20 @@ export default async function handler(req, res) {
     if (!productId || !discountPct || !hoursLeft) {
       return res.status(400).json({ error: 'productId, discountPct, and hoursLeft are required' });
     }
+    const hours = Number(hoursLeft);
+    if (isNaN(hours) || hours <= 0 || hours > 720) {
+      return res.status(400).json({ error: 'hoursLeft must be between 1 and 720' });
+    }
+    const pct = Number(discountPct);
+    if (isNaN(pct) || pct <= 0 || pct >= 100) {
+      return res.status(400).json({ error: 'discountPct must be between 1 and 99' });
+    }
 
     const product = await prisma.product.findUnique({ where: { id: Number(productId) } });
     if (!product) return res.status(404).json({ error: 'Product not found' });
 
-    const flashSalePrice = Math.round(product.price * (1 - Number(discountPct) / 100));
-    const flashSaleEnd = new Date(Date.now() + Number(hoursLeft) * 60 * 60 * 1000);
+    const flashSalePrice = Math.round(product.price * (1 - pct / 100));
+    const flashSaleEnd = new Date(Date.now() + hours * 60 * 60 * 1000);
 
     const updated = await prisma.product.update({
       where: { id: Number(productId) },

@@ -20,12 +20,14 @@ export default async function handler(req, res) {
     const { name, fee, sortOrder } = req.body;
     if (!name) return res.status(400).json({ error: 'name is required' });
 
+    const { estimatedDays } = req.body;
     const zone = await prisma.deliveryZone.create({
       data: {
         name: name.trim(),
         fee: fee ? Math.round(Number(fee)) : 0,
         active: true,
         sortOrder: sortOrder ? Number(sortOrder) : 0,
+        estimatedDays: estimatedDays ? Number(estimatedDays) : 1,
       },
     });
     return res.status(201).json(zone);
@@ -41,6 +43,7 @@ export default async function handler(req, res) {
     if (updates.fee !== undefined) data.fee = Math.round(Number(updates.fee));
     if (updates.active !== undefined) data.active = Boolean(updates.active);
     if (updates.sortOrder !== undefined) data.sortOrder = Number(updates.sortOrder);
+    if (updates.estimatedDays !== undefined) data.estimatedDays = Number(updates.estimatedDays);
 
     const zone = await prisma.deliveryZone.update({ where: { id: Number(id) }, data });
     return res.json(zone);

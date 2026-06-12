@@ -85,11 +85,32 @@ const TIER_GRADIENT = {
 };
 const TIER_ICON = { Bronze: '🥉', Silver: '🥈', Gold: '🥇', Platinum: '💎' };
 
+function EmvChip() {
+  return (
+    <svg width="38" height="30" viewBox="0 0 38 30" fill="none" style={{borderRadius:'4px',overflow:'visible'}}>
+      <rect width="38" height="30" rx="4" fill="#d4a843"/>
+      <rect x="13" y="0" width="12" height="30" fill="#c49930" opacity="0.4"/>
+      <rect x="0" y="10" width="38" height="10" fill="#c49930" opacity="0.4"/>
+      <rect x="13" y="10" width="12" height="10" rx="1" fill="#b8892a"/>
+      <line x1="13" y1="0" x2="13" y2="10" stroke="#b8892a" strokeWidth="1"/>
+      <line x1="25" y1="0" x2="25" y2="10" stroke="#b8892a" strokeWidth="1"/>
+      <line x1="13" y1="20" x2="13" y2="30" stroke="#b8892a" strokeWidth="1"/>
+      <line x1="25" y1="20" x2="25" y2="30" stroke="#b8892a" strokeWidth="1"/>
+    </svg>
+  );
+}
+
 function LoyaltyCardDisplay({ card, userName }) {
   const expiry = card.expiresAt ? new Date(card.expiresAt) : null;
   const expiryStr = expiry
     ? `${String(expiry.getMonth() + 1).padStart(2, '0')}/${expiry.getFullYear().toString().slice(-2)}`
     : '';
+
+  // Format card number as 4 groups of 4
+  const rawNum = (card.cardNumber || '').replace(/\D/g,'');
+  const formattedNum = rawNum.length >= 16
+    ? rawNum.replace(/(.{4})/g,'$1 ').trim()
+    : card.cardNumber;
 
   return (
     <div
@@ -116,45 +137,56 @@ function LoyaltyCardDisplay({ card, userName }) {
         flexShrink: 0,
       }}
     >
-      {/* Background pattern */}
-      <div style={{ position: 'absolute', top: -30, right: -30, width: 160, height: 160, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
-      <div style={{ position: 'absolute', bottom: -40, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+      {/* Background circles */}
+      <div style={{ position: 'absolute', top: -40, right: -40, width: 180, height: 180, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+      <div style={{ position: 'absolute', bottom: -50, left: -30, width: 150, height: 150, borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }} />
+      <div style={{ position: 'absolute', top: 20, right: 60, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.03)' }} />
 
-      {/* Top row */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'relative' }}>
+      {/* Top row: brand + tier */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <img src="/logo.png" alt="KigaliTech" style={{ width: '32px', height: '32px', borderRadius: '8px', objectFit: 'contain', background: 'rgba(255,255,255,0.15)', padding: '3px' }} />
+          <img src="/logo.png" alt="KT" style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} />
           <div>
-            <div style={{ fontWeight: 800, fontSize: '13px', letterSpacing: '1px' }}>KIGALITECH</div>
-            <div style={{ fontSize: '9px', opacity: 0.7, letterSpacing: '2px' }}>LOYALTY CARD</div>
+            <div style={{ fontWeight: 800, fontSize: '12px', letterSpacing: '2px' }}>KIGALITECH</div>
+            <div style={{ fontSize: '8px', opacity: 0.65, letterSpacing: '2.5px', marginTop: '1px' }}>MEMBER CARD</div>
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '24px', lineHeight: 1 }}>{TIER_ICON[card.tier]}</div>
-          <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', opacity: 0.9, marginTop: '2px' }}>{card.tier.toUpperCase()}</div>
+          <div style={{ fontSize: '20px', lineHeight: 1 }}>{TIER_ICON[card.tier]}</div>
+          <div style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '1.5px', opacity: 0.95, marginTop: '2px', background: 'rgba(255,255,255,0.15)', padding: '2px 6px', borderRadius: '99px', display: 'inline-block' }}>{card.tier.toUpperCase()}</div>
         </div>
       </div>
 
+      {/* EMV chip */}
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <EmvChip />
+        {/* Contactless symbol */}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" opacity="0.6">
+          <path d="M8.5 16.5a5 5 0 000-9M5.5 19.5a9 9 0 000-15M11.5 13.5a1 1 0 000-3" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      </div>
+
       {/* Card number */}
-      <div style={{ position: 'relative' }}>
-        <div style={{ fontFamily: 'monospace', fontSize: '13px', letterSpacing: '3px', opacity: 0.85 }}>
-          {card.cardNumber}
-        </div>
+      <div style={{ position: 'relative', fontFamily: '"Courier New", Courier, monospace', fontSize: '14px', letterSpacing: '4px', opacity: 0.9, fontWeight: 600 }}>
+        {formattedNum}
       </div>
 
       {/* Bottom row */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', position: 'relative' }}>
         <div>
-          <div style={{ fontSize: '9px', opacity: 0.6, letterSpacing: '1.5px', marginBottom: '3px' }}>CARD HOLDER</div>
-          <div style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '0.5px' }}>{(userName || 'Member').toUpperCase()}</div>
-          <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '4px' }}>{card.points.toLocaleString()} points</div>
+          <div style={{ fontSize: '8px', opacity: 0.55, letterSpacing: '2px', marginBottom: '3px', textTransform: 'uppercase' }}>Card Holder</div>
+          <div style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.5px' }}>{(userName || 'Member').toUpperCase()}</div>
+          <div style={{ fontSize: '9px', opacity: 0.65, marginTop: '3px' }}>{card.points.toLocaleString()} pts</div>
         </div>
-        {expiryStr && (
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '9px', opacity: 0.6, letterSpacing: '1.5px', marginBottom: '3px' }}>VALID THRU</div>
-            <div style={{ fontSize: '13px', fontWeight: 700 }}>{expiryStr}</div>
-          </div>
-        )}
+        <div style={{ textAlign: 'right' }}>
+          {expiryStr && (
+            <>
+              <div style={{ fontSize: '8px', opacity: 0.55, letterSpacing: '2px', marginBottom: '3px', textTransform: 'uppercase' }}>Valid Thru</div>
+              <div style={{ fontSize: '13px', fontWeight: 700 }}>{expiryStr}</div>
+            </>
+          )}
+          <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '5px', letterSpacing: '0.5px' }}>+250 786 276 555</div>
+        </div>
       </div>
     </div>
   );
@@ -200,8 +232,155 @@ export default function LoyaltyPage() {
     setRequesting(false);
   }
 
+  function buildCardHtml() {
+    if (!card) return '';
+    const bg = card.tier === 'Platinum' ? 'linear-gradient(135deg,#7c3aed,#4338ca)'
+      : card.tier === 'Gold' ? 'linear-gradient(135deg,#f59e0b,#b45309)'
+      : card.tier === 'Silver' ? 'linear-gradient(135deg,#64748b,#334155)'
+      : 'linear-gradient(135deg,#92400e,#78350f)';
+    const icon = { Bronze: '🥉', Silver: '🥈', Gold: '🥇', Platinum: '💎' }[card.tier] || '🪪';
+    const expiry = card.expiresAt ? new Date(card.expiresAt) : null;
+    const expiryStr = expiry
+      ? `${String(expiry.getMonth() + 1).padStart(2, '0')}/${expiry.getFullYear().toString().slice(-2)}`
+      : '';
+    const name = (session?.user?.name || 'Member').toUpperCase();
+    const rawNum = (card.cardNumber || '').replace(/\D/g,'');
+    const formattedNum = rawNum.length >= 16 ? rawNum.replace(/(.{4})/g,'$1 ').trim() : card.cardNumber;
+
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>KigaliTech Loyalty Card — ${name}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0f172a;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;gap:20px}
+  .card{width:360px;height:225px;border-radius:18px;background:${bg};color:white;padding:22px 24px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.5)}
+  .c1{position:absolute;top:-50px;right:-50px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.05)}
+  .c2{position:absolute;bottom:-60px;left:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.04)}
+  .c3{position:absolute;top:30px;right:80px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,0.03)}
+  .btn{padding:12px 36px;border-radius:999px;background:white;color:#0f172a;font-size:14px;font-weight:700;border:none;cursor:pointer;letter-spacing:0.5px}
+  @media print{body{background:white;min-height:auto}.card{box-shadow:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}.btn{display:none}}
+</style></head><body>
+<div class="card">
+  <div class="c1"></div><div class="c2"></div><div class="c3"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;position:relative">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:30px;height:30px;border-radius:7px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🛒</div>
+      <div>
+        <div style="font-weight:800;font-size:12px;letter-spacing:2.5px">KIGALITECH</div>
+        <div style="font-size:7.5px;opacity:0.6;letter-spacing:3px;margin-top:1px">MEMBER CARD</div>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:20px;line-height:1">${icon}</div>
+      <div style="font-size:8px;font-weight:800;letter-spacing:2px;opacity:0.9;margin-top:3px;background:rgba(255,255,255,0.15);padding:2px 7px;border-radius:99px;display:inline-block">${card.tier.toUpperCase()}</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;position:relative">
+    <svg width="38" height="30" viewBox="0 0 38 30"><rect width="38" height="30" rx="4" fill="#d4a843"/><rect x="13" y="0" width="12" height="30" fill="#c49930" opacity="0.4"/><rect x="0" y="10" width="38" height="10" fill="#c49930" opacity="0.4"/><rect x="13" y="10" width="12" height="10" rx="1" fill="#b8892a"/></svg>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" opacity="0.55"><path d="M8.5 16.5a5 5 0 000-9M5.5 19.5a9 9 0 000-15M11.5 13.5a1 1 0 000-3" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+  </div>
+  <div style="font-family:'Courier New',monospace;font-size:15px;letter-spacing:4px;opacity:0.9;font-weight:600;position:relative">${formattedNum}</div>
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;position:relative">
+    <div>
+      <div style="font-size:7.5px;opacity:0.5;letter-spacing:2px;margin-bottom:3px;text-transform:uppercase">Card Holder</div>
+      <div style="font-size:13px;font-weight:700;letter-spacing:0.5px">${name}</div>
+      <div style="font-size:8.5px;opacity:0.65;margin-top:3px">${card.points.toLocaleString()} points</div>
+    </div>
+    ${expiryStr ? `<div style="text-align:right"><div style="font-size:7.5px;opacity:0.5;letter-spacing:2px;margin-bottom:3px;text-transform:uppercase">Valid Thru</div><div style="font-size:13px;font-weight:700">${expiryStr}</div></div>` : ''}
+  </div>
+</div>
+<button class="btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+</body></html>`;
+  }
+
   function printCard() {
-    window.print();
+    if (!card || card.status !== 'approved') return;
+    const html = buildCardHtml();
+
+    // Use hidden iframe — avoids popup blockers on all browsers
+    const existing = document.getElementById('__loyalty-print-frame');
+    if (existing) existing.remove();
+
+    const iframe = document.createElement('iframe');
+    iframe.id = '__loyalty-print-frame';
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:600px;height:500px;border:none;visibility:hidden;';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    iframe.onload = () => {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } catch {
+        // fallback: open new tab
+        const win = window.open('', '_blank');
+        if (win) { win.document.write(html); win.document.close(); }
+      }
+      setTimeout(() => { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 2000);
+    };
+  }
+
+  async function downloadCard() {
+    if (!card || card.status !== 'approved') return;
+    const W = 680, H = 426;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    function rrect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+      ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+      ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+      ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r); ctx.closePath();
+    }
+    rrect(0,0,W,H,32); ctx.save(); ctx.clip();
+    const gmap = { Platinum:['#7c3aed','#4338ca'], Gold:['#f59e0b','#b45309'], Silver:['#64748b','#334155'], Bronze:['#92400e','#78350f'] };
+    const [c1,c2] = gmap[card.tier]||gmap.Bronze;
+    const bg = ctx.createLinearGradient(0,0,W,H); bg.addColorStop(0,c1); bg.addColorStop(1,c2);
+    ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='rgba(255,255,255,0.06)'; ctx.beginPath(); ctx.arc(W+80,-80,360,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.04)'; ctx.beginPath(); ctx.arc(-60,H+100,300,0,Math.PI*2); ctx.fill();
+    try {
+      const logo = await new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=rej; img.src='/logo.png'; });
+      ctx.save(); ctx.beginPath(); ctx.arc(76,68,28,0,Math.PI*2); ctx.clip(); ctx.drawImage(logo,48,40,56,56); ctx.restore();
+    } catch {
+      ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.arc(76,68,28,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='white'; ctx.textAlign='center'; ctx.font='bold 20px system-ui'; ctx.fillText('KT',76,75); ctx.textAlign='left';
+    }
+    ctx.fillStyle='white'; ctx.font='bold 24px system-ui,-apple-system,sans-serif'; ctx.fillText('KIGALITECH',120,60);
+    ctx.fillStyle='rgba(255,255,255,0.65)'; ctx.font='13px system-ui'; ctx.fillText('MEMBER CARD',122,82);
+    const tIcons={Bronze:'🥉',Silver:'🥈',Gold:'🥇',Platinum:'💎'};
+    ctx.font='34px system-ui'; ctx.textAlign='right'; ctx.fillStyle='white'; ctx.fillText(tIcons[card.tier]||'🪪',W-48,60);
+    ctx.font='bold 13px system-ui';
+    const tlabel=card.tier.toUpperCase(); const tw=ctx.measureText(tlabel).width;
+    ctx.fillStyle='rgba(255,255,255,0.18)'; rrect(W-tw-84,68,tw+28,24,12); ctx.fill();
+    ctx.fillStyle='white'; ctx.fillText(tlabel,W-52,84); ctx.textAlign='left';
+    const cg=ctx.createLinearGradient(48,148,124,208); cg.addColorStop(0,'#d4a843'); cg.addColorStop(1,'#b8892a');
+    rrect(48,148,76,60,8); ctx.fillStyle=cg; ctx.fill();
+    ctx.strokeStyle='#b8892a'; ctx.lineWidth=2;
+    ctx.strokeRect(74,148,24,60); ctx.strokeRect(48,168,76,20);
+    ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.font='bold 26px "Courier New",Courier,monospace';
+    ctx.fillText(card.cardNumber||'',48,280);
+    ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font='600 11px system-ui'; ctx.fillText('CARD HOLDER',48,322);
+    ctx.fillStyle='white'; ctx.font='bold 24px system-ui';
+    ctx.fillText((session?.user?.name||'MEMBER').toUpperCase().slice(0,22),48,354);
+    ctx.fillStyle='rgba(255,255,255,0.7)'; ctx.font='15px system-ui'; ctx.fillText(`${card.points.toLocaleString()} pts`,48,386);
+    if (card.expiresAt) {
+      const exp=new Date(card.expiresAt);
+      const es=`${String(exp.getMonth()+1).padStart(2,'0')}/${exp.getFullYear().toString().slice(-2)}`;
+      ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font='600 11px system-ui'; ctx.textAlign='right';
+      ctx.fillText('VALID THRU',W-48,322); ctx.fillStyle='white'; ctx.font='bold 24px system-ui'; ctx.fillText(es,W-48,354);
+    }
+    ctx.fillStyle='rgba(255,255,255,0.7)'; ctx.font='14px system-ui'; ctx.textAlign='right';
+    ctx.fillText('+250 786 276 555',W-48,386); ctx.textAlign='left';
+    ctx.restore();
+    canvas.toBlob(blob=>{
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download=`KigaliTech-Card-${card.cardNumber}.png`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    },'image/png');
   }
 
   if (status === 'loading' || loading) {
@@ -224,7 +403,7 @@ export default function LoyaltyPage() {
 
   return (
     <Layout>
-      <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
 
         {/* Header */}
         <div className="mb-6">
@@ -275,22 +454,36 @@ export default function LoyaltyPage() {
               <div className="overflow-x-auto">
                 <LoyaltyCardDisplay card={card} userName={session?.user?.name} />
               </div>
-              <button onClick={printCard}
-                className="flex items-center gap-2 rounded-full bg-slate-900 dark:bg-white dark:text-slate-900 text-white px-5 py-2.5 text-sm font-semibold hover:bg-slate-700 dark:hover:bg-slate-100 transition">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-                </svg>
-                Download / Print Card
-              </button>
+              <div className="flex flex-wrap gap-3">
+                <button onClick={printCard}
+                  className="flex items-center gap-2 rounded-full bg-slate-900 dark:bg-white dark:text-slate-900 text-white px-5 py-2.5 text-sm font-semibold hover:bg-slate-700 dark:hover:bg-slate-100 transition">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                  </svg>
+                  Print Card
+                </button>
+                <button onClick={downloadCard}
+                  className="flex items-center gap-2 rounded-full border-2 border-slate-900 dark:border-white text-slate-900 dark:text-white px-5 py-2.5 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                  </svg>
+                  Download as Image
+                </button>
+              </div>
               <p className="text-xs text-slate-400">
                 Card #{card.cardNumber} · {card.tier} · Expires {card.expiresAt ? new Date(card.expiresAt).toLocaleDateString() : '—'}
               </p>
             </div>
           ) : card?.status === 'pending' ? (
-            <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-4">
-              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Request pending review</p>
-              <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">Our team will review and approve your loyalty card shortly. You&apos;ll be able to download it once approved.</p>
-              <p className="text-xs text-amber-500 mt-2 font-mono">Card #: {card.cardNumber}</p>
+            <div className="space-y-4">
+              <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-3">
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">⏳ Awaiting admin approval</p>
+                <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">Your card preview is shown below. Download will be available once an admin approves your card.</p>
+              </div>
+              <div className="overflow-x-auto">
+                <LoyaltyCardDisplay card={card} userName={session?.user?.name} />
+              </div>
+              <p className="text-xs text-slate-400 font-mono">Card #: {card.cardNumber} · pending approval</p>
             </div>
           ) : card?.status === 'rejected' ? (
             <div className="space-y-3">
@@ -326,10 +519,10 @@ export default function LoyaltyPage() {
           </h2>
           <div className="space-y-3">
             {[
-              { icon: '🛒', label: 'Purchase',        desc: 'Earn 1.5 points per RWF 1,475 spent on any order', pts: '1.5 pts / RWF 1,475' },
-              { icon: '⭐', label: 'Write a Review',   desc: 'Leave a verified product review',               pts: '10 pts' },
-              { icon: '👥', label: 'Refer a Friend',   desc: 'Your friend places their first order',           pts: '50 pts' },
-              { icon: '🎂', label: 'Birthday Bonus',   desc: 'Points bonus on your birthday month',           pts: '100 pts' },
+              { icon: '🛒', label: 'Purchase',        desc: 'Earn 1 point per RWF 29,500 spent (max 15 pts per order)', pts: 'up to 15 pts' },
+              { icon: '⭐', label: 'Write a Review',   desc: 'Leave a verified product review',                          pts: '3 pts' },
+              { icon: '🎂', label: 'Birthday Bonus',   desc: 'Points bonus on your birthday month',                      pts: '5 pts' },
+              { icon: '👥', label: 'Refer a Friend',   desc: 'Your friend places their first order — rarest reward',     pts: '100 pts' },
             ].map(item => (
               <div key={item.label} className="flex items-center justify-between py-2.5 border-b border-slate-50 dark:border-slate-700/50 last:border-0">
                 <div className="flex items-center gap-3">
@@ -346,7 +539,7 @@ export default function LoyaltyPage() {
             ))}
           </div>
           <p className="mt-4 text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700/40 rounded-xl px-4 py-3">
-            <strong>Redeem:</strong> 100 points = RWF 1,340 discount at checkout. Minimum redemption: 100 points.
+            <strong>Redeem:</strong> 100 points = RWF 1,340 discount at checkout. Points are rare — invite a friend to earn the most in one action.
           </p>
         </div>
 
@@ -374,20 +567,6 @@ export default function LoyaltyPage() {
 
       </div>
 
-      <style global jsx>{`
-        @media print {
-          body > * { display: none !important; }
-          #loyalty-card-print {
-            display: flex !important;
-            position: fixed !important;
-            top: 50% !important;
-            left: 50% !important;
-            transform: translate(-50%, -50%) !important;
-            width: 340px !important;
-            height: 213px !important;
-          }
-        }
-      `}</style>
     </Layout>
   );
 }

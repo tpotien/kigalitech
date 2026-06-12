@@ -15,8 +15,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Valid image required' });
   }
 
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) return res.status(503).json({ error: 'Vision AI not configured' });
+  const geminiKey = process.env.GOOGLE_AI_API_KEY;
+  const groqKey = process.env.GROQ_API_KEY;
+  if (!geminiKey && !groqKey) return res.status(503).json({ error: 'Vision AI not configured' });
 
   // Extract base64 content from data URL
   const base64 = imageDataUrl.split(',')[1];
@@ -50,46 +51,73 @@ Rules:
 - Extract the EXACT model name/number if visible on the product
 - tags should be searchable keywords in lowercase`;
 
-  try {
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-        max_tokens: 1024,
-        messages: [
-          {
+  // ── Try Gemini Vision first (superior image understanding) ────────────────
+  if (geminiKey) {
+    try {
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { inlineData: { mimeType, data: base64 } },
+                { text: prompt },
+              ],
+            }],
+            generationConfig: { temperature: 0.2, maxOutputTokens: 1024 },
+          }),
+        }
+      );
+      if (geminiRes.ok) {
+        const geminiData = await geminiRes.json();
+        const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) {
+          const product = JSON.parse(match[0]);
+          return res.json({ ...product, _source: 'gemini-2.0-vision' });
+        }
+      } else {
+        const errText = await geminiRes.text();
+        console.warn('[ai-scan] Gemini error:', errText);
+      }
+    } catch (err) {
+      console.warn('[ai-scan] Gemini failed, trying Groq:', err.message);
+    }
+  }
+
+  // ── Fallback: Groq Vision ─────────────────────────────────────────────────
+  if (groqKey) {
+    try {
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${groqKey}` },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          max_tokens: 1024,
+          messages: [{
             role: 'user',
             content: [
-              {
-                type: 'image_url',
-                image_url: { url: `data:${mimeType};base64,${base64}` },
-              },
+              { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
               { type: 'text', text: prompt },
             ],
-          },
-        ],
-      }),
-    });
-
-    if (!groqRes.ok) {
-      const err = await groqRes.text();
-      console.error('[ai-scan] Groq error:', err);
-      return res.status(502).json({ error: 'Vision AI failed. Try typing the product name instead.' });
+          }],
+        }),
+      });
+      if (groqRes.ok) {
+        const groqData = await groqRes.json();
+        const text = groqData.choices?.[0]?.message?.content?.trim() || '';
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) {
+          const product = JSON.parse(match[0]);
+          return res.json({ ...product, _source: 'vision' });
+        }
+      }
+    } catch (err) {
+      console.warn('[ai-scan] Groq vision failed:', err.message);
     }
-
-    const groqData = await groqRes.json();
-    const text = groqData.choices?.[0]?.message?.content?.trim() || '';
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('No JSON in response');
-
-    const product = JSON.parse(match[0]);
-    return res.json({ ...product, _source: 'vision' });
-  } catch (err) {
-    console.error('[ai-scan] parse error:', err.message);
-    return res.status(500).json({ error: 'Could not read product from image. Try typing the name instead.' });
   }
+
+  return res.status(502).json({ error: 'Could not read product from image. Try typing the name instead.' });
 }

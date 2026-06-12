@@ -1,67 +1,142 @@
+import { useState } from 'react';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
-import { useCurrency } from '../../context/CurrencyContext';
+import prisma from '../../lib/prisma';
 
-const CONDITION_LABEL = {
-  like_new: 'Like New',
-  good: 'Good',
-  fair: 'Fair',
-  poor: 'Poor',
-};
-
+const CONDITION_LABEL = { like_new: 'Like New', good: 'Good', fair: 'Fair', poor: 'Poor' };
 const CONDITION_COLOR = {
   like_new: 'bg-emerald-100 text-emerald-700',
   good: 'bg-sky-100 text-sky-700',
   fair: 'bg-amber-100 text-amber-700',
   poor: 'bg-red-100 text-red-700',
 };
-
 const SITE = 'https://kigalitechservices.com';
 
 export async function getServerSideProps({ params }) {
-  const { PrismaClient } = require('@prisma/client');
-  const prisma = new PrismaClient();
+  const lid = Number(params.id);
+  if (!Number.isFinite(lid)) return { redirect: { destination: '/', permanent: false } };
   try {
     const listing = await prisma.marketplaceListing.findFirst({
       where: {
-        id: Number(params.id),
+        id: lid,
         OR: [{ status: 'approved' }, { verified: true }],
+        seller: { sellerStatus: 'active' },
       },
       include: { seller: { select: { name: true, image: true } } },
     });
-
     if (!listing) return { notFound: true };
-
-    // Increment views
-    await prisma.marketplaceListing.update({
-      where: { id: listing.id },
-      data: { views: { increment: 1 } },
-    });
-
+    await prisma.marketplaceListing.update({ where: { id: listing.id }, data: { views: { increment: 1 } } });
     return { props: { listing: JSON.parse(JSON.stringify(listing)) } };
   } catch {
     return { notFound: true };
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
+const REPORT_REASONS = [
+  { value: 'scam', label: 'Scam or fraud' },
+  { value: 'counterfeit', label: 'Counterfeit / fake item' },
+  { value: 'inappropriate', label: 'Inappropriate content' },
+  { value: 'overpriced', label: 'Extremely overpriced' },
+  { value: 'already_sold', label: 'Item already sold' },
+];
+
 export default function ListingDetail({ listing }) {
-  const { format } = useCurrency();
-
   const images = (() => { try { return JSON.parse(listing.images) || []; } catch { return []; } })();
-  const sellerPrice = listing.price;
-  const fee = Math.round(sellerPrice * 0.03);
-  const buyerTotal = sellerPrice + fee;
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('scam');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportDone, setReportDone] = useState(false);
 
+  async function submitReport() {
+    setReportSubmitting(true);
+    await fetch('/api/marketplace/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ listingId: listing.id, reason: reportReason }),
+    });
+    setReportSubmitting(false);
+    setReportDone(true);
+    setTimeout(() => { setReportOpen(false); setReportDone(false); }, 2000);
+  }
+
+  const sellerPrice = listing.price;
   const waMsg = encodeURIComponent(
     `Hi! I'm interested in your listing on KigaliTech Marketplace 👋\n\n*${listing.title}*\nPrice: RWF ${sellerPrice.toLocaleString()}\n\n🔗 ${SITE}/marketplace/${listing.id}\n\nIs this still available?`
   );
 
   return (
     <Layout>
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Report modal */}
+      {reportOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setReportOpen(false)}>
+          <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-bold text-slate-900 dark:text-white">Report this listing</h3>
+              <button onClick={() => setReportOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl leading-none">×</button>
+            </div>
+            {reportDone ? (
+              <div className="text-center py-6">
+                <p className="text-3xl mb-2">✓</p>
+                <p className="font-semibold text-emerald-600">Report submitted</p>
+                <p className="text-sm text-slate-400 mt-1">Our team will review this listing.</p>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Why are you reporting this listing?</p>
+                <div className="space-y-2 mb-6">
+                  {REPORT_REASONS.map(r => (
+                    <label key={r.value} className={`flex items-center gap-3 cursor-pointer rounded-xl border px-4 py-3 transition ${reportReason === r.value ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/20' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'}`}>
+                      <input type="radio" value={r.value} checked={reportReason === r.value} onChange={() => setReportReason(r.value)} className="accent-violet-600" />
+                      <span className="text-sm text-slate-800 dark:text-slate-200">{r.label}</span>
+                    </label>
+                  ))}
+                </div>
+                <button
+                  onClick={submitReport}
+                  disabled={reportSubmitting}
+                  className="w-full rounded-full bg-red-500 py-3 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-60 transition"
+                >
+                  {reportSubmitting ? 'Submitting...' : 'Submit Report'}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
+      {/* Lightbox */}
+      {lightboxOpen && images[selectedIdx] && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white/70 hover:text-white text-3xl font-light leading-none z-10"
+            onClick={() => setLightboxOpen(false)}
+          >×</button>
+          <img
+            src={images[selectedIdx]}
+            alt={listing.title}
+            className="max-h-[90vh] max-w-[90vw] object-contain rounded-xl"
+            onClick={e => e.stopPropagation()}
+          />
+          {images.length > 1 && (
+            <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2">
+              {images.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={e => { e.stopPropagation(); setSelectedIdx(i); }}
+                  className={`h-2 rounded-full transition-all ${i === selectedIdx ? 'w-6 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-slate-400 mb-6">
           <Link href="/marketplace" className="hover:text-sky-600 no-underline">Marketplace</Link>
@@ -70,24 +145,46 @@ export default function ListingDetail({ listing }) {
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
-
           {/* ── Left: Images + Description ── */}
-          <div className="space-y-6">
-
-            {/* Images */}
-            <div className="rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 aspect-[4/3]">
-              {images[0] ? (
-                <img src={images[0]} alt={listing.title} className="h-full w-full object-contain" />
+          <div className="space-y-4">
+            {/* Main image */}
+            <div
+              className="rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 aspect-[4/3] cursor-zoom-in relative group"
+              onClick={() => images[selectedIdx] && setLightboxOpen(true)}
+            >
+              {images[selectedIdx] ? (
+                <>
+                  <img
+                    src={images[selectedIdx]}
+                    alt={listing.title}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 text-white text-xs font-semibold rounded-full px-3 py-1.5">
+                      Click to zoom
+                    </span>
+                  </div>
+                </>
               ) : (
                 <div className="flex h-full items-center justify-center text-6xl">📦</div>
               )}
             </div>
 
-            {/* Thumbnail row */}
+            {/* Thumbnails */}
             {images.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {images.map((img, i) => (
-                  <img key={i} src={img} alt="" className="h-16 w-16 flex-shrink-0 rounded-xl object-cover border border-slate-200 dark:border-slate-700" />
+                  <button
+                    key={i}
+                    onClick={() => setSelectedIdx(i)}
+                    className={`flex-shrink-0 h-16 w-16 rounded-xl overflow-hidden border-2 transition-all ${
+                      i === selectedIdx
+                        ? 'border-sky-500 shadow-md shadow-sky-200 dark:shadow-sky-900/40 scale-105'
+                        : 'border-slate-200 dark:border-slate-700 opacity-70 hover:opacity-100 hover:border-slate-400'
+                    }`}
+                  >
+                    <img src={img} alt="" className="h-full w-full object-cover" />
+                  </button>
                 ))}
               </div>
             )}
@@ -108,7 +205,6 @@ export default function ListingDetail({ listing }) {
 
           {/* ── Right: Info + Actions ── */}
           <div className="space-y-4">
-
             {/* Title + badges */}
             <div>
               <div className="flex flex-wrap gap-2 mb-2">
@@ -139,32 +235,23 @@ export default function ListingDetail({ listing }) {
             <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5">
               <p className="text-xs text-slate-400 uppercase tracking-widest mb-2">Price</p>
               <p className="text-3xl font-extrabold text-slate-900 dark:text-white">RWF {sellerPrice.toLocaleString()}</p>
-              <div className="mt-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-4 py-3 text-xs space-y-1">
-                <div className="flex justify-between text-slate-500">
-                  <span>Seller price</span><span>RWF {sellerPrice.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-slate-400">
-                  <span>+3% platform fee</span><span>RWF {fee.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between font-bold text-slate-800 dark:text-slate-100 border-t border-slate-200 dark:border-slate-700 pt-1 mt-1">
-                  <span>You pay</span><span>RWF {buyerTotal.toLocaleString()}</span>
-                </div>
-              </div>
             </div>
 
             {/* Seller */}
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 flex items-center gap-3">
+            <Link href={`/marketplace/seller/${listing.sellerId}`}
+              className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 flex items-center gap-3 no-underline hover:border-violet-300 dark:hover:border-violet-700 transition">
               {listing.seller?.image
                 ? <img src={listing.seller.image} alt="" className="h-10 w-10 rounded-full object-cover" />
                 : <div className="h-10 w-10 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-sm font-bold text-violet-700 dark:text-violet-400 flex-shrink-0">
                     {(listing.seller?.name || 'S')[0]}
                   </div>
               }
-              <div>
+              <div className="flex-1">
                 <p className="text-xs text-slate-400">Sold by</p>
                 <p className="font-semibold text-slate-900 dark:text-white text-sm">{listing.seller?.name || 'Member'}</p>
               </div>
-            </div>
+              <span className="text-xs text-violet-500 font-semibold">View catalog →</span>
+            </Link>
 
             {/* Contact seller */}
             {listing.phone ? (
@@ -187,6 +274,13 @@ export default function ListingDetail({ listing }) {
             <Link href="/marketplace" className="flex w-full items-center justify-center rounded-full border border-slate-200 dark:border-slate-700 py-3 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 no-underline transition">
               ← Back to Marketplace
             </Link>
+
+            <button
+              onClick={() => setReportOpen(true)}
+              className="w-full text-center text-xs text-slate-400 hover:text-red-500 transition py-1"
+            >
+              ⚑ Report this listing
+            </button>
           </div>
         </div>
       </div>

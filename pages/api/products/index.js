@@ -32,11 +32,13 @@ export default async function handler(req, res) {
     take: limit ? Number(limit) : 48,
   });
 
-  // Strip images to first only; skip base64 data URIs (~130 KB each)
+  // Strip to first valid CDN image; skip empty slots and base64 data URIs
   const trimmed = products.map((p) => {
     let firstImg = '';
-    try { firstImg = JSON.parse(p.images || '[]')[0] || ''; } catch {}
-    if (firstImg.startsWith('data:')) firstImg = '';
+    try {
+      const imgs = JSON.parse(p.images || '[]');
+      firstImg = imgs.find(img => img && img.length > 5 && !img.startsWith('data:')) || '';
+    } catch {}
     return { ...p, images: JSON.stringify([firstImg]) };
   });
 

@@ -16,6 +16,7 @@ export default function DeliveryZonesAdmin() {
   const [name, setName] = useState('');
   const [fee, setFee] = useState('');
   const [sortOrder, setSortOrder] = useState('');
+  const [estimatedDays, setEstimatedDays] = useState('1');
   const [adding, setAdding] = useState(false);
   const [msg, setMsg] = useState('');
 
@@ -41,7 +42,7 @@ export default function DeliveryZonesAdmin() {
       const r = await fetch('/api/admin/delivery-zones', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, fee: fee ? Number(fee) : 0, sortOrder: sortOrder ? Number(sortOrder) : 0 }),
+        body: JSON.stringify({ name, fee: fee ? Number(fee) : 0, sortOrder: sortOrder ? Number(sortOrder) : 0, estimatedDays: estimatedDays ? Number(estimatedDays) : 1 }),
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'Failed');
@@ -122,6 +123,17 @@ export default function DeliveryZonesAdmin() {
                 />
               </div>
               <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Est. Days</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={estimatedDays}
+                  onChange={e => setEstimatedDays(e.target.value)}
+                  placeholder="1"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Sort Order</label>
                 <input
                   type="number"
@@ -170,7 +182,7 @@ export default function DeliveryZonesAdmin() {
                 <tr>
                   <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Zone</th>
                   <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Fee (RWF)</th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Order</th>
+                  <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Est. Days</th>
                   <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3"></th>
                 </tr>
@@ -229,7 +241,7 @@ function ZoneRow({ zone, onToggle, onDelete, onFeeEdit }) {
           </button>
         )}
       </td>
-      <td className="px-6 py-4 text-slate-500">{zone.sortOrder}</td>
+      <td className="px-6 py-4 text-slate-500">{zone.estimatedDays ?? 1} day{(zone.estimatedDays ?? 1) !== 1 ? 's' : ''}</td>
       <td className="px-6 py-4">
         <button
           onClick={() => onToggle(zone)}

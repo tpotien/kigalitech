@@ -43,7 +43,7 @@ export default function ReferralCard() {
         </div>
         <div>
           <h2 className="font-bold text-slate-900 dark:text-slate-100">Referral Program</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Invite friends, earn 2,000 loyalty points per referral</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Invite friends, earn 100 loyalty points per referral</p>
         </div>
       </div>
 
@@ -115,7 +115,7 @@ export default function ReferralCard() {
             <ol className="space-y-0.5 text-xs text-slate-500 dark:text-slate-400 list-decimal list-inside">
               <li>Share your code or link with friends</li>
               <li>They register using your referral link</li>
-              <li>When they place their first order, you earn 2,000 loyalty points (~2,000 RWF)</li>
+              <li>When they place their first order, you earn 100 loyalty points — the highest reward</li>
             </ol>
           </div>
 

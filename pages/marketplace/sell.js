@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
@@ -25,72 +25,70 @@ export default function SellPage() {
     phone: session?.user?.phoneNumber || '',
     location: '',
   });
+  const [images, setImages] = useState([]); // array of base64 data URLs
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [sellerStatusData, setSellerStatusData] = useState(null);
 
-  // AI identification state
-  const [aiOpen, setAiOpen] = useState(false);
-  const [aiMode, setAiMode] = useState('serial'); // 'serial' | 'photo'
-  const [serialInput, setSerialInput] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState('');
-  const [aiPhoto, setAiPhoto] = useState(null); // base64 data URL
+  useEffect(() => {
+    if (!session) return;
+    fetch('/api/marketplace/my-seller-status')
+      .then(r => r.json())
+      .then(d => setSellerStatusData(d))
+      .catch(() => {});
+  }, [session]);
+
+  function resizeImage(file) {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 900;
+          let w = img.width, h = img.height;
+          if (w > MAX || h > MAX) {
+            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+            else { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleImageFiles(files) {
+    const remaining = 8 - images.length;
+    const toProcess = Array.from(files).slice(0, remaining);
+    const resized = await Promise.all(toProcess.map(resizeImage));
+    setImages(prev => [...prev, ...resized]);
+  }
+
+  function removeImage(idx) {
+    setImages(prev => prev.filter((_, i) => i !== idx));
+  }
 
   function handleChange(e) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  }
-
-  function handlePhotoChange(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => setAiPhoto(ev.target.result);
-    reader.readAsDataURL(file);
-  }
-
-  async function identifyDevice() {
-    setAiLoading(true);
-    setAiError('');
-    try {
-      const body = aiMode === 'serial'
-        ? { serialNumber: serialInput }
-        : { imageDataUrl: aiPhoto };
-      const res = await fetch('/api/marketplace/ai-identify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (!res.ok) { setAiError(data.error || 'AI could not identify device'); return; }
-      // Auto-fill form
-      setForm(prev => ({
-        ...prev,
-        title: data.title || prev.title,
-        description: data.description || prev.description,
-        category: data.category || prev.category,
-        condition: data.suggestedCondition || prev.condition,
-        price: data.suggestedPrice ? String(data.suggestedPrice) : prev.price,
-      }));
-      setAiOpen(false);
-    } catch {
-      setAiError('AI service error. Please fill in the form manually.');
-    } finally {
-      setAiLoading(false);
-    }
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!session) { router.push('/signin?callbackUrl=/marketplace/sell'); return; }
     if (!form.category || !form.condition) { setError('Please select category and condition.'); return; }
+    if (images.length < 4) { setError('Please upload at least 4 photos of your item.'); return; }
     setSubmitting(true);
     setError('');
     try {
       const res = await fetch('/api/marketplace', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, price: Math.round(Number(form.price)) }),
+        body: JSON.stringify({ ...form, images, price: Math.round(Number(form.price)) }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Submission failed');
@@ -142,67 +140,28 @@ export default function SellPage() {
               </div>
             )}
 
-            {/* AI Device Identification */}
-            <div className="mb-4 rounded-2xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 overflow-hidden">
-              <button type="button" onClick={() => setAiOpen(v => !v)}
-                className="flex w-full items-center justify-between px-5 py-4 text-left">
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">🤖</span>
-                  <div>
-                    <p className="text-sm font-semibold text-violet-900 dark:text-violet-200">AI Auto-Fill</p>
-                    <p className="text-xs text-violet-600 dark:text-violet-400">Identify device by serial number or photo</p>
-                  </div>
-                </div>
-                <span className="text-violet-400 text-lg">{aiOpen ? '▲' : '▼'}</span>
-              </button>
+            {sellerStatusData && sellerStatusData.sellerStatus === 'suspended' && (
+              <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 p-5">
+                <p className="font-bold text-red-700 dark:text-red-400 flex items-center gap-2">
+                  <span>⛔</span> Your seller account is suspended
+                </p>
+                <p className="text-sm text-red-600 dark:text-red-300 mt-1">
+                  Reason: <span className="capitalize">{sellerStatusData.sellerSuspendedReason?.replace('_', ' ') || 'Policy violation'}</span>.
+                </p>
+                <p className="text-sm text-red-600 dark:text-red-300 mt-1">Contact support to resolve this before you can list items.</p>
+              </div>
+            )}
 
-              {aiOpen && (
-                <div className="border-t border-violet-200 dark:border-violet-800 px-5 py-4 space-y-4">
-                  {/* Mode switcher */}
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => setAiMode('serial')}
-                      className={`flex-1 rounded-xl py-2 text-sm font-semibold transition ${aiMode === 'serial' ? 'bg-violet-600 text-white' : 'border border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/40'}`}>
-                      Serial Number
-                    </button>
-                    <button type="button" onClick={() => setAiMode('photo')}
-                      className={`flex-1 rounded-xl py-2 text-sm font-semibold transition ${aiMode === 'photo' ? 'bg-violet-600 text-white' : 'border border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/40'}`}>
-                      Photo Scan
-                    </button>
-                  </div>
-
-                  {aiMode === 'serial' ? (
-                    <div className="flex gap-2">
-                      <input value={serialInput} onChange={e => setSerialInput(e.target.value)}
-                        placeholder="Enter IMEI / Serial Number (e.g. 354758112345678)"
-                        className="flex-1 rounded-xl border border-violet-200 dark:border-violet-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900" />
-                      <button type="button" onClick={identifyDevice} disabled={aiLoading || !serialInput.trim()}
-                        className="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-60 transition">
-                        {aiLoading ? '...' : 'Identify'}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <label className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-violet-300 dark:border-violet-700 p-6 cursor-pointer hover:border-violet-500 transition">
-                        <input type="file" accept="image/*" capture="environment" onChange={handlePhotoChange} className="hidden" />
-                        {aiPhoto
-                          ? <img src={aiPhoto} alt="Device" className="h-28 w-28 object-cover rounded-lg" />
-                          : <><span className="text-3xl">📷</span><span className="text-sm text-violet-600 dark:text-violet-400 font-medium">Take photo or upload device image</span></>
-                        }
-                      </label>
-                      {aiPhoto && (
-                        <button type="button" onClick={identifyDevice} disabled={aiLoading}
-                          className="w-full rounded-xl bg-violet-600 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-60 transition">
-                          {aiLoading ? 'Identifying...' : 'Identify Device from Photo'}
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  {aiError && <p className="text-xs text-red-500">{aiError}</p>}
-                  <p className="text-[11px] text-violet-500 dark:text-violet-400">AI will auto-fill the title, description, category, condition, and suggest a price. You can edit everything before submitting.</p>
-                </div>
-              )}
-            </div>
+            {sellerStatusData && !sellerStatusData.canList && sellerStatusData.sellerStatus !== 'suspended' && (
+              <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 p-5">
+                <p className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                  <span>⚠️</span> Subscription required to list
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                  Your 5-month free period has ended. Pay RWF 10,000/month via MoMo to <strong>0786276555</strong> then contact us to reactivate.
+                </p>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
@@ -232,12 +191,52 @@ export default function SellPage() {
                 <textarea name="description" value={form.description} onChange={handleChange} rows={4} placeholder="Describe the item, include storage size, accessories, any defects..." className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 resize-none" />
               </div>
 
-              {/* Grace period / commission notice */}
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-800 px-4 py-3 flex items-start gap-3">
-                <span className="text-xl mt-0.5">🎉</span>
+              {/* Photos — min 4 required */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    Photos <span className="text-red-500">*</span>
+                  </label>
+                  <span className={`text-xs font-semibold ${images.length >= 4 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                    {images.length}/4 min · {images.length}/8 max
+                  </span>
+                </div>
+
+                {/* Image grid */}
+                {images.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2 mb-3">
+                    {images.map((src, i) => (
+                      <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
+                        <img src={src} alt="" className="h-full w-full object-cover" />
+                        <button type="button" onClick={() => removeImage(i)}
+                          className="absolute top-1 right-1 h-5 w-5 rounded-full bg-black/60 text-white text-xs flex items-center justify-center hover:bg-red-600 transition">
+                          ✕
+                        </button>
+                        {i === 0 && <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1 text-[9px] text-white font-bold">COVER</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {images.length < 8 && (
+                  <label className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 cursor-pointer transition ${images.length < 4 ? 'border-amber-300 bg-amber-50 dark:bg-amber-900/10 dark:border-amber-700' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-violet-400'}`}>
+                    <input type="file" accept="image/*" multiple className="hidden"
+                      onChange={e => handleImageFiles(e.target.files)} />
+                    <span className="text-2xl">📷</span>
+                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      {images.length === 0 ? 'Upload at least 4 photos' : 'Add more photos'}
+                    </p>
+                    <p className="text-xs text-slate-400">First photo is the cover · JPG/PNG · auto-compressed</p>
+                  </label>
+                )}
+              </div>
+
+              {/* Subscription notice */}
+              <div className="rounded-xl border border-violet-200 bg-violet-50 dark:bg-violet-900/20 dark:border-violet-800 px-4 py-3 flex items-start gap-3">
+                <span className="text-xl mt-0.5">💼</span>
                 <div>
-                  <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">0% Commission for your first 5 months!</p>
-                  <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">After the grace period, a 3% service fee applies on each sale. Fees are paid by the buyer on top of your listed price.</p>
+                  <p className="text-sm font-semibold text-violet-800 dark:text-violet-300">Sell on KigaliTech Marketplace</p>
+                  <p className="text-xs text-violet-700 dark:text-violet-400 mt-0.5">Free to list for the first 5 months. After the grace period, a <strong>RWF 10,000/month</strong> subscription is required to keep your listings active and continue selling.</p>
                 </div>
               </div>
 
@@ -249,10 +248,9 @@ export default function SellPage() {
                     <input name="price" type="number" min="0" step="1" value={form.price} onChange={handleChange} required placeholder="0" className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 py-2.5 pl-12 pr-4 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900" />
                   </div>
                   {form.price && Number(form.price) > 0 && (
-                    <div className="mt-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-3 py-2 text-xs space-y-0.5">
-                      <div className="flex justify-between text-slate-500"><span>Your earnings</span><span className="font-semibold text-slate-800 dark:text-white">RWF {Number(form.price).toLocaleString()}</span></div>
-                      <div className="flex justify-between text-slate-400"><span>+ 3% buyer fee</span><span>RWF {Math.round(Number(form.price) * 0.03).toLocaleString()}</span></div>
-                      <div className="flex justify-between font-bold text-slate-700 dark:text-slate-200 border-t border-slate-200 dark:border-slate-700 pt-0.5"><span>Buyer pays</span><span>RWF {Math.round(Number(form.price) * 1.03).toLocaleString()}</span></div>
+                    <div className="mt-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-3 py-2 text-xs">
+                      <div className="flex justify-between font-bold text-slate-700 dark:text-slate-200"><span>Buyer pays</span><span>RWF {Number(form.price).toLocaleString()}</span></div>
+                      <div className="flex justify-between text-slate-500 mt-0.5"><span>You receive</span><span className="font-semibold text-emerald-700 dark:text-emerald-400">RWF {Number(form.price).toLocaleString()}</span></div>
                     </div>
                   )}
                 </div>
@@ -263,14 +261,16 @@ export default function SellPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">WhatsApp / Phone</label>
-                <input name="phone" value={form.phone} onChange={handleChange} placeholder="+250 7XX XXX XXX" className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900" />
-                <p className="mt-1 text-xs text-slate-400">Buyers will contact you directly via WhatsApp</p>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  WhatsApp / Phone <span className="text-red-500">*</span>
+                </label>
+                <input required name="phone" value={form.phone} onChange={handleChange} placeholder="+250 7XX XXX XXX" className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900" />
+                <p className="mt-1 text-xs text-slate-400">Required — buyers contact you directly via WhatsApp</p>
               </div>
 
               {error && <p className="rounded-xl bg-red-50 border border-red-100 px-4 py-2.5 text-sm text-red-600">{error}</p>}
 
-              <button type="submit" disabled={submitting || !session} className="w-full rounded-full bg-violet-600 py-3 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-60 disabled:cursor-not-allowed">
+              <button type="submit" disabled={submitting || !session || (sellerStatusData && !sellerStatusData.canList)} className="w-full rounded-full bg-violet-600 py-3 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-60 disabled:cursor-not-allowed">
                 {submitting ? t('loading') : t('submitListing')}
               </button>
             </form>

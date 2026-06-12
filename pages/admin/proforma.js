@@ -237,9 +237,9 @@ export default function ProformaPage() {
               {/* Header */}
               <div className="flex items-start justify-between mb-8">
                 <div>
-                  <img src="/logo.png" alt="KigaliTech" className="h-14 w-14 rounded-xl object-contain mb-3" />
+                  <img src="/logo.png" alt="KigaliTech" className="h-14 w-14 rounded-full object-cover mb-3" />
                   <p className="font-extrabold text-base text-slate-900 dark:text-white">KigaliTech Services</p>
-                  <p className="text-xs text-slate-500">KG 7 Ave, Kigali, Rwanda</p>
+                  <p className="text-xs text-slate-500">KN 74 ST, Kigali/Rwanda</p>
                   <p className="text-xs text-slate-500">+250 786 276 555 · info@kigalitechservices.com</p>
                   <p className="text-xs text-slate-500">TIN: 103 256 789</p>
                 </div>

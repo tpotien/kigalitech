@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     const preOrder = await prisma.preOrder.create({
       data: {
         productId: Number(productId),
-        userId: token?.id ? Number(token.id) : 1,
+        userId: token?.id ? Number(token.id) : null,
         email: email.toLowerCase(),
         name,
         phone: phone || '',

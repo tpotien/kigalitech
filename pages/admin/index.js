@@ -43,10 +43,25 @@ function PendingTask({ icon, label, count, href, urgent }) {
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshResult, setRefreshResult] = useState(null);
 
   useEffect(() => {
     fetch('/api/admin/stats').then((r) => r.json()).then(setStats);
   }, []);
+
+  async function refreshSite() {
+    setRefreshing(true);
+    setRefreshResult(null);
+    try {
+      const res = await fetch('/api/admin/revalidate-all', { method: 'POST' });
+      const data = await res.json();
+      setRefreshResult(`✓ Refreshed ${data.succeeded} pages${data.failed ? ` (${data.failed} failed)` : ''}`);
+    } catch {
+      setRefreshResult('Failed to refresh. Try again.');
+    }
+    setRefreshing(false);
+  }
 
   const totalPending =
     (stats?.pendingOrders || 0) +
@@ -57,9 +72,26 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout title="Dashboard">
+      {/* Refresh Site */}
+      <div className="mb-6 flex items-center gap-3">
+        <button
+          onClick={refreshSite}
+          disabled={refreshing}
+          className="rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-semibold px-5 py-2.5 text-sm transition flex items-center gap-2"
+        >
+          <span className={refreshing ? 'animate-spin inline-block' : ''}>⟳</span>
+          {refreshing ? 'Refreshing…' : 'Refresh Entire Site'}
+        </button>
+        {refreshResult && (
+          <span className={`text-sm font-medium ${refreshResult.startsWith('✓') ? 'text-emerald-600' : 'text-red-500'}`}>
+            {refreshResult}
+          </span>
+        )}
+      </div>
+
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        <StatCard label="Total Revenue" value={stats ? `RWF ${Math.round((stats.totalRevenue / 100) * 1475).toLocaleString()}` : '…'} sub="All time" href="/admin/orders" />
+        <StatCard label="Total Revenue" value={stats ? `RWF ${Math.round(stats.totalRevenue).toLocaleString()}` : '…'} sub="All time" href="/admin/orders" />
         <StatCard label="Total Orders" value={stats?.totalOrders} sub={`${stats?.pendingOrders || 0} pending`} href="/admin/orders" />
         <StatCard label="Products" value={stats?.totalProducts} sub="Active listings" href="/admin/products" />
         <StatCard
@@ -101,7 +133,7 @@ export default function AdminDashboard() {
                   <p className="text-xs text-slate-500">{o.items.length} item{o.items.length !== 1 ? 's' : ''} · {new Date(o.createdAt).toLocaleDateString()}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-slate-900">RWF {Math.round((o.total / 100) * 1475).toLocaleString()}</p>
+                  <p className="text-sm font-bold text-slate-900">RWF {Math.round(o.total).toLocaleString()}</p>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_COLOR[o.status] || 'bg-slate-100 text-slate-600'}`}>
                     {o.status}
                   </span>
@@ -207,6 +239,7 @@ export default function AdminDashboard() {
                 { href: '/admin/coupons', label: '🏷️ Coupon Codes', color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
                 { href: '/admin/repairs', label: '🔧 Repair Tickets', color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
                 { href: '/admin/analytics', label: '📈 View Analytics', color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
+                { href: '/admin/bulk-sms', label: '📱 Bulk SMS', color: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' },
               ].map((a) => (
                 <Link key={a.href} href={a.href} className={`flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium no-underline transition-colors ${a.color}`}>
                   {a.label}

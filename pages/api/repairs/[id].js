@@ -27,7 +27,7 @@ export default async function handler(req, res) {
         userId: admin.id,
         type: 'repair_update',
         title: `Repair #${id} — Quote Accepted`,
-        body: `Customer accepted the RWF ${Math.round((ticket.quotedCost / 100) * 1475).toLocaleString()} quote for ${ticket.productName}`,
+        body: `Customer accepted the RWF ${Math.round(ticket.quotedCost).toLocaleString()} quote for ${ticket.productName}`,
         link: `/admin/repairs`,
       });
     }
@@ -47,6 +47,27 @@ export default async function handler(req, res) {
         type: 'repair_update',
         title: `Repair #${id} — Quote Rejected`,
         body: `Customer declined the quote for ${ticket.productName}`,
+        link: `/admin/repairs`,
+      });
+    }
+    return res.json(updated);
+  }
+
+  if (action === 'confirm_resolved') {
+    if (!['in_progress', 'ready'].includes(ticket.status)) {
+      return res.status(400).json({ error: 'Cannot confirm — repair is not in a completable state' });
+    }
+    const updated = await prisma.repairTicket.update({
+      where: { id },
+      data: { status: 'resolved', updatedAt: new Date() },
+    });
+    const admins = await prisma.user.findMany({ where: { role: { in: ['admin', 'staff'] } } });
+    for (const admin of admins) {
+      await createNotification({
+        userId: admin.id,
+        type: 'repair_update',
+        title: `Repair #${id} — Confirmed Resolved`,
+        body: `Customer confirmed ${ticket.productName} repair is resolved`,
         link: `/admin/repairs`,
       });
     }

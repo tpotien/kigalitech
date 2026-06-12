@@ -10,6 +10,7 @@ export default async function handler(req, res) {
       orderBy: { createdAt: 'desc' },
     });
     const avg = reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
+    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
     return res.json({ reviews, avg, count: reviews.length });
   }
 

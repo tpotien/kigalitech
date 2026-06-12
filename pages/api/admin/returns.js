@@ -15,10 +15,21 @@ export default async function handler(req, res) {
 
   if (req.method === 'PATCH') {
     const { id, status, adminNotes, refundAmount } = req.body;
+    const existing = await prisma.return.findUnique({ where: { id: Number(id) } });
+    if (!existing) return res.status(404).json({ error: 'Not found' });
+
     const updated = await prisma.return.update({
       where: { id: Number(id) },
       data: { status, adminNotes, refundAmount: Number(refundAmount) || 0, updatedAt: new Date() },
     });
+
+    // Issue store credit when newly approved
+    if (status === 'approved' && existing.status !== 'approved' && updated.refundAmount > 0 && updated.userId) {
+      await prisma.user.update({
+        where: { id: updated.userId },
+        data: { storeCredit: { increment: updated.refundAmount } },
+      });
+    }
     return res.json(updated);
   }
 

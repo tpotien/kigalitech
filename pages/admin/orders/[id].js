@@ -7,13 +7,52 @@ const STATUS_OPTS = ['pending', 'confirmed', 'processing', 'shipped', 'delivered
 const STATUS_COLOR = { pending: 'bg-amber-100 text-amber-700', confirmed: 'bg-sky-100 text-sky-700', processing: 'bg-indigo-100 text-indigo-700', shipped: 'bg-violet-100 text-violet-700', delivered: 'bg-emerald-100 text-emerald-700', cancelled: 'bg-red-100 text-red-700' };
 
 function parse(val) { try { return typeof val === 'string' ? JSON.parse(val) : val; } catch { return []; } }
-function rwf(n) { return `RWF ${Math.round((n / 100) * 1475).toLocaleString()}`; }
+function rwf(n) { return `RWF ${Math.round(n).toLocaleString()}`; }
+
+function AdminNoteBox({ order, onSave }) {
+  const [note, setNote] = useState(order?.adminNote || '');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => { setNote(order?.adminNote || ''); }, [order?.adminNote]);
+
+  async function save() {
+    setSaving(true);
+    await fetch(`/api/admin/orders/${order.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminNote: note }),
+    });
+    setSaving(false);
+    setSaved(true);
+    onSave(note);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
+  return (
+    <div className="rounded-2xl bg-amber-50 border border-amber-200 p-5">
+      <h2 className="font-semibold text-amber-900 mb-3 flex items-center gap-2">
+        📝 Internal Note <span className="text-xs font-normal text-amber-600">(only visible to admin)</span>
+      </h2>
+      <textarea
+        value={note} onChange={e => setNote(e.target.value)} rows={3}
+        placeholder="Add notes about this order, e.g. customer called, hold until Friday…"
+        className="w-full rounded-xl border border-amber-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 resize-none"
+      />
+      <button onClick={save} disabled={saving}
+        className="mt-2 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-semibold px-4 py-2 text-sm transition">
+        {saved ? '✓ Saved' : saving ? 'Saving…' : 'Save Note'}
+      </button>
+    </div>
+  );
+}
 
 export default function AdminOrderDetail() {
   const { query } = useRouter();
   const [order, setOrder] = useState(null);
   const [saving, setSaving] = useState(false);
   const [printing, setPrinting] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
 
   useEffect(() => {
     if (query.id) fetch(`/api/admin/orders/${query.id}`).then((r) => r.json()).then(setOrder);
@@ -28,8 +67,84 @@ export default function AdminOrderDetail() {
   }
 
   function handlePrint() {
-    setPrinting(true);
-    setTimeout(() => { window.print(); setPrinting(false); }, 100);
+    if (!order) return;
+    const items = (order.items || []).map(item => `
+      <tr>
+        <td style="padding:5px 8px 5px 0;vertical-align:top;font-size:12px">
+          <div style="font-weight:bold">${item.name}</div>
+          ${item.color ? `<div style="font-size:10px;color:#555">${[item.color, item.storage].filter(Boolean).join(' · ')}</div>` : ''}
+          ${item.serial && item.serial !== 'TBD' ? `<div style="font-size:10px;color:#555">S/N: ${item.serial}</div>` : ''}
+          <div style="font-size:10px;color:#555">Warranty: ${item.warranty}</div>
+        </td>
+        <td style="text-align:right;padding:5px 0;font-size:12px;white-space:nowrap">${item.quantity}</td>
+        <td style="text-align:right;padding:5px 0;font-size:12px;white-space:nowrap">${rwf(item.price)}</td>
+        <td style="text-align:right;padding:5px 0;font-size:12px;font-weight:bold;white-space:nowrap">${rwf(item.price * item.quantity)}</td>
+      </tr>`).join('');
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Order #${order.id} — KigaliTech</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: monospace; font-size: 13px; color: #000; background: #fff; padding: 24px; }
+  .wrap { max-width: 420px; margin: 0 auto; }
+  table { width: 100%; border-collapse: collapse; }
+  @media print { body { padding: 0; } }
+</style></head><body>
+<div class="wrap">
+  <div style="text-align:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:12px">
+    <p style="font-weight:bold;font-size:18px;margin-bottom:2px">KigaliTech Services</p>
+    <p style="font-size:11px">KG 7 Ave, Kigali, Rwanda</p>
+    <p style="font-size:11px">Tel: +250 786 276 555</p>
+    <p style="font-size:11px">info@kigalitechservices.com</p>
+  </div>
+  <div style="text-align:center;margin-bottom:12px">
+    <p style="font-weight:bold;font-size:15px">SALES RECEIPT</p>
+    <p style="font-size:11px;margin-top:2px">Order #${order.id} · ${new Date(order.createdAt).toLocaleString('en-RW')}</p>
+  </div>
+  <div style="border-top:1px dashed #000;border-bottom:1px dashed #000;padding:8px 0;margin-bottom:12px">
+    <p style="font-weight:bold">Customer</p>
+    <p style="margin-top:2px">${order.shippingName || order.user?.name || '—'}</p>
+    ${order.shippingPhone ? `<p style="font-size:11px;margin-top:1px">${order.shippingPhone}</p>` : ''}
+    ${(order.shippingEmail || order.user?.email) ? `<p style="font-size:11px;margin-top:1px">${order.shippingEmail || order.user?.email}</p>` : ''}
+    ${order.shippingAddress ? `<p style="font-size:11px;margin-top:1px">${order.shippingAddress}</p>` : ''}
+  </div>
+  <table style="margin-bottom:12px">
+    <thead><tr style="border-bottom:1px solid #000">
+      <th style="text-align:left;padding-bottom:4px;font-size:12px">Item</th>
+      <th style="text-align:right;padding-bottom:4px;font-size:12px">Qty</th>
+      <th style="text-align:right;padding-bottom:4px;font-size:12px">Price</th>
+      <th style="text-align:right;padding-bottom:4px;font-size:12px">Total</th>
+    </tr></thead>
+    <tbody>${items}</tbody>
+  </table>
+  <div style="border-top:1px dashed #000;padding-top:8px;margin-bottom:12px">
+    ${order.discountAmount > 0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Discount${order.couponCode ? ` (${order.couponCode})` : ''}</span><span>-${rwf(order.discountAmount)}</span></div>` : ''}
+    <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:14px;border-top:1px solid #000;padding-top:6px;margin-top:4px">
+      <span>TOTAL</span><span>${rwf(order.total)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:4px"><span>Payment</span><span>${order.paymentMethod || '—'}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:2px"><span>Status</span><span style="font-weight:bold">${order.paymentConfirmed ? 'PAID ✓' : 'PENDING'}</span></div>
+  </div>
+  <div style="text-align:center;border-top:1px dashed #000;padding-top:10px;font-size:11px">
+    <p style="font-weight:bold">Thank you for shopping at KigaliTech!</p>
+    <p style="margin-top:4px">Warranty: +250 786 276 555</p>
+    <p style="margin-top:2px">kigalitechservices.com</p>
+    <p style="margin-top:8px;font-size:10px;color:#666">Printed ${new Date().toLocaleString('en-RW')}</p>
+  </div>
+</div>
+<script>window.onload=()=>{window.print();}<\/script>
+</body></html>`;
+    const existing = document.getElementById('__order-print-frame');
+    if (existing) existing.remove();
+    const iframe = document.createElement('iframe');
+    iframe.id = '__order-print-frame';
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:600px;height:800px;border:none;visibility:hidden;';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open(); doc.write(html); doc.close();
+    iframe.onload = () => {
+      try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch { const w = window.open('', '_blank'); if (w) { w.document.write(html); w.document.close(); } }
+      setTimeout(() => { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 2000);
+    };
   }
 
   if (!order) return <AdminLayout title="Order"><div className="py-20 text-center text-slate-400">Loading...</div></AdminLayout>;
@@ -50,26 +165,38 @@ export default function AdminOrderDetail() {
             <div className="border-b border-slate-100 px-6 py-4">
               <h2 className="font-semibold text-slate-900">Items ({(order.items || []).length})</h2>
             </div>
-            <div className="divide-y divide-slate-50">
-              {(order.items || []).map((item) => (
-                <div key={item.id} className="flex gap-4 px-6 py-4">
-                  {images0(item) && <img src={images0(item)} alt="" className="h-14 w-14 rounded-xl object-cover flex-shrink-0" />}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-900">{item.name}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{item.color} · {item.storage} · Warranty: {item.warranty}</p>
-                    <p className="text-xs text-slate-400">Serial: {item.serial}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-slate-900">RWF {Math.round((item.price / 100) * 1475).toLocaleString()}</p>
-                    <p className="text-xs text-slate-400">×{item.quantity}</p>
-                    <p className="text-sm font-semibold text-sky-700">RWF {Math.round((item.price * item.quantity / 100) * 1475).toLocaleString()}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  <th className="px-6 py-2.5 text-left">Item</th>
+                  <th className="px-3 py-2.5 text-center">Qty</th>
+                  <th className="px-3 py-2.5 text-right">Unit Price</th>
+                  <th className="px-6 py-2.5 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {(order.items || []).map((item) => (
+                  <tr key={item.id}>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        {images0(item) && <img src={images0(item)} alt="" className="h-12 w-12 rounded-xl object-cover flex-shrink-0" />}
+                        <div className="min-w-0">
+                          <p className="font-medium text-slate-900">{item.name}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{[item.color, item.storage, item.warranty && `Warranty: ${item.warranty}`].filter(Boolean).join(' · ')}</p>
+                          {item.serial && item.serial !== 'TBD' && <p className="text-xs text-slate-400">S/N: {item.serial}</p>}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 py-4 text-center font-semibold text-slate-700">{item.quantity}</td>
+                    <td className="px-3 py-4 text-right text-slate-700">RWF {Math.round(item.price).toLocaleString()}</td>
+                    <td className="px-6 py-4 text-right font-bold text-slate-900">RWF {Math.round(item.price * item.quantity).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
             <div className="border-t border-slate-100 px-6 py-4 flex justify-between">
               <span className="font-semibold text-slate-900">Total</span>
-              <span className="text-xl font-extrabold text-slate-900">RWF {Math.round((order.total / 100) * 1475).toLocaleString()}</span>
+              <span className="text-xl font-extrabold text-slate-900">RWF {Math.round(order.total).toLocaleString()}</span>
             </div>
           </div>
 
@@ -131,17 +258,64 @@ export default function AdminOrderDetail() {
               {order.billPrintable ? '🖨 Bill Unlocked for Customer' : '🔒 Bill Locked — Awaiting Confirmation'}
             </div>
 
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="w-full rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white hover:bg-slate-700 transition flex items-center justify-center gap-2"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-              </svg>
-              Print Bill
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="flex-1 rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white hover:bg-slate-700 transition flex items-center justify-center gap-2"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                </svg>
+                Print
+              </button>
+              {['confirmed','delivered','processing','shipped'].includes(order.status) && (
+                <button
+                  type="button"
+                  onClick={() => setReceiptOpen(v => !v)}
+                  className="flex-1 rounded-xl bg-sky-600 py-3 text-sm font-semibold text-white hover:bg-sky-700 transition flex items-center justify-center gap-2"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                  {receiptOpen ? 'Hide' : 'Receipt'}
+                </button>
+              )}
+            </div>
+
+            {/* Inline receipt preview */}
+            {receiptOpen && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 font-mono text-xs text-slate-800 space-y-1 mt-1">
+                <div className="text-center font-bold text-sm mb-2">KigaliTech Services</div>
+                <div className="text-center text-[10px] text-slate-500 mb-3">KG 7 Ave, Kigali · +250 786 276 555</div>
+                <div className="border-t border-dashed border-slate-300 pt-2 mb-2">
+                  <div className="font-bold">Order #{order.id}</div>
+                  <div className="text-slate-500">{new Date(order.createdAt).toLocaleString('en-RW')}</div>
+                  <div className="mt-1">{order.shippingName || order.user?.name}</div>
+                </div>
+                <div className="border-t border-dashed border-slate-300 pt-2 space-y-1">
+                  {(order.items || []).map((item, i) => (
+                    <div key={i} className="flex justify-between gap-2">
+                      <span className="flex-1 truncate">{item.name} ×{item.quantity}</span>
+                      <span className="flex-shrink-0">{rwf(item.price * item.quantity)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t border-dashed border-slate-300 pt-2 flex justify-between font-bold">
+                  <span>TOTAL</span><span>{rwf(order.total)}</span>
+                </div>
+                <div className="flex justify-between text-slate-500">
+                  <span>Payment</span><span>{order.paymentMethod || '—'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Status</span><span className="font-bold">{order.paymentConfirmed ? 'PAID ✓' : 'PENDING'}</span>
+                </div>
+                <div className="text-center text-[10px] text-slate-400 pt-2 border-t border-dashed border-slate-300">Thank you for shopping at KigaliTech!</div>
+              </div>
+            )}
           </div>
+
+          <AdminNoteBox order={order} onSave={note => setOrder(o => ({ ...o, adminNote: note }))} />
 
           <div className="rounded-2xl bg-white border border-slate-200 p-5 space-y-2">
             <h2 className="font-semibold text-slate-900 mb-1">Links</h2>
@@ -178,96 +352,6 @@ export default function AdminOrderDetail() {
           </div>
         </div>
       </div>
-      {/* ── Printable Bill (hidden on screen, shown on print) ── */}
-      <div id="order-print-bill" style={{ display: 'none' }}>
-        <div style={{ fontFamily: 'monospace', maxWidth: '420px', margin: '0 auto', padding: '24px', fontSize: '13px', color: '#000' }}>
-          {/* Header */}
-          <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: '12px', marginBottom: '12px' }}>
-            <p style={{ fontWeight: 'bold', fontSize: '18px', margin: '0 0 2px' }}>KigaliTech Services</p>
-            <p style={{ margin: '0', fontSize: '11px' }}>KG 7 Ave, Kigali, Rwanda</p>
-            <p style={{ margin: '0', fontSize: '11px' }}>Tel: +250 786 276 555</p>
-            <p style={{ margin: '2px 0 0', fontSize: '11px' }}>info@kigalitechservices.com</p>
-          </div>
-
-          <div style={{ textAlign: 'center', marginBottom: '12px' }}>
-            <p style={{ fontWeight: 'bold', fontSize: '15px', margin: '0' }}>SALES RECEIPT</p>
-            <p style={{ margin: '2px 0 0', fontSize: '11px' }}>Order #{order.id} · {new Date(order.createdAt).toLocaleString('en-RW')}</p>
-          </div>
-
-          {/* Customer */}
-          <div style={{ borderTop: '1px dashed #000', borderBottom: '1px dashed #000', padding: '8px 0', marginBottom: '12px' }}>
-            <p style={{ margin: '0', fontWeight: 'bold' }}>Customer</p>
-            <p style={{ margin: '2px 0 0' }}>{order.shippingName || order.user?.name || '—'}</p>
-            {order.shippingPhone && <p style={{ margin: '1px 0 0', fontSize: '11px' }}>{order.shippingPhone}</p>}
-            {(order.shippingEmail || order.user?.email) && <p style={{ margin: '1px 0 0', fontSize: '11px' }}>{order.shippingEmail || order.user?.email}</p>}
-            {order.shippingAddress && <p style={{ margin: '1px 0 0', fontSize: '11px' }}>{order.shippingAddress}</p>}
-          </div>
-
-          {/* Items */}
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px', fontSize: '12px' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #000' }}>
-                <th style={{ textAlign: 'left', paddingBottom: '4px' }}>Item</th>
-                <th style={{ textAlign: 'right', paddingBottom: '4px' }}>Qty</th>
-                <th style={{ textAlign: 'right', paddingBottom: '4px' }}>Price</th>
-                <th style={{ textAlign: 'right', paddingBottom: '4px' }}>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(order.items || []).map(item => (
-                <tr key={item.id}>
-                  <td style={{ paddingTop: '4px', paddingRight: '8px' }}>
-                    <div style={{ fontWeight: 'bold' }}>{item.name}</div>
-                    {item.color && <div style={{ fontSize: '10px', color: '#444' }}>{[item.color, item.storage].filter(Boolean).join(' · ')}</div>}
-                    {item.serial && item.serial !== 'TBD' && <div style={{ fontSize: '10px', color: '#444' }}>S/N: {item.serial}</div>}
-                    <div style={{ fontSize: '10px', color: '#444' }}>Warranty: {item.warranty}</div>
-                  </td>
-                  <td style={{ textAlign: 'right', paddingTop: '4px' }}>{item.quantity}</td>
-                  <td style={{ textAlign: 'right', paddingTop: '4px' }}>{rwf(item.price)}</td>
-                  <td style={{ textAlign: 'right', paddingTop: '4px', fontWeight: 'bold' }}>{rwf(item.price * item.quantity)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* Totals */}
-          <div style={{ borderTop: '1px dashed #000', paddingTop: '8px', marginBottom: '12px' }}>
-            {order.discountAmount > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-                <span>Discount {order.couponCode ? `(${order.couponCode})` : ''}</span>
-                <span>-{rwf(order.discountAmount)}</span>
-              </div>
-            )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px', borderTop: '1px solid #000', paddingTop: '6px', marginTop: '4px' }}>
-              <span>TOTAL</span>
-              <span>{rwf(order.total)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '4px' }}>
-              <span>Payment Method</span>
-              <span>{order.paymentMethod || '—'}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '2px' }}>
-              <span>Payment Status</span>
-              <span style={{ fontWeight: 'bold' }}>{order.paymentConfirmed ? 'PAID ✓' : 'PENDING'}</span>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div style={{ textAlign: 'center', borderTop: '1px dashed #000', paddingTop: '10px', fontSize: '11px' }}>
-            <p style={{ margin: '0', fontWeight: 'bold' }}>Thank you for shopping at KigaliTech!</p>
-            <p style={{ margin: '4px 0 0' }}>Warranty claims: +250 786 276 555</p>
-            <p style={{ margin: '2px 0 0' }}>kigalitechservices.com</p>
-            <p style={{ margin: '8px 0 0', fontSize: '10px', color: '#666' }}>Printed by admin · {new Date().toLocaleString('en-RW')}</p>
-          </div>
-        </div>
-      </div>
-
-      <style global jsx>{`
-        @media print {
-          body > * { display: none !important; }
-          #order-print-bill { display: block !important; position: fixed; top: 0; left: 0; width: 100%; }
-        }
-      `}</style>
     </AdminLayout>
   );
 }

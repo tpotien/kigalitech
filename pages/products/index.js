@@ -1,20 +1,22 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
 import Footer from '../../components/Footer';
+import TrendingInTech from '../../components/TrendingInTech';
 import ProductCard from '../../components/ProductCard';
 import ProductCardSkeleton from '../../components/ProductCardSkeleton';
 import { useLang } from '../../context/LanguageContext';
 import { useCurrency } from '../../context/CurrencyContext';
 
-const CATEGORIES = ['All', 'Phones', 'Laptops', 'TVs', 'Audio', 'Wearables', 'Gaming', 'Tablets', 'Cameras', 'Accessories', 'Smart Home'];
+const CATEGORIES = ['All', 'Phones', 'Laptops', 'TVs', 'Audio', 'Wearables', 'Gaming', 'Tablets', 'Cameras', 'Accessories', 'Smart Home', 'Headphones', 'Routers', 'Storage'];
+
 function getSortOptions(t) {
   return [
-    { value: 'default', label: t('featured') },
-    { value: 'price_asc', label: t('priceLow') },
+    { value: 'default',    label: t('featured') },
+    { value: 'price_asc',  label: t('priceLow') },
     { value: 'price_desc', label: t('priceHigh') },
-    { value: 'name_asc', label: t('nameAZ') },
-    { value: 'newest', label: t('newest') },
+    { value: 'name_asc',   label: t('nameAZ') },
+    { value: 'newest',     label: t('newest') },
   ];
 }
 
@@ -25,26 +27,90 @@ export default function ProductsPage() {
   const SORT_OPTIONS = getSortOptions(t);
   const { category: qCat, sub: qSub, search: qSearch } = router.query;
 
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  // Default to 'Phones'; only 'All' when explicitly chosen via the tab
-  const [activeCategory, setActiveCategory] = useState('Phones');
-  const [sort, setSort] = useState('default');
-  const [search, setSearch] = useState('');
-  const [maxPrice, setMaxPrice] = useState(500000);
-  const [inStockOnly, setInStockOnly] = useState(false);
+  const [products, setProducts]         = useState([]);
+  const [loading, setLoading]           = useState(true);
+  // null = not yet synced from URL (prevents premature fetch)
+  const [activeCategory, setActiveCategory] = useState(null);
+  const [sort, setSort]                 = useState('default');
+  const [search, setSearch]             = useState('');
+  // null = no price cap (slider sits at max)
+  const [maxPrice, setMaxPrice]         = useState(null);
+  const [inStockOnly, setInStockOnly]   = useState(false);
   const initialized = useRef(false);
 
-  // Sync from URL query params — only apply default on first load
+  // ── 1. Sync activeCategory/search from URL once router is ready ──────────
   useEffect(() => {
     if (!router.isReady) return;
-    if (qCat) setActiveCategory(qCat);
-    else if (qSearch) { setSearch(qSearch); setActiveCategory('All'); }
-    else if (!initialized.current) setActiveCategory('Phones'); // default only once
+    if (qCat) {
+      setActiveCategory(qCat);
+    } else if (qSearch) {
+      setSearch(qSearch);
+      setActiveCategory('All');
+    } else if (!initialized.current) {
+      setActiveCategory('Phones');
+    }
     initialized.current = true;
   }, [router.isReady, qCat, qSearch]);
 
-  // Update URL when category changes so tabs are deep-linkable
+  // ── 2. Reset price filter whenever category changes ───────────────────────
+  useEffect(() => {
+    setMaxPrice(null);
+  }, [activeCategory]);
+
+  // ── 3. Fetch products — only after activeCategory is known ────────────────
+  //    AbortController cancels any in-flight request so the last
+  //    requested category always wins, regardless of response order.
+  useEffect(() => {
+    if (!router.isReady || activeCategory === null) return;
+
+    setLoading(true);
+    const controller = new AbortController();
+
+    const params = new URLSearchParams();
+    if (activeCategory && activeCategory !== 'All') params.set('category', activeCategory);
+    if (search) params.set('search', search);
+
+    fetch(`/api/products?${params}`, { signal: controller.signal })
+      .then(r => r.json())
+      .then(data => {
+        setProducts(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch(err => {
+        if (err.name !== 'AbortError') setLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [router.isReady, activeCategory, search]);
+
+  // ── Derived: max price in current category's products ────────────────────
+  const categoryMax = useMemo(
+    () => products.length > 0 ? Math.ceil(Math.max(...products.map(p => p.price)) / 1000) * 1000 : 500000,
+    [products]
+  );
+  const categoryMin = useMemo(
+    () => products.length > 0 ? Math.floor(Math.min(...products.map(p => p.price)) / 1000) * 1000 : 0,
+    [products]
+  );
+
+  // Effective price ceiling (null means no filter → show all)
+  const effectiveMax = maxPrice ?? categoryMax;
+
+  // ── Filtering + sorting ───────────────────────────────────────────────────
+  let filtered = [...products];
+  if (inStockOnly) filtered = filtered.filter(p => p.stock > 0);
+  if (effectiveMax < categoryMax) filtered = filtered.filter(p => p.price <= effectiveMax);
+  if (qSub) filtered = filtered.filter(p => p.subcategory === qSub);
+
+  filtered.sort((a, b) => {
+    if (sort === 'price_asc')  return a.price - b.price;
+    if (sort === 'price_desc') return b.price - a.price;
+    if (sort === 'name_asc')   return a.name.localeCompare(b.name);
+    if (sort === 'newest')     return b.id - a.id;
+    return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
+  });
+
+  // ── Navigation helpers ────────────────────────────────────────────────────
   function selectCategory(cat) {
     setActiveCategory(cat);
     const q = {};
@@ -53,35 +119,24 @@ export default function ProductsPage() {
     router.replace({ pathname: '/products', query: q }, undefined, { shallow: true });
   }
 
-  useEffect(() => {
-    if (!router.isReady) return;
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (activeCategory && activeCategory !== 'All') params.set('category', activeCategory);
-    if (search) params.set('search', search);
-    fetch(`/api/products?${params}`)
-      .then(r => r.json())
-      .then(data => { setProducts(Array.isArray(data) ? data : []); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [router.isReady, activeCategory, search]);
-
-  let filtered = [...products];
-  if (inStockOnly) filtered = filtered.filter(p => p.stock > 0);
-  if (maxPrice < 500000) filtered = filtered.filter(p => p.price <= maxPrice);
-  if (qSub) filtered = filtered.filter(p => p.subcategory === qSub);
-
-  filtered.sort((a, b) => {
-    if (sort === 'price_asc') return a.price - b.price;
-    if (sort === 'price_desc') return b.price - a.price;
-    if (sort === 'name_asc') return a.name.localeCompare(b.name);
-    if (sort === 'newest') return b.id - a.id;
-    return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
-  });
-
   function handleSearch(e) {
     e.preventDefault();
-    const q = e.target.querySelector('input').value;
+    const q = e.target.querySelector('input').value.trim();
     setSearch(q);
+    if (!q) {
+      const query = {};
+      if (activeCategory && activeCategory !== 'All') query.category = activeCategory;
+      router.replace({ pathname: '/products', query }, undefined, { shallow: true });
+    } else {
+      router.replace({ pathname: '/products', query: { search: q } }, undefined, { shallow: true });
+    }
+  }
+
+  function clearAllFilters() {
+    selectCategory('Phones');
+    setSearch('');
+    setInStockOnly(false);
+    setMaxPrice(null);
   }
 
   return (
@@ -90,11 +145,12 @@ export default function ProductsPage() {
       <div className="bg-gradient-to-r from-slate-900 to-sky-900 py-8 px-4">
         <div className="mx-auto max-w-7xl">
           <h1 className="text-2xl font-extrabold text-white mb-4">
-            {activeCategory === 'All' ? t('allProducts') : activeCategory}
+            {activeCategory === 'All' ? t('allProducts') : (activeCategory || t('allProducts'))}
             {qSub && <span className="text-sky-300 text-lg font-semibold ml-2">· {qSub}</span>}
           </h1>
           <form onSubmit={handleSearch} className="flex gap-3 max-w-lg">
             <input
+              key={search}
               defaultValue={search}
               placeholder={`${t('search')}...`}
               className="flex-1 rounded-full bg-white/10 border border-white/20 px-5 py-2.5 text-sm text-white placeholder-slate-400 outline-none focus:bg-white/20"
@@ -138,33 +194,61 @@ export default function ProductsPage() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-4">
             {/* In-stock filter */}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={inStockOnly} onChange={e => setInStockOnly(e.target.checked)} className="accent-sky-600" />
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={inStockOnly}
+                onChange={e => setInStockOnly(e.target.checked)}
+                className="accent-sky-600"
+              />
               <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('inStockOnly')}</span>
             </label>
 
-            {/* Max price */}
+            {/* Price range slider */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-500 dark:text-slate-400">{t('maxPrice')}: {format(maxPrice)}</span>
+              <span className="text-sm whitespace-nowrap">
+                <span className="text-slate-500 dark:text-slate-400">{t('maxPrice')}: </span>
+                <span className={`font-semibold tabular-nums ${maxPrice !== null ? 'text-sky-600 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                  {format(effectiveMax)}
+                </span>
+              </span>
               <input
                 type="range"
-                min={1000}
-                max={500000}
-                step={1000}
-                value={maxPrice}
-                onChange={e => setMaxPrice(Number(e.target.value))}
-                className="w-28 accent-sky-600"
+                min={categoryMin}
+                max={categoryMax}
+                step={Math.max(1000, Math.round((categoryMax - categoryMin) / 50 / 1000) * 1000)}
+                value={effectiveMax}
+                onChange={e => {
+                  const v = Number(e.target.value);
+                  if (v >= categoryMax) {
+                    setMaxPrice(null);
+                  } else {
+                    setMaxPrice(v);
+                    setSort('price_asc');
+                  }
+                }}
+                disabled={loading || products.length === 0}
+                className="w-32 accent-sky-600 cursor-pointer"
               />
+              {maxPrice !== null && (
+                <button
+                  onClick={() => { setMaxPrice(null); setSort('default'); }}
+                  className="text-xs text-slate-400 hover:text-red-500 transition-colors"
+                  title="Reset price filter"
+                >
+                  ✕
+                </button>
+              )}
             </div>
           </div>
 
           {/* Sort + count */}
           <div className="flex items-center gap-3">
-            <span className="text-sm text-slate-400">{filtered.length} products</span>
+            <span className="text-sm text-slate-400">{loading ? '…' : `${filtered.length} products`}</span>
             <select
               value={sort}
               onChange={e => setSort(e.target.value)}
-              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-white dark:placeholder-slate-400 outline-none focus:border-sky-400"
+              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-white outline-none focus:border-sky-400"
             >
               {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
@@ -178,10 +262,13 @@ export default function ProductsPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-24 text-center">
-            <div className="mx-auto mb-4 text-5xl">🔍</div>
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('noResults')}</h3>
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-4xl">🔍</div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{t('noResults')}</h3>
             <p className="text-slate-500 dark:text-slate-400 mt-2">{t('tryDifferent')}</p>
-            <button onClick={() => { selectCategory('Phones'); setSearch(''); setInStockOnly(false); setMaxPrice(500000); }} className="mt-6 rounded-full bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-700">
+            <button
+              onClick={clearAllFilters}
+              className="mt-6 rounded-full bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 transition-colors"
+            >
               {t('clearFilters')}
             </button>
           </div>
@@ -193,6 +280,8 @@ export default function ProductsPage() {
           </div>
         )}
       </div>
+
+      <TrendingInTech />
       <Footer />
     </Layout>
   );

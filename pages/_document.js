@@ -1,5 +1,7 @@
 import { Html, Head, Main, NextScript } from 'next/document';
 
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-5M0HWXKDNP';
+
 export default function Document() {
   return (
     <Html lang="en">
@@ -25,7 +27,7 @@ export default function Document() {
         {/* Viewport safe area for iPhone notch */}
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-        {/* Fonts — Plus Jakarta Sans (closest web match to OnePlus Sans) */}
+        {/* Fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
@@ -39,6 +41,15 @@ export default function Document() {
           as="image"
           href="https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=900&q=85"
         />
+
+        {/* Google Analytics 4 */}
+        <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} />
+        <script dangerouslySetInnerHTML={{ __html: `
+          window.dataLayer=window.dataLayer||[];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js',new Date());
+          gtag('config','${GA_ID}',{page_path:window.location.pathname});
+        `}} />
 
         {/* Default OG */}
         <meta property="og:site_name" content="KigaliTech" />

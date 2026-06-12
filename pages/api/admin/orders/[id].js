@@ -1,8 +1,31 @@
 import { getToken } from 'next-auth/jwt';
 import prisma from '../../../../lib/prisma';
-import { sendOrderStatusUpdate } from '../../../../lib/email';
+import { sendOrderStatusUpdate, sendLoyaltyPointsEmail } from '../../../../lib/email';
 import { notifyOrderUpdate } from '../../../../lib/notify';
 import { sendSms } from '../../../../lib/sms';
+import { awardLoyaltyPoints } from '../../../../lib/loyalty';
+import webpush from 'web-push';
+import { whatsappOrderStatus } from '../../../../lib/whatsapp';
+
+const SITE_URL = process.env.NEXTAUTH_URL || 'https://kigalitechservices.com';
+
+async function sendPushToUser(userId, payload) {
+  if (!process.env.VAPID_PRIVATE_KEY || !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) return;
+  try {
+    webpush.setVapidDetails('mailto:kigalitechservices@gmail.com',
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
+    const subs = await prisma.pushSubscription.findMany({ where: { userId } });
+    const data = JSON.stringify(payload);
+    await Promise.allSettled(subs.map(s =>
+      webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, data)
+        .catch(async (e) => {
+          if (e.statusCode === 410 || e.statusCode === 404)
+            await prisma.pushSubscription.delete({ where: { id: s.id } }).catch(() => {});
+        })
+    ));
+  } catch {}
+}
+
 
 export default async function handler(req, res) {
   const token = await getToken({ req });
@@ -33,6 +56,7 @@ export default async function handler(req, res) {
     if (status !== undefined) update.status = status;
     if (adminConfirmed !== undefined) update.adminConfirmed = adminConfirmed;
     if (paymentConfirmed !== undefined) update.paymentConfirmed = paymentConfirmed;
+    if (req.body.adminNote !== undefined) update.adminNote = req.body.adminNote;
 
     const newAdminConfirmed = adminConfirmed !== undefined ? adminConfirmed : current.adminConfirmed;
     const newPaymentConfirmed = paymentConfirmed !== undefined ? paymentConfirmed : current.paymentConfirmed;
@@ -47,9 +71,29 @@ export default async function handler(req, res) {
       },
     });
 
-    // Grant verified buyer badge on first delivery
-    if (status && ['delivered', 'completed'].includes(status) && current.userId && current.user && !current.user.verifiedBuyer) {
-      await prisma.user.update({ where: { id: current.userId }, data: { verifiedBuyer: true } });
+    // Grant verified buyer badge + award loyalty points on first delivery
+    if (status && ['delivered', 'completed'].includes(status) && current.userId) {
+      if (current.user && !current.user.verifiedBuyer) {
+        await prisma.user.update({ where: { id: current.userId }, data: { verifiedBuyer: true } });
+      }
+      // Award loyalty points now (not at checkout) so cancelled orders don't earn points
+      const already = await prisma.loyaltyTransaction.findFirst({
+        where: { userId: current.userId, orderId: current.id, action: 'earn' },
+      });
+      if (!already) {
+        const customerEmail = current.user?.email || current.shippingEmail;
+        const customerName = current.user?.name || current.shippingName;
+        awardLoyaltyPoints(current.userId, current.id, current.total).then(result => {
+          if (result?.pointsAwarded > 0 && customerEmail) {
+            sendLoyaltyPointsEmail({
+              email: customerEmail, name: customerName,
+              pointsEarned: result.pointsAwarded,
+              newBalance: result.newBalance,
+              orderId: current.id,
+            }).catch(() => {});
+          }
+        }).catch(() => {});
+      }
     }
 
     // Send email + in-app notification when status changes (non-blocking)
@@ -59,20 +103,33 @@ export default async function handler(req, res) {
       if (email) sendOrderStatusUpdate({ order, status, customerEmail: email, customerName: name }).catch(() => {});
       notifyOrderUpdate({ order: { ...order, userId: current.userId }, status }).catch(() => {});
 
-      // Send SMS notification if customer has a phone number
+      // SMS + WhatsApp notification
       const shippingPhone = current.shippingPhone;
       if (shippingPhone) {
-        const siteUrl = process.env.NEXTAUTH_URL || 'https://kigalitechservices.com';
+        const customerName = current.user?.name || current.shippingName;
         const smsMessages = {
           confirmed: `KigaliTech: Your order #${order.id} is confirmed! We're preparing it now.`,
-          shipped: `KigaliTech: Order #${order.id} has been shipped! Track at: ${siteUrl}/orders/${order.id}`,
+          processing: `KigaliTech: Order #${order.id} is being packed and will ship soon.`,
+          shipped: `KigaliTech: Order #${order.id} has been shipped! Track at: ${SITE_URL}/orders/${order.id}`,
           delivered: `KigaliTech: Order #${order.id} has been delivered! Thank you for shopping with us.`,
           cancelled: `KigaliTech: Your order #${order.id} has been cancelled. Contact us: +250 786 276 555`,
         };
         const smsText = smsMessages[status];
-        if (smsText) {
-          sendSms(shippingPhone, smsText).catch(() => {});
-        }
+        if (smsText) sendSms(shippingPhone, smsText).catch(() => {});
+        whatsappOrderStatus(shippingPhone, customerName, order.id, status).catch(() => {});
+      }
+
+      // Push notification to customer's devices
+      if (current.userId) {
+        const pushMessages = {
+          confirmed:  { title: '✅ Order Confirmed', body: `Order #${order.id} confirmed — we're preparing it!` },
+          processing: { title: '⚙️ Order Processing', body: `Order #${order.id} is being prepared for shipment.` },
+          shipped:    { title: '🚚 Order Shipped!',   body: `Order #${order.id} is on its way to you.` },
+          delivered:  { title: '🎉 Order Delivered!', body: `Order #${order.id} has arrived. Enjoy!` },
+          cancelled:  { title: '❌ Order Cancelled',  body: `Order #${order.id} was cancelled. Contact us for help.` },
+        };
+        const push = pushMessages[status];
+        if (push) sendPushToUser(current.userId, { ...push, url: `/orders/${order.id}`, icon: '/logo.png' }).catch(() => {});
       }
     }
 

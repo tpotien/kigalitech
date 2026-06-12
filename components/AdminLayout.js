@@ -1,6 +1,16 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useSession, signOut } from 'next-auth/react';
+
+async function doSignOut() {
+  try {
+    localStorage.removeItem('cart');
+    localStorage.removeItem('kt_rv');
+    sessionStorage.clear();
+  } catch {}
+  await signOut({ redirect: false });
+  window.location.replace('/signin');
+}
 import AvatarWithBadge from './AvatarWithBadge';
 import { useTheme } from '../context/ThemeContext';
 
@@ -19,6 +29,8 @@ const NAV = [
   { href: '/admin/returns', label: 'Returns', icon: '↩️' },
   { href: '/admin/delivery-zones', label: 'Delivery Zones', icon: '🚚' },
   { href: '/admin/loyalty-cards', label: 'Loyalty Cards', icon: '🪪' },
+  { href: '/admin/bulk-sms', label: 'Bulk SMS', icon: '📱' },
+  { href: '/admin/push-notifications', label: 'Push Notify', icon: '🔔' },
   { href: '/admin/proforma', label: 'Proforma Invoice', icon: '📄' },
   { href: '/admin/site-config', label: 'Settings', icon: '⚙️' },
   { href: '/admin/profile', label: 'My Profile', icon: '🧑' },
@@ -35,7 +47,7 @@ export default function AdminLayout({ children, title }) {
       <aside className="hidden lg:flex lg:flex-col w-64 bg-slate-900 dark:bg-slate-950 border-r border-slate-800 dark:border-slate-800 min-h-screen">
         {/* Logo */}
         <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-800">
-          <img src="/logo.png" alt="KigaliTech" className="h-11 w-11 rounded-xl object-contain bg-white p-0.5 flex-shrink-0" />
+          <img src="/logo.png" alt="KigaliTech" className="h-11 w-11 rounded-full object-cover flex-shrink-0" />
           <div>
             <p className="font-bold text-white text-sm">KigaliTech</p>
             <p className="text-xs text-slate-400">Admin Panel</p>
@@ -76,7 +88,7 @@ export default function AdminLayout({ children, title }) {
             <Link href="/" className="flex-1 rounded-lg bg-slate-800 py-2 text-center text-xs text-slate-300 hover:bg-slate-700 no-underline">
               ← Store
             </Link>
-            <button onClick={() => signOut({ callbackUrl: '/signin' })} className="flex-1 rounded-lg bg-slate-800 py-2 text-xs text-slate-300 hover:bg-slate-700">
+            <button onClick={doSignOut} className="flex-1 rounded-lg bg-slate-800 py-2 text-xs text-slate-300 hover:bg-slate-700">
               Sign out
             </button>
           </div>

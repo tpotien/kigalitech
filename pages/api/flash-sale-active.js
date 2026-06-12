@@ -20,10 +20,11 @@ export default async function handler(req, res) {
       price: true,
       flashSalePrice: true,
       flashSaleEnd: true,
-      images: true,
     },
     orderBy: { flashSaleEnd: 'asc' },
   });
+
+  res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
 
   if (!product) {
     return res.json({ active: false, product: null });

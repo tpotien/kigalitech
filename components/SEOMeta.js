@@ -34,6 +34,7 @@ export default function SEOMeta({
       <meta property="og:description" content={description} />
       <meta property="og:image" content={resolvedImage} />
       {url && <meta property="og:url" content={url} />}
+      {url && <link rel="canonical" href={url} />}
       <meta property="og:type" content={type} />
       <meta property="og:site_name" content={SITE_NAME} />
 

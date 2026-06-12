@@ -16,7 +16,7 @@ const STATUS_COLORS = {
 const PIE_FALLBACK = ['#0ea5e9', '#8b5cf6', '#f59e0b', '#22c55e', '#ef4444', '#ec4899'];
 
 function fmt(cents) {
-  return `RWF ${Math.round((cents / 100) * 1475).toLocaleString()}`;
+  return `RWF ${Math.round(cents).toLocaleString()}`;
 }
 
 function Trend({ current, prev }) {
@@ -47,15 +47,18 @@ function CustomTooltip({ active, payload, label }) {
 export default function AdminAnalytics() {
   const [data, setData] = useState(null);
   const [stats, setStats] = useState(null);
+  const [visitors, setVisitors] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       fetch('/api/admin/analytics-data').then(r => r.json()),
       fetch('/api/admin/stats').then(r => r.json()),
-    ]).then(([analyticsData, statsData]) => {
+      fetch('/api/admin/visitors').then(r => r.ok ? r.json() : null),
+    ]).then(([analyticsData, statsData, visitorData]) => {
       setData(analyticsData);
       setStats(statsData);
+      setVisitors(visitorData);
       setLoading(false);
     });
   }, []);
@@ -99,7 +102,7 @@ export default function AdminAnalytics() {
     {
       label: 'All-Time Revenue',
       value: fmt(summary.totalRevenue),
-      sub: `Avg ${summary.totalOrders ? fmt(summary.totalRevenue / summary.totalOrders) : '$0'}/order`,
+      sub: `Avg ${summary.totalOrders ? fmt(summary.totalRevenue / summary.totalOrders) : 'RWF 0'}/order`,
       icon: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -141,6 +144,67 @@ export default function AdminAnalytics() {
         ))}
       </div>
 
+      {/* Visitor Analytics */}
+      {visitors && (
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="font-bold text-slate-900">Site Visitors</h2>
+            <span className="text-xs text-slate-400 bg-sky-50 text-sky-600 rounded-full px-2 py-0.5 font-medium">Last 30 days</span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3 mb-4">
+            {[
+              { label: 'Today', value: visitors.todayViews.toLocaleString() },
+              { label: 'This Week', value: visitors.weekViews.toLocaleString() },
+              { label: '30-Day Total', value: visitors.totalViews.toLocaleString() },
+            ].map(k => (
+              <div key={k.label} className="rounded-2xl bg-white border border-slate-200 p-5">
+                <p className="text-sm text-slate-500">{k.label}</p>
+                <p className="text-2xl font-extrabold text-slate-900 mt-1">{k.value}</p>
+                <p className="text-xs text-slate-400 mt-0.5">page views</p>
+              </div>
+            ))}
+          </div>
+          <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+            {/* Visitor chart */}
+            <div className="rounded-2xl bg-white border border-slate-200 p-6">
+              <h3 className="font-semibold text-slate-700 mb-4 text-sm">Daily Visitors — Last 14 Days</h3>
+              {visitors.daily.length > 0 ? (
+                <ResponsiveContainer width="100%" height={160}>
+                  <BarChart data={visitors.daily} margin={{ left: 0, right: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} interval={1} />
+                    <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} allowDecimals={false} width={28} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar dataKey="views" name="Views" fill="#0ea5e9" radius={[4, 4, 0, 0]} barSize={14} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-32 text-slate-400 text-sm">No visitor data yet — it accumulates as people browse the site</div>
+              )}
+            </div>
+            {/* Top pages */}
+            <div className="rounded-2xl bg-white border border-slate-200 p-6">
+              <h3 className="font-semibold text-slate-700 mb-4 text-sm">Top Pages</h3>
+              {visitors.topPages.length > 0 ? (
+                <div className="space-y-2">
+                  {visitors.topPages.map((p, i) => (
+                    <div key={p.path} className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xs font-bold text-slate-400 w-4 flex-shrink-0">{i + 1}</span>
+                        <span className="text-xs text-slate-600 truncate font-mono">{p.path}</span>
+                      </div>
+                      <span className="text-xs font-bold text-slate-900 flex-shrink-0">{p.views.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-slate-400">No page data yet</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Revenue Line Chart */}
       <div className="rounded-2xl bg-white border border-slate-200 p-6 mb-6">
         <div className="flex items-center justify-between mb-6">
@@ -161,7 +225,7 @@ export default function AdminAnalytics() {
               interval={4}
             />
             <YAxis
-              tickFormatter={(v) => `RWF ${Math.round((v / 100) * 1475).toLocaleString()}`}
+              tickFormatter={(v) => `RWF ${Math.round(v).toLocaleString()}`}
               tick={{ fontSize: 10, fill: '#94a3b8' }}
               tickLine={false}
               axisLine={false}
@@ -271,6 +335,36 @@ export default function AdminAnalytics() {
             <Bar dataKey="orders" name="Orders" fill="#22c55e" radius={[4, 4, 0, 0]} barSize={12} />
           </BarChart>
         </ResponsiveContainer>
+      </div>
+
+      {/* Google Analytics section */}
+      <div className="rounded-2xl bg-white border border-slate-200 p-6 mb-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-orange-50 p-2">
+              <svg className="h-5 w-5 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12.004 0C5.374 0 0 5.373 0 12s5.374 12 12.004 12C18.626 24 24 18.627 24 12S18.626 0 12.004 0zm-1.498 16.866l-2.994-2.994L15.858 6.52l2.994 2.994-8.346 7.352zm-.996 2.617l-4.49-4.49 9.338-8.183 4.49 4.49-9.338 8.183z"/>
+              </svg>
+            </div>
+            <div>
+              <h2 className="font-bold text-slate-900">Google Analytics</h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Tracking active — Measurement ID: <span className="font-mono text-sky-600">G-5M0HWXKDNP</span>
+              </p>
+            </div>
+          </div>
+          <a
+            href="https://analytics.google.com/analytics/web/#/p{your-property-id}/reports"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-shrink-0 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 no-underline transition-colors"
+          >
+            Open GA Dashboard →
+          </a>
+        </div>
+        <div className="mt-3 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2.5">
+          <p className="text-xs text-emerald-700">GA4 is active. Go to <a href="https://analytics.google.com" target="_blank" rel="noopener noreferrer" className="font-semibold underline">analytics.google.com</a>, select your KigaliTech property, and view Realtime / Reports for live visitor data.</p>
+        </div>
       </div>
 
       {/* Low stock alert table */}

@@ -10,11 +10,11 @@ export default async function handler(req, res) {
   });
   if (!referral) return res.json({ ok: true, noReferral: true });
 
-  // Give 2000 loyalty points to referrer (worth ~$2 or 2000 RWF)
+  // 100 pts for a successful referral — the highest single-action reward
   await prisma.$transaction([
-    prisma.user.update({ where: { id: referral.referrerId }, data: { loyaltyPoints: { increment: 2000 } } }),
+    prisma.user.update({ where: { id: referral.referrerId }, data: { loyaltyPoints: { increment: 100 } } }),
     prisma.loyaltyTransaction.create({
-      data: { userId: referral.referrerId, points: 2000, action: 'earn', reason: 'referral', orderId: null }
+      data: { userId: referral.referrerId, points: 100, action: 'earn', reason: 'referral', orderId: null }
     }),
     prisma.referral.update({ where: { id: referral.id }, data: { status: 'completed', rewardGiven: true } }),
   ]);

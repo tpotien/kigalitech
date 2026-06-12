@@ -1,32 +1,14 @@
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useLang } from '../context/LanguageContext';
-
-const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=85';
 
 export default function HeroSection({ config = {} }) {
   const { t } = useLang();
 
-  // SSR / ISR values from props (fast initial render)
-  const [liveConfig, setLiveConfig] = useState(config);
+  const badgeText = config.heroBadgeText || 'New Arrivals Just Dropped';
+  const subtitle  = config.heroSubtitle  || 'Premium electronics — phones, laptops, audio, wearables — with fast delivery, real warranties, and zero compromise.';
+  const imageUrl  = config.heroImageUrl  || '/hero-robot.png';
 
-  // Client-side fetch so admin changes show immediately without waiting for ISR
-  useEffect(() => {
-    fetch('/api/hero')
-      .then(r => r.json())
-      .then(data => {
-        if (data && Object.keys(data).length > 0) {
-          setLiveConfig(prev => ({ ...prev, ...data }));
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  const badgeText = liveConfig.heroBadgeText || 'New Arrivals Just Dropped';
-  const subtitle  = liveConfig.heroSubtitle  || 'Premium electronics — phones, laptops, audio, wearables — with fast delivery, real warranties, and zero compromise.';
-  const imageUrl  = liveConfig.heroImageUrl  || DEFAULT_IMAGE;
-
-  const rawTitle  = liveConfig.heroTitle || 'Tech That\nElevates\nYour Life';
+  const rawTitle  = config.heroTitle || 'Tech That\nElevates\nYour Life';
   const titleLines = rawTitle.split('\\n').join('\n').split('\n');
   const line1 = titleLines[0] || 'Tech That';
   const line2 = titleLines[1] || 'Elevates';
@@ -35,9 +17,36 @@ export default function HeroSection({ config = {} }) {
   return (
     <section className="relative overflow-hidden bg-slate-950">
 
+      {/* ── Hero image: absolute, right-anchored, blends left into text area ── */}
+      <div className="absolute inset-0">
+        <img
+          src={imageUrl}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover object-[70%_center] sm:object-[60%_center] lg:object-right"
+          loading="eager"
+          fetchpriority="high"
+          decoding="async"
+          aria-hidden="true"
+        />
+
+        {/* Desktop: solid dark covers text column, then blends into image on the right */}
+        <div
+          className="absolute inset-0 hidden lg:block pointer-events-none"
+          style={{
+            background: 'linear-gradient(to right, #020617 0%, #020617 38%, rgba(2,6,23,0.80) 52%, rgba(2,6,23,0.25) 70%, transparent 100%)',
+          }}
+        />
+
+        {/* Mobile: gradient dark top-left (text) → lighter bottom-right (robot visible) */}
+        <div
+          className="absolute inset-0 lg:hidden pointer-events-none"
+          style={{ background: 'linear-gradient(150deg, rgba(2,6,23,0.88) 0%, rgba(2,6,23,0.75) 40%, rgba(2,6,23,0.45) 70%, rgba(2,6,23,0.2) 100%)' }}
+        />
+      </div>
+
       {/* Subtle grid decoration */}
       <div
-        className="absolute inset-0 opacity-[0.06] pointer-events-none"
+        className="absolute inset-0 opacity-[0.04] pointer-events-none"
         style={{
           backgroundImage: 'linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)',
           backgroundSize: '60px 60px',
@@ -47,12 +56,12 @@ export default function HeroSection({ config = {} }) {
       <div className="absolute -top-32 -right-32 h-[480px] w-[480px] rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
       <div className="absolute -bottom-32 -left-32 h-[480px] w-[480px] rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
 
-      {/* ── Content grid ── */}
+      {/* ── Content — inside max-w-7xl so text respects margins ── */}
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid min-h-[520px] sm:min-h-[580px] lg:min-h-[660px] items-center lg:grid-cols-[1fr_440px] xl:grid-cols-[1fr_520px]">
+        <div className="flex min-h-[520px] sm:min-h-[580px] lg:min-h-[660px] items-center">
 
-          {/* ── Left: Text ── */}
-          <div className="py-8 sm:py-16 lg:py-20 relative z-10 max-w-xl">
+          {/* Text — left side, never overlaps image on desktop */}
+          <div className="py-8 sm:py-16 lg:py-20 relative z-10 w-full lg:max-w-[52%]">
 
             <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-[11px] sm:text-sm font-medium text-sky-300">
               <span className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-pulse" />
@@ -115,23 +124,6 @@ export default function HeroSection({ config = {} }) {
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* ── Right: Image — desktop only ── */}
-          <div className="relative hidden lg:block h-full self-stretch overflow-hidden" style={{ minHeight: '660px' }}>
-            <img
-              key={imageUrl}
-              src={imageUrl}
-              alt="Premium electronics"
-              className="absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-500"
-              loading="eager"
-              fetchpriority="high"
-            />
-            {/* Seamless left blend */}
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{ background: 'linear-gradient(to right, #020617 0%, #020617 20%, rgba(2,6,23,0.85) 38%, rgba(2,6,23,0.3) 58%, transparent 78%)' }}
-            />
           </div>
 
         </div>

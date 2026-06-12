@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
 import Link from 'next/link';
+import { useEffect } from 'react';
 import prisma from '../../../lib/prisma';
 import { getToken } from 'next-auth/jwt';
 
@@ -15,7 +15,9 @@ const PAYMENT_LABELS = {
   'Bank Transfer': 'Bank Transfer',
 };
 
-export default function ReceiptPage({ order, items }) {
+const CASH_METHODS = ['cash', 'Cash on Delivery'];
+
+export default function ReceiptPage({ order, items, paymentConfirmed, isCash }) {
   useEffect(() => {
     document.title = `Receipt — Order #${order.id} — KigaliTech`;
   }, [order.id]);
@@ -24,6 +26,7 @@ export default function ReceiptPage({ order, items }) {
   const discount = order.discountAmount || 0;
   const total = order.total;
   const shipping = subtotal + discount - total > 0 ? 0 : (subtotal - discount >= 9900 ? 0 : 999);
+  const isPending = !paymentConfirmed;
 
   const dateStr = new Date(order.createdAt).toLocaleDateString('en-GB', {
     day: '2-digit', month: 'short', year: 'numeric',
@@ -32,14 +35,13 @@ export default function ReceiptPage({ order, items }) {
     hour: '2-digit', minute: '2-digit',
   });
 
-  function fmt(cents) {
-    return `RWF ${Math.round((cents / 100) * 1475).toLocaleString()}`;
+  function fmt(n) {
+    return `RWF ${Math.round(n).toLocaleString()}`;
   }
 
   return (
     <div className="receipt-print-root bg-slate-100 dark:bg-slate-950 min-h-screen">
       <style dangerouslySetInnerHTML={{ __html: `
-        /* ─── SCREEN: centre the A4-sized card ─── */
         .receipt-print-root { background: #f1f5f9; }
         .receipt-a4 {
           width: 210mm;
@@ -47,31 +49,49 @@ export default function ReceiptPage({ order, items }) {
           background: white;
           margin: 0 auto;
           box-shadow: 0 4px 32px rgba(0,0,0,0.12);
+          position: relative;
         }
 
-        /* ─── PRINT: fill the A4 page exactly ─── */
+        /* ── Diagonal watermark ── */
+        .watermark {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          pointer-events: none;
+          z-index: 10;
+          overflow: hidden;
+        }
+        .watermark-text {
+          transform: rotate(-35deg);
+          font-size: 64px;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          color: rgba(239, 68, 68, 0.13);
+          white-space: nowrap;
+          user-select: none;
+          text-transform: uppercase;
+          font-family: sans-serif;
+        }
+
         @media print {
           html, body, #__next { background: white !important; margin: 0 !important; padding: 0 !important; }
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-
           body * { visibility: hidden; }
           .receipt-print-root, .receipt-print-root * { visibility: visible !important; }
-
           .receipt-print-root {
             position: absolute; top: 0; left: 0; right: 0;
             background: white !important;
             padding: 0 !important; margin: 0 !important;
           }
-
-          /* Make A4 div full-width, remove screen shadow */
           .receipt-a4 {
             width: 100% !important;
             min-height: unset !important;
             box-shadow: none !important;
             margin: 0 !important;
           }
-
-          /* Tighten every section for A4 */
+          .watermark-text { color: rgba(239,68,68,0.10) !important; }
           .r-header  { padding: 10px 24px !important; }
           .r-banner  { padding: 6px 24px !important; }
           .r-body    { padding: 12px 24px !important; gap: 10px !important; }
@@ -117,31 +137,70 @@ export default function ReceiptPage({ order, items }) {
           <Link href={`/orders/${order.id}`} className="rounded-full border border-slate-200 dark:border-slate-700 px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 no-underline transition-all">
             Order Details
           </Link>
-          <button
-            onClick={() => window.print()}
-            className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-700 transition-all"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-            Print / Save PDF
-          </button>
+          {isPending ? (
+            <div className="inline-flex items-center gap-2 rounded-full bg-red-100 border border-red-200 px-4 py-2 text-xs font-semibold text-red-600 cursor-not-allowed select-none">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Print disabled — payment pending
+            </div>
+          ) : (
+            <button
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-700 transition-all"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              Print / Save PDF
+            </button>
+          )}
         </div>
       </div>
+
+      {/* ── Unpaid alert banner (screen only) ── */}
+      {isPending && (
+        <div className="no-print bg-red-600 text-white text-center px-4 py-3 flex items-center justify-center gap-3">
+          <svg className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span className="font-semibold text-sm">
+            {isCash
+              ? 'Payment is due on delivery — this receipt becomes valid once our agent collects payment.'
+              : 'Payment not confirmed yet — this is not a valid receipt. Please complete your payment first.'}
+          </span>
+          <Link href={`/orders/${order.id}`} className="ml-2 rounded-full bg-white text-red-700 font-bold text-xs px-3 py-1 no-underline hover:bg-red-50">
+            View Order →
+          </Link>
+        </div>
+      )}
 
       {/* ── A4 Receipt ── */}
       <div className="receipt-a4 py-6 px-0 sm:my-6">
 
+        {/* Diagonal watermark — only when unpaid */}
+        {isPending && (
+          <div className="watermark">
+            <span className="watermark-text">
+              {isCash ? 'PAYMENT DUE ON DELIVERY' : 'NOT YET PAID'}
+            </span>
+          </div>
+        )}
+
         {/* Header */}
-        <div className="r-header bg-slate-900 px-10 py-7 text-center">
+        <div className={`r-header px-10 py-7 text-center ${isPending ? 'bg-slate-700' : 'bg-slate-900'}`}>
           <img src="/logo.png" alt="KigaliTech" className="r-logo mx-auto mb-2 h-16 w-16 rounded-full object-cover border-2 border-orange-400/50 shadow-lg" />
           <h1 className="r-h1 text-xl font-bold tracking-tight text-white">KigaliTech</h1>
-          <p className="r-h1sub mt-0.5 text-xs text-orange-300 font-semibold tracking-wider uppercase">Official Purchase Receipt</p>
+          <p className="r-h1sub mt-0.5 text-xs font-semibold tracking-wider uppercase text-orange-300">
+            {isPending ? 'Order Summary — Awaiting Payment' : 'Official Purchase Receipt'}
+          </p>
         </div>
 
-        {/* Thank you banner */}
-        <div className="r-banner bg-sky-600 px-10 py-4 text-center">
-          <p className="r-banner-text text-sm font-semibold text-white">Thank you for your purchase! Your order is confirmed.</p>
+        {/* Banner */}
+        <div className={`r-banner px-10 py-4 text-center ${isPending ? 'bg-amber-500' : 'bg-sky-600'}`}>
+          <p className="r-banner-text text-sm font-semibold text-white">
+            {isPending
+              ? isCash
+                ? 'Payment will be collected on delivery. Keep this for your records.'
+                : 'Your order has been received. Please complete your payment to confirm.'
+              : 'Thank you for your purchase! Your order is confirmed.'}
+          </p>
         </div>
 
         {/* Body */}
@@ -160,7 +219,11 @@ export default function ReceiptPage({ order, items }) {
             </div>
             <div className="text-right">
               <p className="r-label text-[10px] font-semibold uppercase tracking-wider text-slate-400">Status</p>
-              <span className="inline-block mt-0.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-700 capitalize">{order.status}</span>
+              <span className={`inline-block mt-0.5 rounded-full px-2.5 py-0.5 text-xs font-bold capitalize ${
+                isPending ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+              }`}>
+                {isPending ? (isCash ? 'Awaiting Delivery' : 'Pending Payment') : order.status}
+              </span>
             </div>
           </div>
 
@@ -197,7 +260,7 @@ export default function ReceiptPage({ order, items }) {
 
           {/* Line items */}
           <div className="r-section">
-            <p className="r-label text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-3">Items Purchased</p>
+            <p className="r-label text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-3">Items {isPending ? 'Ordered' : 'Purchased'}</p>
             <div className="rounded-xl border border-slate-100 overflow-hidden">
               <div className="r-item-head grid grid-cols-12 gap-2 bg-slate-50 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                 <span className="col-span-6">Item</span>
@@ -248,28 +311,52 @@ export default function ReceiptPage({ order, items }) {
               </div>
             )}
             <div className="r-grand flex justify-between border-t border-slate-200 pt-3">
-              <span className="text-base font-extrabold text-slate-900">Total Paid</span>
-              <span className="text-xl font-extrabold text-slate-900">{fmt(total)}</span>
+              <span className="text-base font-extrabold text-slate-900">
+                {isPending ? (isCash ? 'Amount Due on Delivery' : 'Total Due') : 'Total Paid'}
+              </span>
+              <span className={`text-xl font-extrabold ${isPending ? 'text-red-600' : 'text-slate-900'}`}>{fmt(total)}</span>
             </div>
           </div>
 
-          {/* Confirmation badge */}
-          <div className="r-badge flex items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-3">
-            <div className="r-badge-icon flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500">
-              <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-              </svg>
+          {/* Payment status badge */}
+          {isPending ? (
+            <div className="r-badge flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+              <div className="r-badge-icon flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-amber-400">
+                <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="r-badge-title text-sm font-bold text-amber-800">
+                  {isCash ? 'Payment Due on Delivery' : 'Payment Not Confirmed'}
+                </p>
+                <p className="r-subval text-xs text-amber-600">
+                  {isCash
+                    ? 'Our delivery agent will collect payment when your order arrives.'
+                    : 'This document is not a valid receipt until payment is confirmed by KigaliTech.'}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="r-badge-title text-sm font-bold text-emerald-800">Payment Confirmed</p>
-              <p className="r-subval text-xs text-emerald-600">This is your official proof of purchase from KigaliTech</p>
+          ) : (
+            <div className="r-badge flex items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-3">
+              <div className="r-badge-icon flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500">
+                <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <p className="r-badge-title text-sm font-bold text-emerald-800">Payment Confirmed</p>
+                <p className="r-subval text-xs text-emerald-600">This is your official proof of purchase from KigaliTech</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Footer */}
         <div className="r-footer border-t border-dashed border-slate-200 px-8 py-5 text-center space-y-1.5">
-          <p className="r-footer-main text-sm font-semibold text-slate-700">We hope you love your new device!</p>
+          <p className="r-footer-main text-sm font-semibold text-slate-700">
+            {isPending ? 'Questions? Contact us below.' : 'We hope you love your new device!'}
+          </p>
           <p className="r-footer-sub text-xs text-slate-400">Need help? <a href="https://wa.me/250786276555" className="text-green-600 font-medium">WhatsApp: +250 786 276 555</a></p>
           <p className="r-footer-tiny text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-1">KigaliTech — Premium Electronics</p>
           <p className="r-footer-tiny text-[10px] text-slate-400">KN 74St, infront of Al madina mosque, Kigali Rwanda</p>
@@ -279,7 +366,6 @@ export default function ReceiptPage({ order, items }) {
         </div>
       </div>
 
-      {/* Screen bottom padding */}
       <div className="no-print h-8" />
     </div>
   );
@@ -290,6 +376,7 @@ export async function getServerSideProps({ req, params }) {
   if (!token) return { redirect: { destination: '/signin', permanent: false } };
 
   const orderId = Number(params.id);
+  if (!Number.isFinite(orderId)) return { redirect: { destination: '/', permanent: false } };
   const where = {
     id: orderId,
     ...(token.role !== 'admin' && token.role !== 'staff' ? { userId: Number(token.id) } : {}),
@@ -298,10 +385,24 @@ export async function getServerSideProps({ req, params }) {
   const order = await prisma.order.findFirst({ where, include: { items: true } });
   if (!order) return { notFound: true };
 
+  const isCash = CASH_METHODS.includes(order.paymentMethod);
+
+  // Block receipt entirely for non-cash unpaid orders (redirect to order page)
+  if (!order.paymentConfirmed && !isCash) {
+    return {
+      redirect: {
+        destination: `/orders/${orderId}?receipt=blocked`,
+        permanent: false,
+      },
+    };
+  }
+
   return {
     props: {
       order: JSON.parse(JSON.stringify(order)),
       items: JSON.parse(JSON.stringify(order.items)),
+      paymentConfirmed: order.paymentConfirmed,
+      isCash,
     },
   };
 }

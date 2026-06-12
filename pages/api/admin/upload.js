@@ -15,6 +15,46 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Valid image required' });
   }
 
-  // Store as data URL — persists in DB, works on Vercel (no filesystem write)
-  return res.json({ url: imageDataUrl });
+  try {
+    // Decode base64 to binary
+    const matches = imageDataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if (!matches) return res.status(400).json({ error: 'Invalid image format' });
+    const mimeType = matches[1];
+    const base64Data = matches[2];
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    const ext = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+
+    const uploadRes = await fetch(
+      `${supabaseUrl}/storage/v1/object/product-images/${filename}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': mimeType,
+          'x-upsert': 'true',
+        },
+        body: buffer,
+      }
+    );
+
+    if (!uploadRes.ok) {
+      const err = await uploadRes.text();
+      console.error('[upload] Supabase error:', err);
+      // Fallback: return data URI if Supabase fails
+      return res.json({ url: imageDataUrl });
+    }
+
+    const publicUrl = `${supabaseUrl}/storage/v1/object/public/product-images/${filename}`;
+    return res.json({ url: publicUrl });
+
+  } catch (err) {
+    console.error('[upload] error:', err.message);
+    // Fallback to data URI on any error
+    return res.json({ url: imageDataUrl });
+  }
 }

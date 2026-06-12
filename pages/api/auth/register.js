@@ -1,11 +1,18 @@
 import prisma from '../../../lib/prisma';
 import bcrypt from 'bcryptjs';
 import { sendVerificationEmail } from '../../../lib/email';
+import { rateLimit } from '../../../lib/rate-limit';
+import { whatsappWelcome } from '../../../lib/whatsapp';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
+
+  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+  if (!rateLimit(ip, 'register', 5, 60_000)) {
+    return res.status(429).json({ error: 'Too many attempts. Please wait a minute.' });
+  }
 
   const { name, phone, password } = req.body;
   const email = req.body.email ? req.body.email.toLowerCase().trim() : '';
@@ -51,6 +58,11 @@ export default async function handler(req, res) {
       emailVerified: isPhoneOnly ? new Date() : null,
     },
   });
+
+  // WhatsApp welcome when phone number provided at signup
+  if (phone) {
+    whatsappWelcome(phone, user.name).catch(() => {});
+  }
 
   if (!isPhoneOnly) {
     // Generate 6-digit OTP

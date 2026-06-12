@@ -5,17 +5,32 @@ import { useCurrency } from '../context/CurrencyContext';
 
 const CATEGORIES = ['Phones', 'Laptops', 'Headphones', 'Gaming', 'Wearables', 'TVs', 'Cameras'];
 const QUICK_SEARCHES = ['iPhone 17 Pro Max', 'MacBook Pro M5', 'Sony XM6', 'Samsung S26', 'PS5 Slim', 'AirPods'];
+const RECENT_KEY = 'kt_recent_searches';
+
+function getRecent() { try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch { return []; } }
+function saveRecent(q) {
+  try {
+    const prev = getRecent().filter(s => s !== q);
+    localStorage.setItem(RECENT_KEY, JSON.stringify([q, ...prev].slice(0, 5)));
+  } catch {}
+}
 
 export default function SearchModal({ open, onClose }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeIdx, setActiveIdx] = useState(-1);
+  const [recentSearches, setRecentSearches] = useState([]);
   const inputRef = useRef(null);
   const { format } = useCurrency();
+  const router = useRouter();
 
   useEffect(() => {
-    if (open) { setQuery(''); setResults([]); setActiveIdx(-1); setTimeout(() => inputRef.current?.focus(), 50); }
+    if (open) {
+      setQuery(''); setResults([]); setActiveIdx(-1);
+      setRecentSearches(getRecent());
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
   }, [open]);
 
   useEffect(() => {
@@ -28,21 +43,30 @@ export default function SearchModal({ open, onClose }) {
     if (query.length < 2) { setResults([]); setActiveIdx(-1); return; }
     const t = setTimeout(async () => {
       setLoading(true);
-      const data = await fetch(`/api/search?q=${encodeURIComponent(query)}`).then((r) => r.json());
-      setResults(data);
+      const data = await fetch(`/api/search/autocomplete?q=${encodeURIComponent(query)}`).then((r) => r.json());
+      setResults(Array.isArray(data) ? data : []);
       setActiveIdx(-1);
       setLoading(false);
-    }, 200);
+    }, 180);
     return () => clearTimeout(t);
   }, [query]);
+
+  function navigate(href, term) {
+    if (term) saveRecent(term);
+    onClose();
+    router.push(href);
+  }
 
   function handleKeyDown(e) {
     if (!results.length) return;
     if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx(i => Math.min(i + 1, results.length - 1)); }
     if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIdx(i => Math.max(i - 1, -1)); }
     if (e.key === 'Enter' && activeIdx >= 0) {
-      window.location.href = `/products/${results[activeIdx].id}`;
-      onClose();
+      e.preventDefault();
+      navigate(`/products/${results[activeIdx].id}`, results[activeIdx].name);
+    } else if (e.key === 'Enter' && query.trim()) {
+      e.preventDefault();
+      navigate(`/products?search=${encodeURIComponent(query.trim())}`, query.trim());
     }
   }
 
@@ -84,39 +108,39 @@ export default function SearchModal({ open, onClose }) {
         {/* Results */}
         {results.length > 0 && (
           <ul className="max-h-96 overflow-y-auto divide-y divide-slate-50 dark:divide-slate-800 py-1">
-            {results.map((p, i) => {
-              const img = p.images?.[0] || '';
-              const discount = p.comparePrice && p.comparePrice > p.price
-                ? Math.round((1 - p.price / p.comparePrice) * 100)
-                : null;
-              return (
-                <li key={p.id}>
-                  <Link
-                    href={`/products/${p.id}`}
-                    onClick={onClose}
-                    className={`flex items-center gap-4 px-5 py-3 no-underline transition-colors ${
-                      i === activeIdx ? 'bg-sky-50 dark:bg-sky-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
-                      {img && <img src={img} alt={p.name} className="h-full w-full object-cover" />}
+            {results.map((p, i) => (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/products/${p.id}`, p.name)}
+                  className={`w-full flex items-center gap-4 px-5 py-3 text-left transition-colors ${
+                    i === activeIdx ? 'bg-sky-50 dark:bg-sky-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+                    {p.image
+                      ? <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
+                      : <span className="flex h-full w-full items-center justify-center text-xl">📦</span>
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{p.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {p.brand && <span className="text-xs text-slate-400 truncate">{p.brand}</span>}
+                      {p.brand && <span className="h-1 w-1 rounded-full bg-slate-300" />}
+                      <span className="rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400">{p.category}</span>
+                      {!p.inStock && (
+                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-500">Out of stock</span>
+                      )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{p.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs text-slate-400">{p.brand || p.category}</span>
-                        <span className="h-1 w-1 rounded-full bg-slate-300" />
-                        <span className="rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400">{p.category}</span>
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{format(p.price)}</p>
-                      {discount && <p className="text-[10px] font-bold text-red-500">-{discount}%</p>}
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{format(p.price)}</p>
+                    {p.discount > 0 && <p className="text-[10px] font-bold text-red-500">-{p.discount}%</p>}
+                  </div>
+                </button>
+              </li>
+            ))}
           </ul>
         )}
 
@@ -129,22 +153,50 @@ export default function SearchModal({ open, onClose }) {
           </div>
         )}
 
-        {/* Empty state: categories + quick searches */}
+        {/* Empty state: recent + categories + quick searches */}
         {query.length === 0 && (
           <div className="px-5 py-5 space-y-5">
+            {/* Recent searches */}
+            {recentSearches.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Recent Searches</p>
+                  <button
+                    onClick={() => { try { localStorage.removeItem(RECENT_KEY); } catch {} setRecentSearches([]); }}
+                    className="text-xs text-slate-400 hover:text-red-500 transition-colors"
+                  >
+                    Clear
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {recentSearches.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setQuery(s)}
+                      className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-300 hover:border-sky-300 hover:text-sky-700 transition-colors"
+                    >
+                      <svg className="h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Category pills */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Browse by Category</p>
               <div className="flex flex-wrap gap-2">
                 {CATEGORIES.map((cat) => (
-                  <Link
+                  <button
                     key={cat}
-                    href={`/products?category=${cat}`}
-                    onClick={onClose}
-                    className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 no-underline hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700 transition-colors"
+                    onClick={() => navigate(`/products?category=${cat}`)}
+                    className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700 transition-colors"
                   >
                     {cat}
-                  </Link>
+                  </button>
                 ))}
               </div>
             </div>

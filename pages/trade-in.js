@@ -141,7 +141,7 @@ export default function TradeInPage() {
 
       {/* Form */}
       <section className="py-16 bg-slate-50 dark:bg-slate-950">
-        <div className="mx-auto max-w-2xl px-4">
+        <div className="mx-auto max-w-4xl px-4">
           <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 shadow-sm">
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-6">{t('submitTradeIn')}</h2>
 

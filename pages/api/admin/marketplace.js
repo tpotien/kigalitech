@@ -1,15 +1,6 @@
 import prisma from '../../../lib/prisma';
 import { getToken } from 'next-auth/jwt';
 
-const COMMISSION_RATE = 0.03; // 3%
-const GRACE_MONTHS = 5;
-
-function isInGracePeriod(sellerCreatedAt) {
-  const graceEnd = new Date(sellerCreatedAt);
-  graceEnd.setMonth(graceEnd.getMonth() + GRACE_MONTHS);
-  return new Date() < graceEnd;
-}
-
 async function sendSellerNotification(listing, newStatus, sellerEmail, sellerName) {
   const RESEND_KEY = process.env.RESEND_API_KEY;
   if (!RESEND_KEY || !sellerEmail) return;
@@ -78,20 +69,13 @@ export default async function handler(req, res) {
       where: status && status !== 'all' ? { status } : {},
       include: {
         seller: {
-          select: { name: true, email: true, phoneNumber: true, createdAt: true }
+          select: { name: true, email: true, phoneNumber: true }
         }
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    // Attach commission info to each listing
-    const withCommission = listings.map(l => ({
-      ...l,
-      inGracePeriod: l.seller?.createdAt ? isInGracePeriod(l.seller.createdAt) : false,
-      commissionRate: l.seller?.createdAt && isInGracePeriod(l.seller.createdAt) ? 0 : COMMISSION_RATE,
-    }));
-
-    return res.json(withCommission);
+    return res.json(listings);
   }
 
   if (req.method === 'PATCH') {

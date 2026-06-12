@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
+
+const GRACE_MONTHS = 5;
 
 const STATUS_STYLES = {
   pending:  'bg-amber-100 text-amber-700',
@@ -18,6 +20,11 @@ export default function MyListings() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(null);
+  const [bio, setBio] = useState('');
+  const [bioSaving, setBioSaving] = useState(false);
+  const [bioSaved, setBioSaved] = useState(false);
+  const bioTimer = useRef(null);
+  const [sellerStatus, setSellerStatus] = useState(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.replace('/signin?callbackUrl=/marketplace/my-listings');
@@ -28,6 +35,14 @@ export default function MyListings() {
     fetch('/api/marketplace/my-listings')
       .then(r => r.json())
       .then(data => { setListings(data); setLoading(false); });
+    fetch(`/api/marketplace/seller-profile?userId=${session.user.id}`)
+      .then(r => r.json())
+      .then(d => { if (d.user?.bio) setBio(d.user.bio); })
+      .catch(() => {});
+    fetch('/api/marketplace/my-seller-status')
+      .then(r => r.json())
+      .then(d => setSellerStatus(d))
+      .catch(() => {});
   }, [status]);
 
   function shareLink(listingId) {
@@ -35,7 +50,22 @@ export default function MyListings() {
   }
 
   function catalogLink() {
-    return `${SITE}/marketplace?seller=${session?.user?.id}`;
+    return `${SITE}/marketplace/seller/${session?.user?.id}`;
+  }
+
+  async function saveBio() {
+    setBioSaving(true);
+    try {
+      await fetch('/api/marketplace/seller-profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bio }),
+      });
+      setBioSaved(true);
+      clearTimeout(bioTimer.current);
+      bioTimer.current = setTimeout(() => setBioSaved(false), 2500);
+    } catch {}
+    setBioSaving(false);
   }
 
   function copyToClipboard(text, key) {
@@ -73,6 +103,70 @@ export default function MyListings() {
           </Link>
         </div>
 
+        {/* Seller status banner */}
+        {sellerStatus && sellerStatus.sellerStatus === 'suspended' && (
+          <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 px-5 py-4">
+            <p className="font-bold text-red-700 dark:text-red-400 text-sm flex items-center gap-2">
+              <span>⛔</span> Your seller account has been suspended
+            </p>
+            <p className="text-xs text-red-600 dark:text-red-300 mt-1">
+              Reason: <span className="capitalize">{sellerStatus.sellerSuspendedReason?.replace('_', ' ') || 'Policy violation'}</span>. Please contact support to resolve this.
+            </p>
+          </div>
+        )}
+        {sellerStatus && sellerStatus.sellerStatus === 'inactive' && (
+          <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 px-5 py-4">
+            <p className="font-bold text-amber-700 dark:text-amber-400 text-sm flex items-center gap-2">
+              <span>⚠️</span> Your seller account is inactive
+            </p>
+            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+              Your 5-month grace period has ended. Pay the monthly subscription (RWF 10,000) via MoMo to <strong>0786276555</strong> to continue listing.
+            </p>
+          </div>
+        )}
+        {sellerStatus && sellerStatus.sellerStatus === 'active' && sellerStatus.graceExpired && sellerStatus.subscriptionActive && sellerStatus.sellerSubscriptionExp && (
+          <div className="mb-5 rounded-2xl border border-sky-200 bg-sky-50 dark:bg-sky-900/20 dark:border-sky-700 px-5 py-3">
+            <p className="text-xs text-sky-700 dark:text-sky-300 flex items-center gap-2">
+              <span>✓</span> Subscription active until <strong>{new Date(sellerStatus.sellerSubscriptionExp).toLocaleDateString()}</strong>
+            </p>
+          </div>
+        )}
+        {sellerStatus && sellerStatus.sellerStatus === 'active' && !sellerStatus.graceExpired && sellerStatus.graceDaysLeft !== null && sellerStatus.graceDaysLeft <= 30 && (
+          <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 px-5 py-3">
+            <p className="text-xs text-amber-700 dark:text-amber-300">
+              ⏳ Grace period ends in <strong>{sellerStatus.graceDaysLeft} days</strong>. After that, a monthly subscription of RWF 10,000 is required to keep listing.
+            </p>
+          </div>
+        )}
+
+        {/* Bio editor */}
+        <div className="mb-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5">
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div>
+              <p className="font-semibold text-slate-900 dark:text-white text-sm">Seller Bio</p>
+              <p className="text-xs text-slate-400 mt-0.5">Shown on your public catalog page · max 300 characters</p>
+            </div>
+            <Link href={`/marketplace/seller/${session?.user?.id}`} target="_blank"
+              className="flex-shrink-0 text-xs text-violet-600 dark:text-violet-400 hover:underline no-underline font-semibold">
+              View catalog →
+            </Link>
+          </div>
+          <textarea
+            value={bio}
+            onChange={e => setBio(e.target.value.slice(0, 300))}
+            rows={3}
+            placeholder="Tell buyers about yourself — what you sell, your location, how to reach you..."
+            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-3 text-sm resize-none focus:outline-none focus:border-violet-400 transition"
+          />
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-xs text-slate-400">{bio.length}/300</span>
+            <button onClick={saveBio} disabled={bioSaving}
+              className="rounded-full bg-violet-600 px-5 py-2 text-xs font-semibold text-white hover:bg-violet-700 disabled:opacity-60 transition">
+              {bioSaved ? '✓ Saved!' : bioSaving ? 'Saving...' : 'Save Bio'}
+            </button>
+          </div>
+        </div>
+
         {/* Share full catalog */}
         {approvedListings.length > 0 && (
           <div className="mb-6 rounded-2xl border border-violet-100 bg-violet-50 dark:bg-violet-900/20 dark:border-violet-800 px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4">
@@ -106,7 +200,6 @@ export default function MyListings() {
             {listings.map(listing => {
               const images = (() => { try { return JSON.parse(listing.images); } catch { return []; } })();
               const isVerified = listing.verified;
-              const fee = Math.round(listing.price * 0.03);
               const sellerEarns = listing.price;
 
               return (
@@ -136,11 +229,11 @@ export default function MyListings() {
                         </div>
                       </div>
 
-                      {/* Price breakdown */}
-                      <div className="mt-2 flex items-center gap-4 text-xs text-slate-500">
-                        <span>Your price: <span className="font-bold text-slate-800 dark:text-white">RWF {sellerEarns.toLocaleString()}</span></span>
-                        <span>+3% fee: <span className="font-medium">RWF {fee.toLocaleString()}</span></span>
-                        <span>Buyer pays: <span className="font-bold text-emerald-700">RWF {(sellerEarns + fee).toLocaleString()}</span></span>
+                      {/* Price */}
+                      <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
+                        <span>Price: <span className="font-bold text-slate-800 dark:text-white">RWF {sellerEarns.toLocaleString()}</span></span>
+                        <span className="text-slate-300">·</span>
+                        <span>You receive: <span className="font-bold text-emerald-700">RWF {sellerEarns.toLocaleString()}</span></span>
                       </div>
 
                       {/* Admin notes if rejected */}

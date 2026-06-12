@@ -55,7 +55,7 @@ export default function GiftCards() {
   return (
     <Layout title="Gift Cards">
       <Head><title>Gift Cards | KigaliTech</title></Head>
-      <div className="max-w-2xl mx-auto px-4 py-10">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="text-center mb-8">
           <span className="text-5xl block mb-3">🎁</span>
           <h1 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 mb-2">Gift Cards</h1>

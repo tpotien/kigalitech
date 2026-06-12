@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   try {
     const payload = {
       tx_ref: txRef || `KT-${Date.now()}-${orderId || 0}`,
-      amount: Math.ceil(amount / 100), // convert from cents to RWF units
+      amount: Math.ceil(amount), // amount is already in RWF
       currency,
       network: network === 'mtn' ? 'MTN' : 'AIRTEL',
       email: email || 'customer@kigalitechservices.com',

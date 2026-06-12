@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     },
     select: {
       id: true, name: true, brand: true, category: true,
-      price: true, comparePrice: true, stock: true,
+      price: true, comparePrice: true, stock: true, images: true,
     },
     orderBy: [{ featured: 'desc' }, { id: 'desc' }],
     take: 10,
@@ -30,6 +30,11 @@ export default async function handler(req, res) {
     const discount = p.comparePrice && p.comparePrice > p.price
       ? Math.round((1 - p.price / p.comparePrice) * 100)
       : null;
+    let image = null;
+    try {
+      const imgs = JSON.parse(p.images || '[]');
+      image = imgs.find(img => typeof img === 'string' && img.trim().length > 10) || null;
+    } catch {}
     return {
       id: p.id,
       name: p.name,
@@ -37,7 +42,7 @@ export default async function handler(req, res) {
       category: p.category,
       price: p.price,
       discount,
-      image: null,
+      image,
       inStock: p.stock > 0,
     };
   });

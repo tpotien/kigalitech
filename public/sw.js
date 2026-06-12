@@ -17,6 +17,34 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
+// ── Push notifications ────────────────────────────────────────────────────────
+self.addEventListener('push', e => {
+  if (!e.data) return;
+  const { title, body, url = '/', icon = '/logo.png', badge = '/logo.png' } = e.data.json();
+  e.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon,
+      badge,
+      data: { url },
+      vibrate: [200, 100, 200],
+    })
+  );
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = e.notification.data?.url || '/';
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const client of list) {
+        if (client.url === url && 'focus' in client) return client.focus();
+      }
+      return clients.openWindow(url);
+    })
+  );
+});
+
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);

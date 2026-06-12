@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import AdminLayout from '../../components/AdminLayout';
 
 const STATUS_STYLE = {
@@ -10,6 +12,7 @@ const STATUS_STYLE = {
 const TIER_ICON = { Bronze: '🥉', Silver: '🥈', Gold: '🥇', Platinum: '💎' };
 
 export default function AdminLoyaltyCards() {
+  const { data: session } = useSession();
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -33,8 +36,41 @@ export default function AdminLoyaltyCards() {
 
   const filtered = filter === 'all' ? cards : cards.filter(c => c.status === filter);
 
+  const myCard = cards.find(c => c.user?.email === session?.user?.email);
+
   return (
     <AdminLayout title="Loyalty Cards">
+
+      {/* Admin's own card status */}
+      <div className="mb-6 rounded-2xl border border-violet-100 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex-1">
+          <p className="font-semibold text-violet-900 dark:text-violet-300 text-sm flex items-center gap-2">
+            <span>💎</span> Your Platinum Card
+          </p>
+          {myCard ? (
+            <p className="text-xs text-violet-600 dark:text-violet-400 mt-0.5">
+              Status: <span className="font-bold capitalize">{myCard.status}</span>
+              {myCard.status === 'approved' && myCard.expiresAt && ` · Expires ${new Date(myCard.expiresAt).toLocaleDateString()}`}
+              {' '}· #{myCard.cardNumber}
+            </p>
+          ) : (
+            <p className="text-xs text-violet-600 dark:text-violet-400 mt-0.5">You haven&apos;t requested your card yet.</p>
+          )}
+        </div>
+        <div className="flex gap-2 flex-shrink-0">
+          <Link href="/account/loyalty"
+            className="rounded-full bg-violet-600 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-700 no-underline transition">
+            {myCard ? 'View / Print My Card' : 'Request My Card'}
+          </Link>
+          {myCard && myCard.status === 'approved' && (
+            <button onClick={() => updateCard(myCard.id, 'approved')}
+              className="rounded-full border border-violet-300 dark:border-violet-700 px-4 py-2 text-xs font-semibold text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/40 transition">
+              Renew
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="mb-5 flex flex-wrap gap-2">
         {['all', 'pending', 'approved', 'rejected'].map(s => (
           <button key={s} onClick={() => setFilter(s)}
@@ -95,23 +131,27 @@ export default function AdminLoyaltyCards() {
                 </div>
 
                 {/* Actions */}
-                {card.status === 'pending' && (
+                {(card.status === 'pending' || card.status === 'approved') && (
                   <div className="flex flex-col gap-2 flex-shrink-0 w-full sm:w-48">
-                    <textarea
-                      value={notes[card.id] || ''}
-                      onChange={e => setNotes(n => ({ ...n, [card.id]: e.target.value }))}
-                      placeholder="Optional note to member..."
-                      rows={2}
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white px-3 py-2 text-xs resize-none focus:outline-none focus:border-sky-400"
-                    />
+                    {card.status === 'pending' && (
+                      <textarea
+                        value={notes[card.id] || ''}
+                        onChange={e => setNotes(n => ({ ...n, [card.id]: e.target.value }))}
+                        placeholder="Optional note to member..."
+                        rows={2}
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white px-3 py-2 text-xs resize-none focus:outline-none focus:border-sky-400"
+                      />
+                    )}
                     <button onClick={() => updateCard(card.id, 'approved')}
                       className="w-full rounded-xl bg-emerald-600 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition">
-                      ✓ Approve
+                      {card.status === 'approved' ? '↻ Renew (+1 yr)' : '✓ Approve'}
                     </button>
-                    <button onClick={() => updateCard(card.id, 'rejected')}
-                      className="w-full rounded-xl border border-red-200 dark:border-red-800 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition">
-                      Reject
-                    </button>
+                    {card.status === 'pending' && (
+                      <button onClick={() => updateCard(card.id, 'rejected')}
+                        className="w-full rounded-xl border border-red-200 dark:border-red-800 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+                        Reject
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

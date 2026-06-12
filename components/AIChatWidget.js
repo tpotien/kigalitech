@@ -102,7 +102,7 @@ export default function AIChatWidget() {
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {m.role === 'assistant' && (
                   <div className="h-7 w-7 rounded-full bg-white border border-slate-200 dark:border-slate-700 flex items-center justify-center flex-shrink-0 mr-2 mt-0.5 overflow-hidden">
-                    <img src="/logo.png" alt="KT" className="h-full w-full object-contain p-0.5"
+                    <img src="/logo.png" alt="KT" className="h-full w-full object-cover"
                       onError={e => { e.target.style.display='none'; e.target.parentNode.innerHTML='<span style="font-size:10px;font-weight:700;color:#0284c7">KT</span>'; }} />
                   </div>
                 )}
@@ -118,7 +118,7 @@ export default function AIChatWidget() {
             {loading && (
               <div className="flex justify-start">
                 <div className="h-7 w-7 rounded-full bg-white border border-slate-200 dark:border-slate-700 flex items-center justify-center flex-shrink-0 mr-2 overflow-hidden">
-                  <img src="/logo.png" alt="KT" className="h-full w-full object-contain p-0.5" />
+                  <img src="/logo.png" alt="KT" className="h-full w-full object-cover" />
                 </div>
                 <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1 items-center">
                   {[0,1,2].map(i => (
@@ -176,7 +176,7 @@ export default function AIChatWidget() {
           <img
             src="/logo.png"
             alt="AI"
-            className="h-4 w-4 rounded-full object-contain bg-white p-0.5"
+            className="h-4 w-4 rounded-full object-cover"
             onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
           />
           <span className="hidden text-white text-xs font-bold">AI</span>
@@ -191,7 +191,7 @@ export default function AIChatWidget() {
           <img
             src="/logo.png"
             alt="KigaliTech AI"
-            className="h-7 w-7 rounded-full object-contain bg-white p-0.5 flex-shrink-0 border border-sky-400/50"
+            className="h-7 w-7 rounded-full object-cover flex-shrink-0 border border-sky-400/50"
             onError={e => { e.target.style.display = 'none'; }}
           />
           <div className="text-left leading-tight">

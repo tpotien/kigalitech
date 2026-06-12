@@ -1,97 +1,118 @@
 import { useState } from 'react';
 import { useLang } from '../context/LanguageContext';
 
-// slug = SimpleIcons CDN slug  |  iconColor = hex without # for the logo fill
-// bg = brand's official background color  |  text = text/icon color over bg
 const PJS = "'Plus Jakarta Sans',sans-serif";
 
+// Microsoft's real 4-color logo as inline SVG
+const MicrosoftLogo = () => (
+  <svg width="36" height="36" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+    <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+    <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+    <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+  </svg>
+);
+
 const BRANDS = [
-  { name: 'Apple',    slug: 'apple',       bg: '#000000', text: '#ffffff', iconColor: 'ffffff', font: PJS },
-  { name: 'Samsung',  slug: 'samsung',     bg: '#1428A0', text: '#ffffff', iconColor: 'ffffff', font: PJS },
-  { name: 'Sony',     slug: 'sony',        bg: '#000000', text: '#ffffff', iconColor: 'ffffff', font: PJS },
-  { name: 'LG',       slug: 'lg',          bg: '#A50034', text: '#ffffff', iconColor: 'ffffff', font: PJS },
-  { name: 'ASUS',     slug: 'asus',        bg: '#0066CC', text: '#ffffff', iconColor: 'ffffff', font: PJS },
-  { name: 'HP',       slug: 'hp',          bg: '#0096D6', text: '#ffffff', iconColor: 'ffffff', font: PJS },
-  { name: 'OnePlus',  slug: 'oneplus',     bg: '#F5010C', text: '#ffffff', iconColor: 'ffffff', font: PJS },
-  { name: 'Lenovo',   slug: 'lenovo',      bg: '#E2231A', text: '#ffffff', iconColor: 'ffffff', font: PJS },
-  { name: 'Xiaomi',   slug: 'xiaomi',      bg: '#FF6900', text: '#ffffff', iconColor: 'ffffff', font: PJS },
-  { name: 'Huawei',   slug: 'huawei',      bg: '#CF0A2C', text: '#ffffff', iconColor: 'ffffff', font: PJS },
-  { name: 'JBL',      slug: 'jbl',         bg: '#F76C00', text: '#000000', iconColor: '000000', font: PJS },
-  { name: 'Bose',     slug: 'bose',        bg: '#000000', text: '#ffffff', iconColor: 'ffffff', font: PJS },
-  { name: 'Beats',    slug: 'beatsbydre',  bg: '#DD0000', text: '#ffffff', iconColor: 'ffffff', font: PJS },
-  { name: 'Anker',    slug: 'anker',       bg: '#0070F0', text: '#ffffff', iconColor: 'ffffff', font: PJS },
-  { name: 'GoPro',    slug: 'gopro',       bg: '#00B4D8', text: '#000000', iconColor: '000000', font: PJS },
-  { name: 'Canon',    slug: 'canon',       bg: '#CC0000', text: '#ffffff', iconColor: 'ffffff', font: PJS },
+  {
+    name: 'Apple',
+    slug: 'apple',
+    bg: '#000000',
+    text: '#ffffff',
+    iconColor: 'ffffff',
+    font: PJS,
+  },
+  {
+    name: 'Samsung',
+    slug: 'samsung',
+    bg: '#1428A0',
+    text: '#ffffff',
+    iconColor: 'ffffff',
+    font: PJS,
+  },
+  {
+    name: 'Sony',
+    slug: 'sony',
+    bg: '#000000',
+    text: '#ffffff',
+    iconColor: 'ffffff',
+    font: PJS,
+  },
+  {
+    name: 'Microsoft',
+    slug: null, // uses custom SVG
+    bg: '#f3f3f3',
+    text: '#111111',
+    customLogo: <MicrosoftLogo />,
+    font: PJS,
+  },
+  {
+    name: 'OnePlus',
+    slug: 'oneplus',
+    bg: '#F5010C',
+    text: '#ffffff',
+    iconColor: 'ffffff',
+    font: PJS,
+  },
 ];
 
 function BrandCard({ brand }) {
   const [hovered, setHovered] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
 
-  // SimpleIcons CDN returns a clean SVG in the exact color requested
-  const logoSrc = `https://cdn.simpleicons.org/${brand.slug}/${brand.iconColor}`;
+  const logoSrc = brand.slug
+    ? `https://cdn.simpleicons.org/${brand.slug}/${brand.iconColor}`
+    : null;
 
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="relative flex flex-col items-center justify-center rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden cursor-default"
+      className="flex flex-col items-center justify-center rounded-2xl border overflow-hidden cursor-default"
       style={{
         width: '100%',
-        height: 'clamp(3.5rem, 10vw, 5.5rem)',
-        backgroundColor: hovered ? brand.bg : undefined,
-        borderColor: hovered ? brand.bg : undefined,
-        transform: hovered ? 'translateY(-6px) scale(1.07)' : 'translateY(0) scale(1)',
-        boxShadow: hovered ? `0 18px 45px ${brand.bg}50` : '0 1px 3px rgba(0,0,0,0.05)',
-        transition: 'all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        height: 'clamp(4rem, 12vw, 6rem)',
+        backgroundColor: hovered ? brand.bg : '#ffffff',
+        borderColor: hovered ? brand.bg : '#e2e8f0',
+        transform: hovered ? 'translateY(-5px) scale(1.06)' : 'translateY(0) scale(1)',
+        boxShadow: hovered ? `0 16px 40px ${brand.bg}55` : '0 1px 4px rgba(0,0,0,0.06)',
+        transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
       }}
     >
-      {/* Default state: brand name text only */}
-      {!hovered && (
-        <span
-          style={{
-            fontFamily: brand.font,
-            color: '#64748b',
-            fontWeight: 800,
-            fontSize: brand.name.length > 6 ? '13px' : '16px',
-            letterSpacing: '0.02em',
-            pointerEvents: 'none',
-            userSelect: 'none',
-            textAlign: 'center',
-            padding: '0 8px',
-          }}
-        >
+      {hovered ? (
+        /* Hovered: show logo */
+        brand.customLogo ? (
+          <div style={{ filter: brand.bg === '#f3f3f3' ? 'none' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {brand.customLogo}
+          </div>
+        ) : logoSrc && !imgFailed ? (
+          <img
+            src={logoSrc}
+            alt={brand.name}
+            style={{ pointerEvents: 'none' }}
+            className="h-9 w-auto max-w-[75%] object-contain"
+            loading="lazy"
+            onError={() => setImgFailed(true)}
+          />
+        ) : (
+          <span style={{ fontFamily: brand.font, color: brand.text, fontWeight: 800, fontSize: '15px', letterSpacing: '0.04em' }}>
+            {brand.name}
+          </span>
+        )
+      ) : (
+        /* Default: name text */
+        <span style={{
+          fontFamily: brand.font,
+          color: '#64748b',
+          fontWeight: 800,
+          fontSize: brand.name.length > 6 ? '13px' : '15px',
+          letterSpacing: '0.02em',
+          textAlign: 'center',
+          padding: '0 8px',
+          userSelect: 'none',
+        }}>
           {brand.name}
         </span>
-      )}
-
-      {/* Hover state: logo only, no text */}
-      {hovered && (
-        <>
-          {!imgFailed ? (
-            <img
-              src={logoSrc}
-              alt={brand.name}
-              style={{ pointerEvents: 'none' }}
-              className="h-10 w-auto max-w-[80%] object-contain"
-              loading="lazy"
-              onError={() => setImgFailed(true)}
-            />
-          ) : (
-            <span
-              style={{
-                fontFamily: brand.font,
-                color: brand.text,
-                fontWeight: 800,
-                fontSize: brand.name.length > 6 ? '14px' : '18px',
-                letterSpacing: brand.slug === 'jbl' ? '0.12em' : '0.04em',
-                userSelect: 'none',
-              }}
-            >
-              {brand.name}
-            </span>
-          )}
-        </>
       )}
     </div>
   );
@@ -101,12 +122,12 @@ export default function TrustBadges() {
   const { t } = useLang();
 
   return (
-    <section className="bg-slate-50 dark:bg-slate-950 border-y border-slate-100 dark:border-slate-800 py-5 sm:py-10">
-      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
-        <p className="mb-4 sm:mb-7 text-center text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-slate-400">
+    <section className="bg-white dark:bg-slate-900 py-8 sm:py-12 border-t border-slate-100 dark:border-slate-800">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6">
+        <p className="mb-5 sm:mb-8 text-center text-[10px] sm:text-xs font-bold uppercase tracking-widest text-slate-400">
           {t('trustedBy')}
         </p>
-        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 sm:gap-3">
+        <div className="grid grid-cols-5 gap-3 sm:gap-4">
           {BRANDS.map(brand => <BrandCard key={brand.name} brand={brand} />)}
         </div>
       </div>

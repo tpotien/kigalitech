@@ -2,6 +2,7 @@ import { getToken } from 'next-auth/jwt';
 import prisma from '../../../lib/prisma';
 import { createNotification, notifyRepairUpdate } from '../../../lib/notify';
 import { sendRepairQuoteEmail, sendRepairStatusEmail } from '../../../lib/email';
+import { whatsappRepairUpdate, sendWhatsAppText } from '../../../lib/whatsapp';
 
 export default async function handler(req, res) {
   const token = await getToken({ req });
@@ -31,18 +32,24 @@ export default async function handler(req, res) {
           status: 'open',
           updatedAt: new Date(),
         },
-        include: { user: { select: { name: true, email: true } } },
+        include: { user: { select: { name: true, email: true, phoneNumber: true } } },
       });
       // Notify the customer
       await createNotification({
         userId: ticket.userId,
         type: 'repair_quote',
         title: `Repair Quote for #${ticket.id}`,
-        body: `Your ${ticket.productName} repair quote is RWF ${Math.round((ticket.quotedCost / 100) * 1475).toLocaleString()}. Accept or decline in your account.`,
+        body: `Your ${ticket.productName} repair quote is RWF ${Math.round(ticket.quotedCost).toLocaleString()}. Accept or decline in your account.`,
         link: `/account#repairs`,
       });
       const qEmail = ticket.user?.email;
       if (qEmail) sendRepairQuoteEmail({ ticket, customerEmail: qEmail, customerName: ticket.user?.name }).catch(() => {});
+      // WhatsApp quote notification
+      const qPhone = ticket.user?.phoneNumber;
+      if (qPhone) {
+        const qMsg = `Hello ${ticket.user?.name || 'Customer'}! 🔧\n\nYour KigaliTech repair quote for *${ticket.productName}* (#${ticket.id}) is ready.\n💰 Quote: *RWF ${Math.round(ticket.quotedCost).toLocaleString()}*\n\nAccept or decline in your account:\nhttps://kigalitechservices.com/account#repairs`;
+        sendWhatsAppText(qPhone, qMsg).catch(() => {});
+      }
       return res.json(ticket);
     }
 
@@ -78,6 +85,8 @@ export default async function handler(req, res) {
       notifyRepairUpdate({ ticket, status }).catch(() => {});
       const sEmail = ticket.user?.email;
       if (sEmail) sendRepairStatusEmail({ ticket, status, customerEmail: sEmail, customerName: ticket.user?.name }).catch(() => {});
+      const sPhone = ticket.user?.phoneNumber;
+      if (sPhone) whatsappRepairUpdate(sPhone, ticket.user?.name || 'Customer', ticket.id, status).catch(() => {});
     }
 
     return res.json(ticket);

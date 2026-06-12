@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     const cards = await prisma.loyaltyCard.findMany({
-      include: { user: { select: { name: true, email: true, phone: true } } },
+      include: { user: { select: { name: true, email: true, phoneNumber: true } } },
       orderBy: { createdAt: 'desc' },
     });
     return res.json(cards);

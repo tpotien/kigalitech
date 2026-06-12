@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import prisma from '../../../lib/prisma';
+import { sendOrderConfirmation } from '../../../lib/email';
 
 // CRITICAL: disable Next.js body parser so Stripe can verify the raw body signature
 export const config = {
@@ -52,14 +53,27 @@ export default async function handler(req, res) {
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const intent = event.data.object;
-        await prisma.order.updateMany({
+        const updated = await prisma.order.updateMany({
           where: { stripePaymentIntentId: intent.id },
-          data: {
-            status: 'confirmed',
-            paymentConfirmed: true,
-          },
+          data: { status: 'confirmed', paymentConfirmed: true },
         });
-        console.log(`[stripe-webhook] payment_intent.succeeded: ${intent.id}`);
+        console.log(`[stripe-webhook] payment_intent.succeeded: ${intent.id} (${updated.count} order(s) updated)`);
+
+        // Send order confirmation email
+        if (updated.count > 0) {
+          const order = await prisma.order.findFirst({
+            where: { stripePaymentIntentId: intent.id },
+            include: { items: true },
+          });
+          if (order) {
+            sendOrderConfirmation({
+              order,
+              shippingName: order.shippingName,
+              shippingEmail: order.shippingEmail,
+              items: order.items,
+            }).catch(err => console.error('[stripe-webhook] Confirmation email failed:', err.message));
+          }
+        }
         break;
       }
 

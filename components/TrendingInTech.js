@@ -33,7 +33,7 @@ export default function TrendingInTech() {
               Trending in Tech
             </h2>
           </div>
-          <Link href="/"
+          <Link href="/products"
             className="text-xs sm:text-sm font-semibold text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 no-underline whitespace-nowrap">
             View all →
           </Link>

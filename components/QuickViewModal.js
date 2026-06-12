@@ -12,9 +12,14 @@ export default function QuickViewModal({ product, onClose }) {
   const [added, setAdded] = useState(false);
   const [imgIndex, setImgIndex] = useState(0);
 
-  const images = Array.isArray(product?.images) ? product.images : JSON.parse(product?.images || '[]');
-  const colors = Array.isArray(product?.colors) ? product.colors : JSON.parse(product?.colors || '[]');
-  const storageOptions = Array.isArray(product?.storageOptions) ? product.storageOptions : JSON.parse(product?.storageOptions || '[]');
+  function parseField(val) {
+    const normalize = arr => arr.map(s => (typeof s === 'object' && s !== null ? s.value || '' : s)).filter(Boolean);
+    if (Array.isArray(val)) return normalize(val);
+    try { const p = JSON.parse(val || '[]'); return Array.isArray(p) ? normalize(p) : []; } catch { return []; }
+  }
+  const images = parseField(product?.images);
+  const colors = parseField(product?.colors);
+  const storageOptions = parseField(product?.storageOptions);
 
   useEffect(() => {
     if (product) {
@@ -64,7 +69,7 @@ export default function QuickViewModal({ product, onClose }) {
                 <img
                   src={images[imgIndex]}
                   alt={product.name}
-                  className="h-full w-full object-contain p-4 drop-shadow-md"
+                  className="h-full w-full object-cover"
                 />
               ) : (
                 <svg className="h-16 w-16 text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
@@ -82,7 +87,7 @@ export default function QuickViewModal({ product, onClose }) {
                       imgIndex === i ? 'border-sky-500 ring-1 ring-sky-200 dark:ring-sky-800' : 'border-slate-200 dark:border-slate-700 opacity-60 hover:opacity-100'
                     }`}
                   >
-                    <img src={src} alt="" className="h-full w-full object-contain p-1.5" />
+                    <img src={src} alt="" className="h-full w-full object-cover" />
                   </button>
                 ))}
               </div>

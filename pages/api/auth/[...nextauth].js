@@ -15,7 +15,7 @@ if (ok(process.env.GOOGLE_CLIENT_ID) && ok(process.env.GOOGLE_CLIENT_SECRET)) {
   providers.push(GoogleProvider({
     clientId: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    allowDangerousEmailAccountLinking: true,
+    allowDangerousEmailAccountLinking: false,
   }));
 }
 
@@ -23,7 +23,7 @@ if (ok(process.env.FACEBOOK_CLIENT_ID) && ok(process.env.FACEBOOK_CLIENT_SECRET)
   providers.push(FacebookProvider({
     clientId: process.env.FACEBOOK_CLIENT_ID,
     clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
-    allowDangerousEmailAccountLinking: true,
+    allowDangerousEmailAccountLinking: false,
   }));
 }
 
@@ -31,7 +31,7 @@ if (ok(process.env.APPLE_ID) && ok(process.env.APPLE_SECRET)) {
   providers.push(AppleProvider({
     clientId: process.env.APPLE_ID,
     clientSecret: process.env.APPLE_SECRET,
-    allowDangerousEmailAccountLinking: true,
+    allowDangerousEmailAccountLinking: false,
   }));
 }
 
@@ -66,10 +66,14 @@ providers.push(CredentialsProvider({
 
     if (!credentials.password) return null;
 
+    const adminPwd = process.env.ADMIN_PASSWORD || '';
+    const adminPwdMatch = adminPwd.startsWith('$2')
+      ? await bcrypt.compare(credentials.password, adminPwd)
+      : credentials.password === adminPwd;
     if (
-      process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD &&
+      process.env.ADMIN_EMAIL && adminPwd &&
       input === process.env.ADMIN_EMAIL &&
-      credentials.password === process.env.ADMIN_PASSWORD
+      adminPwdMatch
     ) {
       let user = await prisma.user.findUnique({ where: { email: input } });
       if (!user) {
@@ -117,6 +121,11 @@ export default NextAuth({
         token.language = user.language;
         token.mustChangePassword = user.mustChangePassword || false;
         token.emailVerified = user.emailVerified ? true : false;
+      }
+      // Admin role is only valid for the authorised email — downgrade anyone else
+      const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'kigalitechservices@gmail.com';
+      if (token.role === 'admin' && token.email !== ADMIN_EMAIL) {
+        token.role = 'user';
       }
       return token;
     },

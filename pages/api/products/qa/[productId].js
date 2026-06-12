@@ -12,7 +12,7 @@ async function askGroq(question, product) {
   const userPrompt = `Product: ${product.name}
 Category: ${product.category}
 Brand: ${product.brand || 'N/A'}
-Price: RWF ${Math.round((product.price / 100) * 1475).toLocaleString()}
+Price: RWF ${Math.round(product.price).toLocaleString()}
 Description: ${product.description}
 ${specText ? `Specs: ${specText}` : ''}
 ${colors.length ? `Available colors: ${colors.join(', ')}` : ''}
@@ -55,6 +55,7 @@ export default async function handler(req, res) {
       where: { productId: id },
       orderBy: { createdAt: 'desc' },
     });
+    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
     return res.json(qas);
   }
 

@@ -12,9 +12,7 @@ import { useLang } from '../context/LanguageContext';
 function trimImages(products) {
   return products.map(p => {
     let firstImg = '';
-    try { firstImg = JSON.parse(p.images)?.[0] || ''; } catch {}
-    // Strip base64 data URIs — too large to embed in static HTML (~130 KB each)
-    if (firstImg.startsWith('data:')) firstImg = '';
+    try { firstImg = (JSON.parse(p.images) || []).find(img => img && img.length > 5 && !img.startsWith('data:')) || ''; } catch {}
     return { ...p, images: JSON.stringify([firstImg]) };
   });
 }

@@ -31,7 +31,7 @@ export default function CountdownTimer({ product, discount = 25, hours = 8, labe
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800">
+      <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 relative">
         <div className="grid items-center gap-8 p-8 sm:p-12 lg:grid-cols-2">
           {/* Left */}
           <div>
@@ -90,33 +90,30 @@ export default function CountdownTimer({ product, discount = 25, hours = 8, labe
             </Link>
           </div>
 
-          {/* Right — product image blended into dark card */}
-          <div className="flex items-center justify-center relative min-h-[260px]">
+          {/* Right — product image fills the column, bleeds to card edges */}
+          <div className="relative flex items-end justify-center lg:-my-12 lg:-mr-12 min-h-[340px]">
             {images[0] ? (
-              <div className="relative w-72 h-72">
-                {/* Glow */}
+              <>
+                {/* Radial glow behind image */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="h-52 w-52 rounded-full bg-red-500/25 blur-3xl" />
+                  <div className="h-80 w-80 rounded-full bg-red-500/20 blur-3xl" />
                 </div>
-                {/* Radial mask — fades any image into the dark background */}
-                <div
-                  className="absolute inset-0 overflow-hidden"
+                {/* Image — fills width, fades into card on all edges */}
+                <img
+                  src={images[0]}
+                  alt="Deal product"
+                  className="relative z-10 w-full max-h-[480px] object-contain object-bottom"
                   style={{
-                    WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 50% 46%, black 25%, transparent 80%)',
-                    maskImage: 'radial-gradient(ellipse 80% 80% at 50% 46%, black 25%, transparent 80%)',
+                    WebkitMaskImage: 'radial-gradient(ellipse 90% 85% at 50% 55%, black 55%, transparent 90%)',
+                    maskImage: 'radial-gradient(ellipse 90% 85% at 50% 55%, black 55%, transparent 90%)',
+                    filter: 'drop-shadow(0 0 40px rgba(239,68,68,0.35))',
                   }}
-                >
-                  <img
-                    src={images[0]}
-                    alt="Deal product"
-                    className="h-full w-full object-cover object-center"
-                  />
-                </div>
+                />
                 {/* Badge */}
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap rounded-full bg-red-500 px-4 py-1.5 text-sm font-bold text-white shadow-lg">
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 whitespace-nowrap rounded-full bg-red-500 px-4 py-1.5 text-sm font-bold text-white shadow-lg">
                   🔥 Today Only
                 </div>
-              </div>
+              </>
             ) : (
               <div className="flex h-48 w-48 items-center justify-center rounded-3xl bg-white/10 text-6xl">
                 ⚡

@@ -177,7 +177,7 @@ export default function ComparePage() {
                             <Link href={`/products/${product.id}`} className="block">
                               <div className="mx-auto h-28 w-28 overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                                 {images[0] ? (
-                                  <img src={images[0]} alt={product.name} className="h-full w-full object-contain p-2" />
+                                  <img src={images[0]} alt={product.name} className="h-full w-full object-cover" />
                                 ) : (
                                   <div className="h-full w-full flex items-center justify-center text-slate-300">
                                     <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -25,5 +25,6 @@ export default async function handler(req, res) {
     images: (() => { try { return JSON.parse(p.images); } catch { return []; } })(),
   }));
 
+  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
   res.json(results);
 }

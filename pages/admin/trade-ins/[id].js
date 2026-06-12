@@ -70,8 +70,8 @@ export default function AdminTradeInDetail() {
     setActionLoading(false);
   }
 
-  function fmt(cents) {
-    return `RWF ${Math.round((cents / 100) * 1475).toLocaleString()}`;
+  function fmt(n) {
+    return `RWF ${Math.round(n).toLocaleString()}`;
   }
 
   if (loading) {
@@ -301,7 +301,7 @@ export default function AdminTradeInDetail() {
                   <button
                     disabled={!offerAmount || actionLoading}
                     onClick={() => doAction(item.status === 'negotiating' ? 'counter_offer' : 'offer', {
-                      offeredPrice: Math.round(parseFloat(offerAmount) * 100 / 1475),
+                      offeredPrice: Math.round(parseFloat(offerAmount)),
                       adminNotes: offerNote,
                     })}
                     className="w-full rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50 transition-colors"

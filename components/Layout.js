@@ -266,43 +266,115 @@ export default function Layout({ children }) {
                     </Link>
 
                     {/* Mega menu */}
-                    {hasMega && megaActive === link.label && (
-                      <div className="absolute left-1/2 -translate-x-1/2 top-full z-50 w-[520px]">
-                        <div className="rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xl shadow-slate-200/60 overflow-hidden mt-0.5">
-                          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-700">
-                            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">{link.label}</span>
-                            <Link href={link.href} className="text-xs font-bold text-sky-600 no-underline hover:text-sky-700">View all →</Link>
-                          </div>
-                          {products.length > 0 ? (
-                            <div className="grid grid-cols-4 gap-0 p-3">
-                              {products.map((p) => (
-                                <Link key={p.id} href={`/products/${p.id}`}
-                                  className="group flex flex-col items-center gap-2 rounded-xl p-2.5 no-underline hover:bg-sky-50 transition-colors">
-                                  <div className="h-20 w-20 rounded-xl bg-slate-50 dark:bg-slate-700 overflow-hidden flex items-center justify-center border border-slate-100 dark:border-slate-600">
-                                    <span className="text-2xl">
-                                      {link.label === 'Phones' ? '📱' : link.label === 'Laptops' ? '💻' : link.label === 'TVs' ? '📺' : link.label === 'Headphones' ? '🎧' : link.label === 'Wearables' ? '⌚' : link.label === 'Gaming' ? '🎮' : '📦'}
-                                    </span>
-                                  </div>
-                                  <div className="text-center">
-                                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-tight line-clamp-2 group-hover:text-sky-700 dark:group-hover:text-sky-400">{p.name}</p>
-                                    <p className="mt-0.5 text-xs font-bold text-sky-600">{format(p.price)}</p>
-                                  </div>
-                                </Link>
-                              ))}
+                    {hasMega && megaActive === link.label && (() => {
+                      const uniqueBrands = [...new Set(products.map(p => p.brand).filter(Boolean))];
+                      const onSale = products.filter(p => p.comparePrice && p.comparePrice > p.price);
+                      const featured = products.filter(p => p.featured);
+                      const brandColors = ['bg-violet-100 text-violet-700','bg-sky-100 text-sky-700','bg-emerald-100 text-emerald-700','bg-amber-100 text-amber-700','bg-rose-100 text-rose-700','bg-indigo-100 text-indigo-700'];
+                      return (
+                        <div className="absolute left-0 top-full z-50 w-[600px] pt-1.5"
+                          style={{ filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.18))' }}>
+                          <div className="rounded-2xl overflow-hidden border border-slate-200/80 dark:border-slate-700">
+
+                            {/* Header — dark gradient */}
+                            <div className="relative px-5 py-3.5 flex items-center justify-between overflow-hidden"
+                              style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0369a1 100%)' }}>
+                              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, #38bdf8 0%, transparent 60%)' }} />
+                              <div className="relative flex items-center gap-3">
+                                <span className="text-white font-extrabold text-[15px] tracking-tight">{link.label}</span>
+                                {onSale.length > 0 && (
+                                  <span className="flex items-center gap-1 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+                                    🔥 {onSale.length} on sale
+                                  </span>
+                                )}
+                                {featured.length > 0 && (
+                                  <span className="bg-amber-400 text-slate-900 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                    ⭐ {featured.length} featured
+                                  </span>
+                                )}
+                              </div>
+                              <Link href={link.href} onClick={() => setMegaActive(null)}
+                                className="relative flex items-center gap-1.5 text-sky-300 hover:text-white text-xs font-bold no-underline transition-colors">
+                                See all
+                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+                              </Link>
                             </div>
-                          ) : (
-                            <div className="px-5 py-8 text-center text-sm text-slate-400">Loading products…</div>
-                          )}
-                          <div className="border-t border-slate-100 dark:border-slate-700 px-5 py-3 bg-slate-50/60 dark:bg-slate-800/60">
-                            <Link href={link.href}
-                              className="flex items-center justify-center gap-1.5 rounded-xl bg-sky-600 py-2 text-xs font-bold text-white no-underline hover:bg-sky-700 transition-colors">
-                              Browse all {link.label}
-                              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                            </Link>
+
+                            {/* Brand pills */}
+                            {uniqueBrands.length > 0 && (
+                              <div className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700 flex-wrap">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mr-0.5">Brands</span>
+                                {uniqueBrands.slice(0, 6).map((b, i) => (
+                                  <span key={b} className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full cursor-default ${brandColors[i % brandColors.length]}`}>{b}</span>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Product grid */}
+                            <div className="bg-white dark:bg-slate-900 p-3 grid grid-cols-3 gap-2.5">
+                              {products.slice(0, 6).map(p => {
+                                const discount = p.comparePrice && p.comparePrice > p.price
+                                  ? Math.round((1 - p.price / p.comparePrice) * 100) : 0;
+                                return (
+                                  <Link key={p.id} href={`/products/${p.id}`} onClick={() => setMegaActive(null)}
+                                    className="group relative flex flex-col rounded-xl overflow-hidden border border-slate-100 dark:border-slate-800 hover:border-sky-300 dark:hover:border-sky-600 hover:shadow-lg hover:shadow-sky-100 dark:hover:shadow-sky-900/30 transition-all duration-200 no-underline bg-white dark:bg-slate-900">
+                                    {/* Product image */}
+                                    <div className="relative h-24 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 overflow-hidden">
+                                      {p.image ? (
+                                        <img src={p.image} alt={p.name}
+                                          className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                                      ) : (
+                                        <div className="flex h-full items-center justify-center">
+                                          <svg className="h-10 w-10 text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                          </svg>
+                                        </div>
+                                      )}
+                                      {/* Badges */}
+                                      {discount > 0 && (
+                                        <span className="absolute top-1.5 left-1.5 bg-red-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full leading-none">
+                                          -{discount}%
+                                        </span>
+                                      )}
+                                      {p.featured && !discount && (
+                                        <span className="absolute top-1.5 left-1.5 bg-violet-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                                          ★
+                                        </span>
+                                      )}
+                                      {/* Hover shine */}
+                                      <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </div>
+                                    {/* Product info */}
+                                    <div className="px-2.5 py-2 flex-1 flex flex-col gap-0.5">
+                                      {p.brand && (
+                                        <p className="text-[9px] font-extrabold uppercase tracking-widest text-sky-600 dark:text-sky-400 leading-none">{p.brand}</p>
+                                      )}
+                                      <p className="text-[11px] font-semibold text-slate-800 dark:text-slate-200 leading-snug line-clamp-2 group-hover:text-sky-700 dark:group-hover:text-sky-400 transition-colors">{p.name}</p>
+                                    </div>
+                                  </Link>
+                                );
+                              })}
+                            </div>
+
+                            {/* Footer */}
+                            <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-slate-50 to-sky-50 dark:from-slate-800 dark:to-slate-800 border-t border-slate-100 dark:border-slate-700">
+                              <Link href={link.href} onClick={() => setMegaActive(null)}
+                                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-sky-600 hover:bg-sky-700 active:scale-95 py-2.5 text-[13px] font-extrabold text-white no-underline transition-all shadow-md shadow-sky-200 dark:shadow-sky-900">
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                                Browse all {link.label}
+                              </Link>
+                              {onSale.length > 0 && (
+                                <Link href={`${link.href}?sale=1`} onClick={() => setMegaActive(null)}
+                                  className="flex items-center gap-1.5 rounded-xl border-2 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 px-3 py-2 text-[12px] font-bold text-red-600 dark:text-red-400 no-underline transition-colors whitespace-nowrap">
+                                  🏷️ Deals
+                                </Link>
+                              )}
+                            </div>
+
                           </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 );
               })}

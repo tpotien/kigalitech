@@ -33,13 +33,19 @@ export default async function handler(req, res) {
     const points = user?.loyaltyPoints || 0;
     const tier = role === 'admin' ? 'Platinum' : role === 'staff' ? 'Gold' : points >= 500 ? 'Silver' : 'Bronze';
 
+    // Admins get auto-approved instantly
+    const isAdmin = role === 'admin';
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+
     const card = await prisma.loyaltyCard.create({
       data: {
         userId,
         cardNumber: generateCardNumber(userId),
         tier,
         points,
-        status: 'pending',
+        status: isAdmin ? 'approved' : 'pending',
+        ...(isAdmin ? { approvedAt: now, expiresAt } : {}),
       },
     });
 

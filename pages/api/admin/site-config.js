@@ -9,8 +9,8 @@ const DEFAULTS = {
   currency: 'RWF',
   usdToRwf: '1475',
   primaryColor: '#0284c7',
-  address: 'Kigali, Rwanda',
-  email: 'info@kigalitechservices.com',
+  address: 'KN 74 St, Kigali, Rwanda',
+  email: 'kigalitechservices@gmail.com',
   phone: '+250 786 276 555',
   // Flash Deal
   flashDealProductId: '',

@@ -1,5 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/router';
+
+function rwfToUsdCents(rwf) { return Math.round(Number(rwf)); }
+function usdCentsToRwf(cents) { return String(Math.round(cents)); }
 
 const CATEGORIES = [
   'Phones', 'Laptops', 'TVs', 'Audio', 'Wearables',
@@ -29,7 +32,26 @@ function Field({ label, help, children }) {
 function parse(val, fallback = []) {
   if (Array.isArray(val)) return val;
   if (typeof val === 'object' && val !== null) return val;
-  try { return JSON.parse(val); } catch { return fallback; }
+  try {
+    const p = JSON.parse(val);
+    // JSON.parse(null) returns null without throwing — always fall back in that case
+    if (p === null || p === undefined) return fallback;
+    return p;
+  } catch { return fallback; }
+}
+
+function parseStorageItems(val, storagePriceVal) {
+  const arr = parse(val, []);
+  if (!Array.isArray(arr)) return [];
+  let priceMap = {};
+  try { priceMap = JSON.parse(storagePriceVal || '{}'); } catch {}
+  return arr.map(item => {
+    if (typeof item === 'string') {
+      const rwf = priceMap[item] ? String(Math.round(priceMap[item])) : '';
+      return { value: item, priceRwf: rwf, available: true };
+    }
+    return { value: item.value || '', priceRwf: item.priceRwf != null ? String(item.priceRwf) : '', available: item.available !== false };
+  });
 }
 
 export default function ProductForm({ initial }) {
@@ -37,13 +59,33 @@ export default function ProductForm({ initial }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0 });
+  const [selectedImgIndexes, setSelectedImgIndexes] = useState(new Set());
+  const [dragIndex, setDragIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiStatus, setAiStatus] = useState('');
   const [scanning, setScanning] = useState(false);
   const [scanPreview, setScanPreview] = useState(null);
   const [nameWarning, setNameWarning] = useState('');
+  const [storageItems, setStorageItems] = useState(() => parseStorageItems(initial?.storageOptions, initial?.storagePrice));
+  const [newStorageVal, setNewStorageVal] = useState('');
+  const [bundleSearch, setBundleSearch] = useState('');
+  const [bundleResults, setBundleResults] = useState([]);
   const fileRef = useRef();
   const scanRef = useRef();
+
+  useEffect(() => {
+    if (!bundleSearch.trim()) { setBundleResults([]); return; }
+    const t = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/admin/products?search=${encodeURIComponent(bundleSearch)}`);
+        const d = await r.json();
+        setBundleResults((d.products || d || []).slice(0, 6));
+      } catch { setBundleResults([]); }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [bundleSearch]);
 
   const [form, setForm] = useState({
     name: initial?.name || '',
@@ -51,8 +93,8 @@ export default function ProductForm({ initial }) {
     brand: initial?.brand || '',
     sku: initial?.sku || '',
     description: initial?.description || '',
-    price: initial?.price ? (initial.price / 100).toFixed(2) : '',
-    comparePrice: initial?.comparePrice ? (initial.comparePrice / 100).toFixed(2) : '',
+    price: initial?.price ? usdCentsToRwf(initial.price) : '',
+    comparePrice: initial?.comparePrice ? usdCentsToRwf(initial.comparePrice) : '',
     stock: initial?.stock ?? '',
     lowStockThreshold: initial?.lowStockThreshold ?? 5,
     weight: initial?.weight || '',
@@ -61,9 +103,8 @@ export default function ProductForm({ initial }) {
     active: initial?.active ?? true,
     images: parse(initial?.images, []).join('\n'),
     colors: parse(initial?.colors, []).join(', '),
-    storageOptions: parse(initial?.storageOptions, []).join(', '),
     warrantyOptions: parse(initial?.warrantyOptions, []).join(', '),
-    specs: typeof initial?.specs === 'string' ? initial.specs : JSON.stringify(parse(initial?.specs, {}), null, 2),
+    specs: typeof initial?.specs === 'string' ? initial.specs : JSON.stringify(parse(initial?.specs, {}) || {}, null, 2),
     serialNumbers: parse(initial?.serialNumbers, []).join(', '),
     tags: parse(initial?.tags, []).join(', '),
     bundledWith: (() => {
@@ -85,7 +126,7 @@ export default function ProductForm({ initial }) {
       ? new Date(initial.preOrderDate).toISOString().split('T')[0]
       : '',
     preOrderDeposit: initial?.preOrderDeposit ?? 0,
-    preOrderDepositRwf: initial?.preOrderDeposit ? (initial.preOrderDeposit / 100).toString() : '',
+    preOrderDepositRwf: initial?.preOrderDeposit ? initial.preOrderDeposit.toString() : '',
     colorImages: (() => {
       try {
         const v = initial?.colorImages;
@@ -116,14 +157,19 @@ export default function ProductForm({ initial }) {
         description: data.description || f.description,
         brand: data.brand || f.brand,
         weight: data.weight || f.weight,
+        dimensions: data.dimensions || f.dimensions,
         colors: Array.isArray(data.colors) ? data.colors.join(', ') : f.colors,
         storageOptions: Array.isArray(data.storageOptions) ? data.storageOptions.join(', ') : f.storageOptions,
         warrantyOptions: Array.isArray(data.warrantyOptions) ? data.warrantyOptions.join(', ') : f.warrantyOptions,
         tags: Array.isArray(data.tags) ? data.tags.join(', ') : f.tags,
         specs: data.specs ? JSON.stringify(data.specs, null, 2) : f.specs,
-        price: data.suggestedPrice && !f.price ? (data.suggestedPrice / 100).toFixed(2) : f.price,
+        price: data.suggestedPrice && !f.price ? usdCentsToRwf(data.suggestedPrice) : f.price,
+        ...(Array.isArray(data.storageOptions) && data.storageOptions.length ? {} : {}),
       }));
-      const src = data._source === 'groq' ? '✨ Groq AI' : data._source === 'claude' ? '✨ Claude AI' : '⚡ Smart Fill';
+      if (Array.isArray(data.storageOptions) && data.storageOptions.length) {
+        setStorageItems(parseStorageItems(JSON.stringify(data.storageOptions)));
+      }
+      const src = data._source?.startsWith('gemini') ? '✨ Gemini AI' : data._source === 'groq' ? '✨ Groq AI' : data._source === 'claude' ? '✨ Claude AI' : '⚡ Smart Fill';
       setAiStatus(`${src} — filled! Review and adjust before saving.`);
       setTimeout(() => setAiStatus(''), 5000);
     } catch (err) {
@@ -169,12 +215,13 @@ export default function ProductForm({ initial }) {
             description: data.description || f.description,
             brand: data.brand || f.brand,
             weight: data.weight || f.weight,
+            dimensions: data.dimensions || f.dimensions,
             colors: Array.isArray(data.colors) ? data.colors.join(', ') : f.colors,
             storageOptions: Array.isArray(data.storageOptions) ? data.storageOptions.join(', ') : f.storageOptions,
             warrantyOptions: Array.isArray(data.warrantyOptions) ? data.warrantyOptions.join(', ') : f.warrantyOptions,
             tags: Array.isArray(data.tags) ? data.tags.join(', ') : f.tags,
             specs: data.specs ? JSON.stringify(data.specs, null, 2) : f.specs,
-            price: data.suggestedPrice && !f.price ? (data.suggestedPrice / 100).toFixed(2) : f.price,
+            price: data.suggestedPrice && !f.price ? usdCentsToRwf(data.suggestedPrice) : f.price,
             images: f.images ? f.images : dataUrl,
           }));
           setAiStatus('📷 Product scanned — review all fields before saving.');
@@ -219,43 +266,66 @@ export default function ProductForm({ initial }) {
     if (isEmpty) runAiFill(name, form.category);
   }
 
+  async function resizeAndUpload(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new window.Image();
+        img.onload = async () => {
+          const MAX = 1000;
+          const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          try {
+            const res = await fetch('/api/admin/upload', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ imageDataUrl: dataUrl }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Upload failed');
+            resolve(data.url);
+          } catch (err) {
+            reject(err);
+          }
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = ev.target.result;
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function handleImageUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
     setUploading(true);
     setError('');
     e.target.value = '';
+    setUploadProgress({ done: 0, total: files.length });
 
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = new window.Image();
-      img.onload = async () => {
-        // Resize to max 1000px to keep DB size manageable
-        const MAX = 1000;
-        const scale = Math.min(MAX / img.width, MAX / img.height, 1);
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-        try {
-          const res = await fetch('/api/admin/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ imageDataUrl: dataUrl }),
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Upload failed');
-          set('images', form.images ? `${form.images}\n${data.url}` : data.url);
-        } catch (err) {
-          setError(err.message);
-        } finally {
-          setUploading(false);
-        }
-      };
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
+    const urls = [];
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const url = await resizeAndUpload(files[i]);
+        urls.push(url);
+        setUploadProgress({ done: i + 1, total: files.length });
+      } catch (err) {
+        setError(`File ${i + 1} failed: ${err.message}`);
+      }
+    }
+    if (urls.length) {
+      setForm(f => {
+        const existing = f.images ? f.images.trim() : '';
+        return { ...f, images: existing ? `${existing}\n${urls.join('\n')}` : urls.join('\n') };
+      });
+    }
+    setUploading(false);
+    setUploadProgress({ done: 0, total: 0 });
   }
 
   async function handleColorImageUpload(file, colorName) {
@@ -310,8 +380,8 @@ export default function ProductForm({ initial }) {
         brand: form.brand,
         sku: form.sku,
         description: form.description,
-        price: Math.round(parseFloat(form.price) * 100),
-        comparePrice: form.comparePrice ? Math.round(parseFloat(form.comparePrice) * 100) : null,
+        price: rwfToUsdCents(form.price),
+        comparePrice: form.comparePrice ? rwfToUsdCents(form.comparePrice) : null,
         stock: parseInt(form.stock, 10),
         lowStockThreshold: parseInt(form.lowStockThreshold, 10),
         weight: form.weight,
@@ -320,7 +390,14 @@ export default function ProductForm({ initial }) {
         active: form.active,
         images: form.images.split('\n').map((s) => s.trim()).filter(Boolean),
         colors: form.colors.split(',').map((s) => s.trim()).filter(Boolean),
-        storageOptions: form.storageOptions.split(',').map((s) => s.trim()).filter(Boolean),
+        storageOptions: storageItems.filter(s => s.value.trim()).map(s => s.value.trim()),
+        storagePrice: JSON.stringify(
+          Object.fromEntries(
+            storageItems
+              .filter(s => s.value.trim() && Number(s.priceRwf) > 0)
+              .map(s => [s.value.trim(), rwfToUsdCents(s.priceRwf)])
+          )
+        ),
         warrantyOptions: form.warrantyOptions.split(',').map((s) => s.trim()).filter(Boolean),
         serialNumbers: form.serialNumbers.split(',').map((s) => s.trim()).filter(Boolean),
         tags: form.tags.split(',').map((s) => s.trim()).filter(Boolean),
@@ -474,7 +551,17 @@ export default function ProductForm({ initial }) {
             <input value={form.brand} onChange={(e) => set('brand', e.target.value)} className={inp} placeholder="e.g. Apple" />
           </Field>
           <Field label="SKU">
-            <input value={form.sku} onChange={(e) => set('sku', e.target.value)} className={inp} placeholder="e.g. APPLE-IP17PM" />
+            <div className="flex gap-2">
+              <input value={form.sku} onChange={(e) => set('sku', e.target.value)} className={`${inp} flex-1`} placeholder="e.g. APPLE-IP17PM" />
+              <button type="button" onClick={() => {
+                const b = form.brand.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);
+                const n = form.name.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+                const r = Math.floor(Math.random()*900+100);
+                set('sku', `${b}${b&&n?'-':''}${n}-${r}`);
+              }} className="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 whitespace-nowrap">
+                Generate
+              </button>
+            </div>
           </Field>
         </div>
         <div className="mt-4">
@@ -486,11 +573,17 @@ export default function ProductForm({ initial }) {
 
       <Section title="Pricing & Stock">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label="Price (USD) *">
-            <input required type="number" step="0.01" min="0" value={form.price} onChange={(e) => set('price', e.target.value)} className={inp} placeholder="0.00" />
+          <Field label="Price (RWF) *">
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">RWF</span>
+              <input required type="number" step="1" min="0" value={form.price} onChange={(e) => set('price', e.target.value)} className={`${inp} pl-12`} placeholder="0" />
+            </div>
           </Field>
-          <Field label="Compare Price (USD)" help="Shown as strikethrough">
-            <input type="number" step="0.01" min="0" value={form.comparePrice} onChange={(e) => set('comparePrice', e.target.value)} className={inp} placeholder="0.00" />
+          <Field label="Compare Price (RWF)" help="Shown as strikethrough">
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">RWF</span>
+              <input type="number" step="1" min="0" value={form.comparePrice} onChange={(e) => set('comparePrice', e.target.value)} className={`${inp} pl-12`} placeholder="0" />
+            </div>
           </Field>
           <Field label="Stock *">
             <input required type="number" min="0" value={form.stock} onChange={(e) => set('stock', e.target.value)} className={inp} placeholder="0" />
@@ -502,38 +595,149 @@ export default function ProductForm({ initial }) {
       </Section>
 
       <Section title="Images">
-        <div className="mb-4 flex items-center gap-3">
+        {/* Toolbar */}
+        <div className="mb-4 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 disabled:opacity-50"
           >
             <svg className="h-4 w-4 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            {uploading ? 'Uploading...' : 'Upload Image'}
+            {uploading
+              ? uploadProgress.total > 1
+                ? `Uploading ${uploadProgress.done}/${uploadProgress.total}…`
+                : 'Uploading…'
+              : 'Upload Photos'}
           </button>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-          <span className="text-xs text-slate-400">or paste URLs below — uploaded files are added automatically</span>
+          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+
+          {selectedImgIndexes.size > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  const urls = form.images.split('\n').filter(u => u.trim());
+                  const remaining = urls.filter((_, i) => !selectedImgIndexes.has(i));
+                  set('images', remaining.join('\n'));
+                  setSelectedImgIndexes(new Set());
+                }}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50"
+              >
+                🗑 Delete selected ({selectedImgIndexes.size})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedImgIndexes(new Set())}
+                className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline"
+              >
+                Deselect all
+              </button>
+            </>
+          )}
+          <span className="text-xs text-slate-400 ml-auto">Select photos to delete • first photo is the main image</span>
         </div>
 
-        <Field label="Image URLs" help="One URL per line — first image is the main display image.">
+        {/* Image grid with checkboxes */}
+        {(() => {
+          const urls = form.images.split('\n').map(u => u.trim()).filter(Boolean);
+          const allSelected = urls.length > 0 && selectedImgIndexes.size === urls.length;
+          return urls.length > 0 ? (
+            <div className="mb-4">
+              {/* Select all row */}
+              <div className="mb-2 flex items-center gap-2">
+                <label className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-500 dark:text-slate-400 select-none">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={() => {
+                      if (allSelected) setSelectedImgIndexes(new Set());
+                      else setSelectedImgIndexes(new Set(urls.map((_, i) => i)));
+                    }}
+                    className="h-3.5 w-3.5 rounded accent-sky-600"
+                  />
+                  Select all ({urls.length})
+                </label>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {urls.map((url, i) => {
+                  const isSelected = selectedImgIndexes.has(i);
+                  const isDragging = dragIndex === i;
+                  const isDragOver = dragOverIndex === i && dragIndex !== i;
+                  return (
+                    <div
+                      key={i}
+                      draggable
+                      onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; setDragIndex(i); }}
+                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOverIndex(i); }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (dragIndex === null || dragIndex === i) return;
+                        const reordered = [...urls];
+                        const [moved] = reordered.splice(dragIndex, 1);
+                        reordered.splice(i, 0, moved);
+                        set('images', reordered.join('\n'));
+                        setSelectedImgIndexes(new Set());
+                        setDragIndex(null);
+                        setDragOverIndex(null);
+                      }}
+                      onDragEnd={() => { setDragIndex(null); setDragOverIndex(null); }}
+                      className={`relative group cursor-grab active:cursor-grabbing rounded-xl overflow-hidden border-2 transition-all ${
+                        isDragging ? 'opacity-40 scale-95' :
+                        isDragOver ? 'border-sky-500 shadow-lg scale-105' :
+                        isSelected ? 'border-red-400 shadow-md' :
+                        'border-slate-200 dark:border-slate-600 hover:border-sky-300'
+                      }`}
+                      style={{ width: 88, height: 88 }}
+                      onClick={() => {
+                        setSelectedImgIndexes(prev => {
+                          const next = new Set(prev);
+                          if (next.has(i)) next.delete(i); else next.add(i);
+                          return next;
+                        });
+                      }}
+                    >
+                      <img src={url} alt="" className="h-full w-full object-contain bg-white dark:bg-slate-800" onError={(e) => { e.target.style.display='none'; }} />
+                      {/* Checkbox overlay */}
+                      <div className={`absolute top-1 left-1 h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-red-500 border-red-500' : 'bg-white/80 border-slate-300 group-hover:border-sky-400'}`}>
+                        {isSelected && <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                      </div>
+                      {/* First = main badge */}
+                      {i === 0 && <span className="absolute bottom-0 left-0 right-0 bg-sky-600/80 text-white text-[9px] font-bold text-center py-0.5">MAIN</span>}
+                      {/* Quick delete */}
+                      <button
+                        type="button"
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          const remaining = urls.filter((_, j) => j !== i);
+                          set('images', remaining.join('\n'));
+                          setSelectedImgIndexes(prev => {
+                            const next = new Set();
+                            prev.forEach(idx => { if (idx < i) next.add(idx); else if (idx > i) next.add(idx - 1); });
+                            return next;
+                          });
+                        }}
+                        className="absolute top-1 right-1 h-5 w-5 rounded-full bg-red-500/80 hover:bg-red-600 text-white text-[11px] font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >×</button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null;
+        })()}
+
+        <Field label="Image URLs" help="One URL per line — paste additional URLs here">
           <textarea
-            rows={5}
+            rows={3}
             value={form.images}
-            onChange={(e) => set('images', e.target.value)}
+            onChange={(e) => { set('images', e.target.value); setSelectedImgIndexes(new Set()); }}
             className={ta}
             placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
           />
         </Field>
-        {form.images && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {form.images.split('\n').filter((u) => u.trim()).slice(0, 8).map((url, i) => (
-              <img key={i} src={url.trim()} alt="" className="h-16 w-16 rounded-xl object-cover border border-slate-200" onError={(e) => e.target.style.display='none'} />
-            ))}
-          </div>
-        )}
       </Section>
 
       <Section title="Variants & Options">
@@ -618,10 +822,56 @@ export default function ProductForm({ initial }) {
               </div>
             </div>
           )}
-          <Field label="Storage Options" help="Comma-separated. e.g. 128GB, 256GB, 512GB">
-            <input value={form.storageOptions} onChange={(e) => set('storageOptions', e.target.value)} className={inp} placeholder="128GB, 256GB, 1TB" />
-          </Field>
-          <Field label="Warranty Options" help="Comma-separated — AI fills this automatically">
+          {/* Storage Options with per-option pricing */}
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Storage Options & Pricing</label>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">Enter the RWF increment <strong>above</strong> the base product price for every tier — including the first one (e.g. 128GB). Leave 0 for no increment.</p>
+            <div className="space-y-2 mb-3">
+              {storageItems.map((item, i) => (
+                <div key={i} className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 px-3 py-2">
+                  <input
+                    type="checkbox"
+                    checked={item.available}
+                    onChange={e => setStorageItems(prev => prev.map((s, j) => j === i ? {...s, available: e.target.checked} : s))}
+                    className="h-4 w-4 rounded accent-sky-600 flex-shrink-0"
+                    title="In stock"
+                  />
+                  <input
+                    value={item.value}
+                    onChange={e => setStorageItems(prev => prev.map((s, j) => j === i ? {...s, value: e.target.value} : s))}
+                    className="w-24 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-2 py-1 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400"
+                    placeholder="128GB"
+                  />
+                  <div className="relative flex-1">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-slate-400">RWF</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={item.priceRwf}
+                      onChange={e => setStorageItems(prev => prev.map((s, j) => j === i ? {...s, priceRwf: e.target.value} : s))}
+                      className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 pl-10 pr-2 py-1 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400"
+                      placeholder="+increment (RWF)"
+                    />
+                  </div>
+                  <button type="button" onClick={() => setStorageItems(prev => prev.filter((_, j) => j !== i))}
+                    className="text-slate-300 hover:text-red-500 transition-colors flex-shrink-0 text-lg leading-none">×</button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                value={newStorageVal}
+                onChange={e => setNewStorageVal(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (newStorageVal.trim()) { setStorageItems(prev => [...prev, {value: newStorageVal.trim(), priceRwf: '', available: true}]); setNewStorageVal(''); } } }}
+                className={`${inp} flex-1`}
+                placeholder="128GB, 256GB, 1TB…"
+              />
+              <button type="button" onClick={() => { if (newStorageVal.trim()) { setStorageItems(prev => [...prev, {value: newStorageVal.trim(), priceRwf: '', available: true}]); setNewStorageVal(''); } }}
+                className="rounded-xl bg-sky-600 text-white px-4 py-2 text-sm font-semibold hover:bg-sky-700 transition-colors">Add</button>
+            </div>
+          </div>
+          <Field label="Warranty" help="Manual input — e.g. 1 Year, 2 Years">
             <input value={form.warrantyOptions} onChange={(e) => set('warrantyOptions', e.target.value)} className={inp} placeholder="1 Year, 2 Years, 3 Years" />
           </Field>
           <Field label="Serial Numbers" help="Comma-separated">
@@ -701,7 +951,7 @@ export default function ProductForm({ initial }) {
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Deposit Amount (RWF)</label>
-              <input type="number" min="0" value={form.preOrderDepositRwf || ''} onChange={e => setForm({...form, preOrderDepositRwf: e.target.value, preOrderDeposit: Math.round(Number(e.target.value) * 100)})}
+              <input type="number" min="0" value={form.preOrderDepositRwf || ''} onChange={e => setForm({...form, preOrderDepositRwf: e.target.value, preOrderDeposit: Math.round(Number(e.target.value))})}
                 placeholder="0 = free to reserve"
                 className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
             </div>
@@ -712,30 +962,65 @@ export default function ProductForm({ initial }) {
       {/* Bundle Products */}
       <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 space-y-4">
         <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Bundle Products</h3>
-        <p className="text-xs text-slate-500">Add product IDs to bundle together (customers get a discount on bundled items)</p>
-        <div className="flex gap-2">
-          <input type="text" id="bundleInput" placeholder="Product ID : discount% (e.g. 42:15)"
-            className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
-          <button type="button" onClick={() => {
-            const val = document.getElementById('bundleInput').value.trim();
-            if (!val) return;
-            const [pid, disc] = val.split(':');
-            if (!pid) return;
-            const current = (() => { try { return JSON.parse(form.bundledWith || '[]'); } catch { return []; } })();
-            const updated = [...current, { productId: Number(pid), discount: Number(disc) || 10 }];
-            setForm({ ...form, bundledWith: JSON.stringify(updated) });
-            document.getElementById('bundleInput').value = '';
-          }} className="rounded-xl bg-sky-600 text-white px-4 py-2 text-sm font-semibold hover:bg-sky-700 transition-colors">Add</button>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Search and add products to bundle — customers get a discount when buying together</p>
+
+        {/* Search */}
+        <div className="relative">
+          <input
+            type="text"
+            value={bundleSearch}
+            onChange={e => setBundleSearch(e.target.value)}
+            placeholder="Search product name to add to bundle…"
+            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 pr-10"
+          />
+          {bundleSearch && <button type="button" onClick={() => { setBundleSearch(''); setBundleResults([]); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">×</button>}
+          {bundleResults.length > 0 && (
+            <div className="absolute z-20 top-full left-0 right-0 mt-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg overflow-hidden">
+              {bundleResults.map(p => {
+                const bundled = (() => { try { return JSON.parse(form.bundledWith || '[]'); } catch { return []; } })();
+                const alreadyAdded = bundled.some(b => b.productId === p.id);
+                return (
+                  <button key={p.id} type="button" disabled={alreadyAdded}
+                    onClick={() => {
+                      if (alreadyAdded) return;
+                      const current = (() => { try { return JSON.parse(form.bundledWith || '[]'); } catch { return []; } })();
+                      setForm(f => ({ ...f, bundledWith: JSON.stringify([...current, { productId: p.id, productName: p.name, discount: 10 }]) }));
+                      setBundleSearch(''); setBundleResults([]);
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${alreadyAdded ? 'opacity-40 cursor-not-allowed' : ''}`}>
+                    <span className="flex-1 truncate font-medium text-slate-800 dark:text-slate-100">{p.name}</span>
+                    <span className="text-xs text-slate-400">#{p.id}</span>
+                    {alreadyAdded && <span className="text-[10px] text-emerald-600 font-semibold">Added</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
+
+        {/* Bundle list */}
         <div className="flex flex-wrap gap-2">
           {(() => { try { return JSON.parse(form.bundledWith || '[]'); } catch { return []; } })().map((b, i) => (
-            <span key={i} className="flex items-center gap-1.5 rounded-full bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 px-3 py-1 text-xs font-medium">
-              Product #{b.productId} · {b.discount}% off
+            <div key={i} className="flex items-center gap-2 rounded-xl bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 px-3 py-2">
+              <div>
+                <p className="text-xs font-semibold text-sky-800 dark:text-sky-300">{b.productName || `Product #${b.productId}`}</p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <span className="text-[10px] text-sky-600 dark:text-sky-400">Discount:</span>
+                  <input type="number" min="0" max="100" value={b.discount}
+                    onChange={e => {
+                      const current = (() => { try { return JSON.parse(form.bundledWith || '[]'); } catch { return []; } })();
+                      setForm(f => ({ ...f, bundledWith: JSON.stringify(current.map((bb, j) => j === i ? {...bb, discount: Number(e.target.value)} : bb)) }));
+                    }}
+                    className="w-12 rounded border border-sky-200 dark:border-sky-700 bg-white dark:bg-slate-800 px-1 py-0.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-sky-400"
+                  />
+                  <span className="text-[10px] text-sky-600 dark:text-sky-400">%</span>
+                </div>
+              </div>
               <button type="button" onClick={() => {
                 const current = (() => { try { return JSON.parse(form.bundledWith || '[]'); } catch { return []; } })();
-                setForm({ ...form, bundledWith: JSON.stringify(current.filter((_, j) => j !== i)) });
-              }} className="text-sky-500 hover:text-red-500 transition-colors">×</button>
-            </span>
+                setForm(f => ({ ...f, bundledWith: JSON.stringify(current.filter((_, j) => j !== i)) }));
+              }} className="text-slate-300 hover:text-red-500 transition-colors ml-1">×</button>
+            </div>
           ))}
         </div>
       </div>

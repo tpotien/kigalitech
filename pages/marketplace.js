@@ -3,23 +3,33 @@ import Link from 'next/link';
 import Layout from '../components/Layout';
 import { useCurrency } from '../context/CurrencyContext';
 import { useLang } from '../context/LanguageContext';
+import TrendingInTech from '../components/TrendingInTech';
+import prisma from '../lib/prisma';
 
 const CATEGORIES = ['All', 'Phones', 'Laptops', 'Tablets', 'Audio', 'Cameras', 'Wearables', 'TVs', 'Gaming', 'Other'];
 
 const CONDITION_COLORS = {
-  like_new: 'bg-emerald-100 text-emerald-700',
-  good: 'bg-sky-100 text-sky-700',
-  fair: 'bg-amber-100 text-amber-700',
-  poor: 'bg-red-100 text-red-700',
+  like_new: 'bg-emerald-500 text-white',
+  good: 'bg-sky-500 text-white',
+  fair: 'bg-amber-500 text-white',
+  poor: 'bg-red-500 text-white',
 };
 
+const CONDITION_LABELS = {
+  like_new: 'Like New',
+  good: 'Good',
+  fair: 'Fair',
+  poor: 'Poor',
+};
+
+const PAGE_SIZE = 20;
+
 export async function getServerSideProps({ query }) {
-  const { PrismaClient } = require('@prisma/client');
-  const prisma = new PrismaClient();
   try {
     const { category, search } = query;
     const baseWhere = {
       OR: [{ status: 'approved' }, { verified: true }],
+      seller: { sellerStatus: 'active' },
     };
     if (category && category !== 'All') baseWhere.category = category;
     if (search) baseWhere.AND = [{ OR: [
@@ -27,24 +37,38 @@ export async function getServerSideProps({ query }) {
       { description: { contains: search, mode: 'insensitive' } },
     ]}];
 
-    const listings = await prisma.marketplaceListing.findMany({
-      where: baseWhere,
-      include: { seller: { select: { name: true, image: true } } },
-      orderBy: [{ verified: 'desc' }, { createdAt: 'desc' }],
-    });
-    return { props: { listings: JSON.parse(JSON.stringify(listings)), query } };
+    const baseWhereAll = {
+      OR: [{ status: 'approved' }, { verified: true }],
+      seller: { sellerStatus: 'active' },
+    };
+    const [listings, total, topListings] = await Promise.all([
+      prisma.marketplaceListing.findMany({
+        where: baseWhere,
+        include: { seller: { select: { name: true, image: true } } },
+        orderBy: [{ verified: 'desc' }, { createdAt: 'desc' }],
+        take: PAGE_SIZE,
+      }),
+      prisma.marketplaceListing.count({ where: baseWhere }),
+      prisma.marketplaceListing.findMany({
+        where: { ...baseWhereAll, views: { gt: 0 } },
+        include: { seller: { select: { name: true, image: true } } },
+        orderBy: { views: 'desc' },
+        take: 4,
+      }),
+    ]);
+    return { props: { listings: JSON.parse(JSON.stringify(listings)), total, query, topListings: JSON.parse(JSON.stringify(topListings)) } };
   } catch {
-    return { props: { listings: [], query } };
-  } finally {
-    await prisma.$disconnect();
+    return { props: { listings: [], total: 0, query } };
   }
 }
 
-export default function MarketplacePage({ listings, query }) {
+export default function MarketplacePage({ listings: initialListings, total, query, topListings = [] }) {
   const { format } = useCurrency();
   const { t } = useLang();
   const [search, setSearch] = useState(query.search || '');
   const [activeCategory, setActiveCategory] = useState(query.category || 'All');
+  const [allListings, setAllListings] = useState(initialListings);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   function handleSearch(e) {
     e.preventDefault();
@@ -52,6 +76,19 @@ export default function MarketplacePage({ listings, query }) {
     if (search) params.set('search', search);
     if (activeCategory !== 'All') params.set('category', activeCategory);
     window.location.href = `/marketplace?${params}`;
+  }
+
+  async function loadMore() {
+    setLoadingMore(true);
+    try {
+      const params = new URLSearchParams({ skip: String(allListings.length), take: '20' });
+      if (query.category && query.category !== 'All') params.set('category', query.category);
+      if (query.search) params.set('search', query.search);
+      const res = await fetch(`/api/marketplace?${params}`);
+      const data = await res.json();
+      setAllListings(prev => [...prev, ...(data.listings || [])]);
+    } catch {}
+    setLoadingMore(false);
   }
 
   return (
@@ -103,9 +140,53 @@ export default function MarketplacePage({ listings, query }) {
         </div>
       </div>
 
+      {/* Hot & Trending — top viewed listings */}
+      {topListings.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 pt-10 pb-2">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🔥</span>
+              <div>
+                <h2 className="text-lg font-extrabold text-slate-900 dark:text-white leading-tight">Hot &amp; Trending</h2>
+                <p className="text-xs text-slate-400">Most viewed listings right now</p>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {topListings.map((listing, idx) => {
+              let imgs = [];
+              try { imgs = JSON.parse(listing.images || '[]'); } catch {}
+              return (
+                <Link key={listing.id} href={`/marketplace/${listing.id}`} className="no-underline group relative rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                  <div className="absolute top-2 left-2 z-10 flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 backdrop-blur-sm">
+                    <span className="text-[10px] font-bold text-amber-400">#{idx + 1}</span>
+                    <span className="text-[10px] text-white/80">{listing.views} views</span>
+                  </div>
+                  {listing.verified && (
+                    <div className="absolute top-2 right-2 z-10 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold text-white">✓ Verified</div>
+                  )}
+                  <div className="aspect-square bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                    {imgs[0]
+                      ? <img src={imgs[0]} alt={listing.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                      : <div className="flex h-full items-center justify-center text-4xl">📦</div>
+                    }
+                  </div>
+                  <div className="p-3">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-violet-600 mb-0.5">{listing.category}</p>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 line-clamp-1">{listing.title}</p>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white mt-1">RWF {listing.price.toLocaleString()}</p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+          <hr className="mt-8 border-slate-200 dark:border-slate-800" />
+        </section>
+      )}
+
       {/* Listings */}
       <section className="mx-auto max-w-7xl px-4 py-12">
-        {listings.length === 0 ? (
+        {allListings.length === 0 ? (
           <div className="text-center py-20">
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-4xl">📭</div>
             <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">{t('noResults')}</h3>
@@ -115,11 +196,18 @@ export default function MarketplacePage({ listings, query }) {
             </Link>
           </div>
         ) : (
+          <>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{total} listing{total !== 1 ? 's' : ''} available</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {listings.map(listing => {
+            {allListings.map(listing => {
               const images = JSON.parse(listing.images || '[]');
               return (
                 <article key={listing.id} className="group rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden shadow-sm hover:shadow-lg transition-all hover:-translate-y-0.5">
+                  {/* Condition banner */}
+                  <div className={`w-full py-1.5 text-center text-xs font-bold uppercase tracking-wider ${CONDITION_COLORS[listing.condition] || 'bg-slate-400 text-white'}`}>
+                    {CONDITION_LABELS[listing.condition] || listing.condition?.replace('_', ' ') || 'Unknown'}
+                  </div>
+
                   {/* Image */}
                   <div className="relative h-52 w-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                     {images[0]
@@ -129,9 +217,6 @@ export default function MarketplacePage({ listings, query }) {
                     {listing.verified && (
                       <span className="absolute top-3 left-3 rounded-full bg-emerald-500 px-2.5 py-0.5 text-xs font-bold text-white">✓ Verified</span>
                     )}
-                    <span className={`absolute top-3 right-3 rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${CONDITION_COLORS[listing.condition] || 'bg-slate-100 text-slate-700'}`}>
-                      {listing.condition?.replace('_', ' ')}
-                    </span>
                   </div>
 
                   {/* Body */}
@@ -140,37 +225,19 @@ export default function MarketplacePage({ listings, query }) {
                     <h3 className="font-semibold text-slate-900 dark:text-slate-100 leading-snug mb-2">{listing.title}</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mb-3">{listing.description}</p>
 
-                    {/* Price + 3% fee breakdown */}
-                    {(() => {
-                      const sellerPrice = listing.price;
-                      const fee = Math.round(sellerPrice * 0.03);
-                      const total = sellerPrice + fee;
-                      return (
-                        <div className="rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-3 py-2.5 mb-3 space-y-1">
-                          <div className="flex justify-between text-xs text-slate-500">
-                            <span>Seller price</span>
-                            <span>RWF {sellerPrice.toLocaleString()}</span>
-                          </div>
-                          <div className="flex justify-between text-xs text-slate-500">
-                            <span>Service fee (3%)</span>
-                            <span>RWF {fee.toLocaleString()}</span>
-                          </div>
-                          <div className="flex justify-between text-sm font-extrabold text-slate-900 dark:text-white border-t border-slate-200 dark:border-slate-700 pt-1 mt-1">
-                            <span>Total</span>
-                            <span>RWF {total.toLocaleString()}</span>
-                          </div>
-                        </div>
-                      );
-                    })()}
+                    {/* Price */}
+                    <p className="text-lg font-extrabold text-slate-900 dark:text-white mb-3">
+                      RWF {listing.price.toLocaleString()}
+                    </p>
 
                     <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-1.5">
+                      <Link href={`/marketplace/seller/${listing.sellerId}`} className="flex items-center gap-1.5 no-underline hover:underline">
                         {listing.seller?.image
                           ? <img src={listing.seller.image} alt="" className="h-6 w-6 rounded-full object-cover" />
                           : <div className="h-6 w-6 rounded-full bg-violet-100 flex items-center justify-center text-xs font-bold text-violet-700">{(listing.seller?.name || 'U')[0]}</div>
                         }
                         <span className="text-xs text-slate-500">{listing.seller?.name}</span>
-                      </div>
+                      </Link>
                     </div>
 
                     {listing.phone && (() => {
@@ -192,8 +259,21 @@ export default function MarketplacePage({ listings, query }) {
               );
             })}
           </div>
+          {allListings.length < total && (
+            <div className="mt-10 flex justify-center">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="rounded-full border-2 border-violet-600 px-8 py-3 text-sm font-semibold text-violet-600 hover:bg-violet-600 hover:text-white disabled:opacity-50 transition"
+              >
+                {loadingMore ? 'Loading...' : `Load More (${total - allListings.length} remaining)`}
+              </button>
+            </div>
+          )}
+          </>
         )}
       </section>
+      <TrendingInTech />
     </Layout>
   );
 }

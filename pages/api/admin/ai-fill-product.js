@@ -10,6 +10,7 @@ const TEMPLATES = {
     warrantyOptions: ['1 Year', '2 Years', '2 Years AppleCare+'],
     specKeys: ['Display', 'Processor', 'RAM', 'Camera', 'Battery', 'OS', 'Connectivity', 'Weight'],
     weight: '195g',
+    dimensions: '163 × 77 × 8mm',
     tags: ['smartphone', 'mobile', '5G'],
   },
   Laptops: {
@@ -18,6 +19,7 @@ const TEMPLATES = {
     warrantyOptions: ['1 Year', '2 Years', '3 Years'],
     specKeys: ['Processor', 'RAM', 'Storage', 'Display', 'Battery Life', 'OS', 'GPU', 'Weight'],
     weight: '1.4kg',
+    dimensions: '356 × 247 × 17mm',
     tags: ['laptop', 'computer', 'portable'],
   },
   TVs: {
@@ -26,6 +28,7 @@ const TEMPLATES = {
     warrantyOptions: ['1 Year', '2 Years', '3 Years'],
     specKeys: ['Screen Size', 'Resolution', 'Display Type', 'HDR', 'Smart TV', 'HDMI Ports', 'Refresh Rate', 'Audio'],
     weight: '12kg',
+    dimensions: '1232 × 713 × 215mm (with stand)',
     tags: ['tv', 'smart tv', '4K', 'OLED'],
   },
   Audio: {
@@ -34,6 +37,7 @@ const TEMPLATES = {
     warrantyOptions: ['1 Year', '2 Years'],
     specKeys: ['Driver Size', 'Frequency Response', 'Battery Life', 'Connectivity', 'Noise Cancellation', 'Impedance', 'Weight'],
     weight: '250g',
+    dimensions: '195 × 165 × 85mm (folded)',
     tags: ['headphones', 'audio', 'wireless', 'ANC'],
   },
   Wearables: {
@@ -42,6 +46,7 @@ const TEMPLATES = {
     warrantyOptions: ['1 Year', '2 Years'],
     specKeys: ['Display', 'Battery Life', 'Water Resistance', 'Health Sensors', 'Connectivity', 'Compatibility', 'Weight'],
     weight: '38g',
+    dimensions: '44 × 38 × 10mm',
     tags: ['smartwatch', 'wearable', 'fitness', 'health'],
   },
   Gaming: {
@@ -50,6 +55,7 @@ const TEMPLATES = {
     warrantyOptions: ['1 Year', '2 Years'],
     specKeys: ['Processor', 'RAM', 'Storage', 'GPU', 'Display', 'Connectivity', 'Battery'],
     weight: '4kg',
+    dimensions: '390 × 104 × 260mm',
     tags: ['gaming', 'console', 'games'],
   },
   Tablets: {
@@ -58,6 +64,7 @@ const TEMPLATES = {
     warrantyOptions: ['1 Year', '2 Years'],
     specKeys: ['Display', 'Processor', 'RAM', 'Camera', 'Battery', 'OS', 'Connectivity', 'Weight'],
     weight: '460g',
+    dimensions: '247 × 178 × 7mm',
     tags: ['tablet', 'iPad', 'portable'],
   },
   Cameras: {
@@ -66,6 +73,7 @@ const TEMPLATES = {
     warrantyOptions: ['1 Year', '2 Years'],
     specKeys: ['Sensor', 'Megapixels', 'ISO Range', 'Shutter Speed', 'Video', 'Lens Mount', 'Battery Life', 'Weight'],
     weight: '650g',
+    dimensions: '139 × 104 × 75mm',
     tags: ['camera', 'photography', 'DSLR', 'mirrorless'],
   },
   Accessories: {
@@ -74,6 +82,7 @@ const TEMPLATES = {
     warrantyOptions: ['1 Year'],
     specKeys: ['Compatibility', 'Material', 'Dimensions', 'Weight', 'Color Options'],
     weight: '100g',
+    dimensions: '120 × 60 × 15mm',
     tags: ['accessories', 'electronics', 'compatible'],
   },
   'Smart Home': {
@@ -82,32 +91,33 @@ const TEMPLATES = {
     warrantyOptions: ['1 Year', '2 Years'],
     specKeys: ['Connectivity', 'Compatibility', 'Power', 'Voice Assistant', 'App Control', 'Range', 'Setup'],
     weight: '300g',
+    dimensions: '100 × 100 × 30mm',
     tags: ['smart home', 'IoT', 'wifi', 'alexa', 'google home'],
   },
 };
 
-// Known brand → suggest price range (cents) and brand name cleanup
+// Known brand → suggest price range (RWF) and brand name cleanup
 const BRAND_HINTS = {
-  apple: { priceMin: 79900, priceMax: 159900 },
-  samsung: { priceMin: 49900, priceMax: 129900 },
-  sony: { priceMin: 29900, priceMax: 99900 },
-  lg: { priceMin: 29900, priceMax: 89900 },
-  huawei: { priceMin: 29900, priceMax: 89900 },
-  xiaomi: { priceMin: 19900, priceMax: 59900 },
-  oppo: { priceMin: 19900, priceMax: 59900 },
-  dell: { priceMin: 59900, priceMax: 149900 },
-  hp: { priceMin: 49900, priceMax: 129900 },
-  lenovo: { priceMin: 49900, priceMax: 119900 },
-  asus: { priceMin: 49900, priceMax: 129900 },
-  bose: { priceMin: 24900, priceMax: 79900 },
-  jbl: { priceMin: 4900, priceMax: 39900 },
-  anker: { priceMin: 1900, priceMax: 14900 },
-  canon: { priceMin: 49900, priceMax: 199900 },
-  nikon: { priceMin: 49900, priceMax: 199900 },
-  fujifilm: { priceMin: 59900, priceMax: 179900 },
-  google: { priceMin: 29900, priceMax: 99900 },
-  philips: { priceMin: 4900, priceMax: 49900 },
-  amazon: { priceMin: 4900, priceMax: 24900 },
+  apple: { priceMin: 1200000, priceMax: 2400000 },
+  samsung: { priceMin: 750000, priceMax: 1950000 },
+  sony: { priceMin: 450000, priceMax: 1500000 },
+  lg: { priceMin: 450000, priceMax: 1350000 },
+  huawei: { priceMin: 450000, priceMax: 1350000 },
+  xiaomi: { priceMin: 300000, priceMax: 900000 },
+  oppo: { priceMin: 300000, priceMax: 900000 },
+  dell: { priceMin: 900000, priceMax: 2250000 },
+  hp: { priceMin: 750000, priceMax: 1950000 },
+  lenovo: { priceMin: 750000, priceMax: 1800000 },
+  asus: { priceMin: 750000, priceMax: 1950000 },
+  bose: { priceMin: 375000, priceMax: 1200000 },
+  jbl: { priceMin: 75000, priceMax: 600000 },
+  anker: { priceMin: 30000, priceMax: 225000 },
+  canon: { priceMin: 750000, priceMax: 3000000 },
+  nikon: { priceMin: 750000, priceMax: 3000000 },
+  fujifilm: { priceMin: 900000, priceMax: 2700000 },
+  google: { priceMin: 450000, priceMax: 1500000 },
+  philips: { priceMin: 75000, priceMax: 750000 },
+  amazon: { priceMin: 75000, priceMax: 375000 },
 };
 
 function templateFill(name, category) {
@@ -125,8 +135,8 @@ function templateFill(name, category) {
     }
   }
 
-  // Mid-range price suggestion
-  const suggestedPrice = Math.round((priceRange.priceMin + priceRange.priceMax) / 2 / 100) * 100;
+  // Mid-range price suggestion (in RWF, rounded to nearest 1000)
+  const suggestedPrice = Math.round((priceRange.priceMin + priceRange.priceMax) / 2 / 1000) * 1000;
 
   // Build spec values based on category
   const specMap = {
@@ -251,6 +261,7 @@ function templateFill(name, category) {
     warrantyOptions: tpl.warrantyOptions,
     specs,
     weight: tpl.weight,
+    dimensions: tpl.dimensions || '',
     suggestedPrice,
     tags: [...tpl.tags, name.toLowerCase().split(' ').filter(w => w.length > 2)].flat(),
   };
@@ -281,16 +292,48 @@ Return ONLY valid JSON — no markdown, no explanation, no code fences:
   "warrantyOptions": ["1 Year", "2 Years"],
   "specs": { "Key1": "Value1", "Key2": "Value2" },
   "weight": "195g",
-  "suggestedPrice": 99900,
+  "dimensions": "163 × 77 × 8mm",
+  "suggestedPrice": 450000,
   "tags": ["tag1", "tag2", "tag3"]
 }
 Rules:
-- suggestedPrice is in USD cents (e.g. $299 = 29900). Price for Rwanda market.
+- suggestedPrice is in RWF (Rwandan Francs). Price for Rwanda market (e.g. 450000 = RWF 450,000).
+- dimensions should use × symbol, e.g. "163 × 77 × 8mm" for phones or "356 × 247 × 17mm" for laptops.
 - Include 6-8 real, accurate specs for this exact product model
 - Use real spec values if you know them, otherwise use realistic estimates
 - tags should be lowercase searchable keywords`;
 
-  // ── Try Groq first (free, fast) ───────────────────────────────────────────
+  // ── Try Gemini first (best product knowledge) ────────────────────────────
+  const geminiKey = process.env.GOOGLE_AI_API_KEY;
+  if (geminiKey) {
+    try {
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            tools: [{ googleSearch: {} }],
+            generationConfig: { temperature: 0.2, maxOutputTokens: 1024 },
+          }),
+        }
+      );
+      if (geminiRes.ok) {
+        const geminiData = await geminiRes.json();
+        const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) {
+          const data = JSON.parse(match[0]);
+          return res.json({ ...data, _source: 'gemini-2.0' });
+        }
+      }
+    } catch (err) {
+      console.warn('[ai-fill] Gemini failed, trying Groq:', err.message);
+    }
+  }
+
+  // ── Fallback: Groq ────────────────────────────────────────────────────────
   const groqKey = process.env.GROQ_API_KEY;
   if (groqKey) {
     try {

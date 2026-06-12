@@ -9,9 +9,10 @@ import { useCart } from '../context/CartContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useLang } from '../context/LanguageContext';
 
-const BUSINESS_PHONE = '0786276555';
-const BUSINESS_PHONE_DISPLAY = '+250 786 276 555';
-const WHATSAPP_NUMBER = '250786276555';
+// Defaults — overridden at runtime from SiteConfig
+const DEFAULT_PHONE = '0786276555';
+const DEFAULT_PHONE_DISPLAY = '+250 786 276 555';
+const DEFAULT_WHATSAPP = '250786276555';
 
 const PAYMENT_METHODS = [
   { id: 'momo',        label: 'Mobile Money (MTN / Airtel)', icon: '🇷🇼', desc: 'Send to our MoMo number — fast & easy', popular: true },
@@ -30,6 +31,15 @@ export default function Checkout() {
   const [error, setError] = useState('');
   const [showPayModal, setShowPayModal] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(null); // { orderId }
+  const [loyaltyPts, setLoyaltyPts] = useState(null);
+  const [freeDeliveries, setFreeDeliveries] = useState(null); // { used, remaining, total }
+
+  useEffect(() => {
+    if (session) {
+      fetch('/api/loyalty/balance').then(r => r.json()).then(d => setLoyaltyPts(d?.points ?? 0)).catch(() => {});
+      fetch('/api/account/free-deliveries').then(r => r.json()).then(setFreeDeliveries).catch(() => {});
+    }
+  }, [session]);
 
   const [form, setForm] = useState({
     name: '',
@@ -49,13 +59,57 @@ export default function Checkout() {
         name: f.name || session.user.name || '',
         email: f.email || session.user.email || '',
       }));
+      fetch('/api/account/addresses')
+        .then(r => r.json())
+        .then(data => { if (Array.isArray(data)) setSavedAddresses(data); })
+        .catch(() => {});
     }
   }, [session]);
+
+  useEffect(() => {
+    if (!items.length) return;
+    const cartIds = items.map(i => i.id);
+    const categories = [...new Set(items.map(i => i.category).filter(Boolean))];
+    const cat = categories[0] || '';
+    fetch(`/api/products?${cat ? `category=${encodeURIComponent(cat)}&` : ''}limit=8`)
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setUpsellProducts(data.filter(p => !cartIds.includes(p.id) && p.stock > 0).slice(0, 4));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.replace('/signin?callbackUrl=/checkout');
   }, [status]);
 
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [whatsappUpdates, setWhatsappUpdates] = useState(true);
+  const [addressSaved, setAddressSaved] = useState(false);
+  const [addressSaveLoading, setAddressSaveLoading] = useState(false);
+  const [BUSINESS_PHONE, setBusinessPhone] = useState(DEFAULT_PHONE);
+  const [BUSINESS_PHONE_DISPLAY, setBusinessPhoneDisplay] = useState(DEFAULT_PHONE_DISPLAY);
+  const [WHATSAPP_NUMBER, setWhatsappNumber] = useState(DEFAULT_WHATSAPP);
+
+  useEffect(() => {
+    fetch('/api/admin/site-config')
+      .then(r => r.json())
+      .then(cfg => {
+        if (cfg.phone) {
+          const raw = cfg.phone.replace(/\s/g, '');
+          setBusinessPhoneDisplay(cfg.phone);
+          setWhatsappNumber(raw.startsWith('+') ? raw.slice(1) : raw);
+          if (raw.startsWith('+250')) setBusinessPhone('0' + raw.slice(4));
+          else if (raw.startsWith('250')) setBusinessPhone('0' + raw.slice(3));
+          else setBusinessPhone(raw);
+        }
+        if (cfg.whatsappNumber) setWhatsappNumber(cfg.whatsappNumber);
+      })
+      .catch(() => {});
+  }, []);
+  const [upsellProducts, setUpsellProducts] = useState([]);
   const [addons, setAddons] = useState([]);
   const [selectedAddons, setSelectedAddons] = useState({});
   const [deliveryZones, setDeliveryZones] = useState([]);
@@ -129,11 +183,12 @@ export default function Checkout() {
 
   const addonTotal = addons.filter(a => selectedAddons[a.id]).reduce((s, a) => s + a.price, 0);
   const selectedZone = deliveryZones.find(z => z.id === selectedZoneId) || null;
-  const shipping = selectedZone ? selectedZone.fee : (subtotal + addonTotal) >= 9900 ? 0 : 999;
-  const tvInstallFee = tvInstallation ? 5000 : 0;
+  const freeDeliveryEligible = !freeDeliveries || freeDeliveries.remaining > 0;
+  const shipping = selectedZone ? selectedZone.fee : (freeDeliveryEligible ? 0 : (subtotal + addonTotal) >= 146000 ? 0 : 14730);
+  const tvInstallFee = 0; // negotiable — priced separately after contact
   const couponDiscount = couponApplied?.discount || 0;
-  const creditApplied = useStoreCredit ? Math.min(storeCredit, subtotal + addonTotal + shipping + tvInstallFee - couponDiscount) : 0;
-  const total = Math.max(0, subtotal + addonTotal + shipping + tvInstallFee - couponDiscount - creditApplied);
+  const creditApplied = useStoreCredit ? Math.min(storeCredit, subtotal + addonTotal + shipping - couponDiscount) : 0;
+  const total = Math.max(0, subtotal + addonTotal + shipping - couponDiscount - creditApplied);
   const isMomo = form.paymentMethod === 'momo';
   const isInstallment = form.paymentMethod === 'installment';
 
@@ -161,8 +216,25 @@ export default function Checkout() {
       deliveryDate: deliverySlot.date || '',
       couponCode: couponApplied?.code || undefined,
       useStoreCredit: creditApplied > 0,
+      whatsappUpdates,
       ...overrides,
     };
+  }
+
+  const showSaveAddressPrompt = session?.user && !savedAddresses.length && form.name && form.phone && form.address && !form.useMpost;
+
+  async function saveCurrentAddress() {
+    setAddressSaveLoading(true);
+    try {
+      const res = await fetch('/api/account/addresses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label: 'Home', name: form.name, phone: form.phone, address: form.address, isDefault: true }),
+      });
+      if (res.ok) { setAddressSaved(true); setSavedAddresses([{ name: form.name, phone: form.phone, address: form.address }]); }
+    } catch { /* silent */ } finally {
+      setAddressSaveLoading(false);
+    }
   }
 
   async function placeOrder(payload) {
@@ -277,6 +349,25 @@ export default function Checkout() {
             {/* ── Left ── */}
             <div className="space-y-6">
 
+              {/* Saved addresses */}
+              {savedAddresses.length > 0 && (
+                <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-6">
+                  <h2 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">Saved Addresses</h2>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {savedAddresses.map(addr => (
+                      <button key={addr.id} type="button"
+                        onClick={() => setForm(f => ({ ...f, name: addr.name, phone: addr.phone, address: addr.address }))}
+                        className="text-left rounded-xl border border-slate-200 dark:border-slate-700 p-3 hover:border-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-all">
+                        <p className="text-xs font-bold text-sky-600 uppercase mb-0.5">{addr.label}</p>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{addr.name}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{addr.phone}</p>
+                        <p className="text-xs text-slate-400 truncate mt-0.5">{addr.address}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Contact */}
               <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-6">
                 <h2 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">{t('contactInfo')}</h2>
@@ -343,7 +434,12 @@ export default function Checkout() {
                       >
                         <div className="flex items-center gap-3">
                           <input type="radio" name="deliveryZone" value={zone.id} checked={selectedZoneId === zone.id} onChange={() => setSelectedZoneId(zone.id)} className="accent-sky-600" />
-                          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{zone.name}</span>
+                          <div>
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{zone.name}</span>
+                            {zone.estimatedDays && (
+                              <p className="text-xs text-slate-400 mt-0.5">Est. {zone.estimatedDays === 1 ? 'same day' : `${zone.estimatedDays} days`}</p>
+                            )}
+                          </div>
                         </div>
                         <span className={`text-sm font-semibold ${zone.fee === 0 ? 'text-emerald-600' : 'text-slate-700 dark:text-slate-300'}`}>
                           {zone.fee === 0 ? 'Free' : `RWF ${zone.fee.toLocaleString()}`}
@@ -365,7 +461,7 @@ export default function Checkout() {
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input type="checkbox" checked={tvInstallation} onChange={e => setTvInstallation(e.target.checked)} className="accent-amber-600" />
                         <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                          {t('addInstallation')} — <span className="text-amber-700 dark:text-amber-400 font-semibold">{format(tvInstallFee)}</span>
+                          {t('addInstallation')} — <span className="text-amber-700 dark:text-amber-400 font-semibold">Negotiable</span>
                         </span>
                       </label>
                       {tvInstallation && (
@@ -474,6 +570,14 @@ export default function Checkout() {
               <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-6">
                 <h2 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">{t('notes')}</h2>
                 <textarea rows={3} value={form.notes} onChange={e => set('notes', e.target.value)} className={`${inp} resize-none`} placeholder="Special instructions, preferred delivery time..." />
+                <label className="mt-4 flex items-center gap-3 cursor-pointer select-none">
+                  <input type="checkbox" checked={whatsappUpdates} onChange={e => setWhatsappUpdates(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-400" />
+                  <span className="text-sm text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <svg viewBox="0 0 32 32" className="h-4 w-4 fill-[#25D366] flex-shrink-0"><path d="M16.004 2C8.276 2 2 8.268 2 15.986c0 2.458.64 4.866 1.856 6.98L2 30l7.236-1.822A14.022 14.022 0 0016.004 30C23.724 30 30 23.732 30 16.014 30 8.268 23.724 2 16.004 2zm7.414 19.878c-.316.886-1.564 1.622-2.56 1.836-.68.144-1.568.258-4.552-1.004C12.624 21.162 9.98 17.6 9.778 17.338c-.198-.26-1.664-2.21-1.664-4.222 0-2.012 1.048-2.992 1.42-3.402.37-.412.808-.514 1.078-.514.27 0 .542.002.78.014.248.012.584-.096.914.696l1.31 3.184c.13.314.216.682.04 1.098-.174.414-.26.67-.522.99-.258.32-.546.716-.778.962-.258.272-.526.566-.228 1.11.3.544 1.33 2.192 2.858 3.55 1.964 1.75 3.62 2.29 4.13 2.548.512.258.81.216 1.108-.13.298-.344 1.276-1.492 1.616-2.006.34-.512.68-.43 1.146-.258.466.174 2.974 1.4 3.484 1.656.51.258.85.386.974.6.126.214.126 1.104-.19 1.99z"/></svg>
+                    Send me WhatsApp updates on my order status
+                  </span>
+                </label>
               </div>
             </div>
 
@@ -483,6 +587,11 @@ export default function Checkout() {
                 <div className="border-b border-slate-100 dark:border-slate-800 px-5 py-4">
                   <h2 className="font-semibold text-slate-900 dark:text-slate-100">{t('orderSummary')}</h2>
                 </div>
+                {items.some(i => i.isPreOrder) && (
+                  <div className="mx-5 mt-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-2.5 text-xs text-amber-800 dark:text-amber-300">
+                    🔔 <strong>Pre-order items</strong> — you are paying the deposit only. Full balance is due when the product ships.
+                  </div>
+                )}
                 <div className="divide-y divide-slate-50 dark:divide-slate-800 max-h-72 overflow-y-auto">
                   {items.map(item => (
                     <div key={item.key} className="flex gap-3 px-5 py-3">
@@ -552,9 +661,22 @@ export default function Checkout() {
                     <span>{t('shipping')}{selectedZone ? ` — ${selectedZone.name}` : ''}</span>
                     <span>{shipping === 0 ? <span className="text-emerald-600">Free</span> : format(shipping)}</span>
                   </div>
-                  {tvInstallFee > 0 && (
+                  {!selectedZone && freeDeliveries && (
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                      {freeDeliveries.remaining > 0
+                        ? `Free delivery order ${freeDeliveries.used + 1} of ${freeDeliveries.total}`
+                        : `${freeDeliveries.total} free deliveries used — standard shipping applies`}
+                    </p>
+                  )}
+                  {selectedZone?.estimatedDays && (
+                    <div className="flex items-center gap-1.5 rounded-lg bg-sky-50 dark:bg-sky-900/20 px-3 py-2 text-xs text-sky-700 dark:text-sky-400">
+                      <span>📅</span>
+                      <span>Expected delivery: <strong>{selectedZone.estimatedDays === 1 ? 'Today / Tomorrow' : `${selectedZone.estimatedDays} business days`}</strong></span>
+                    </div>
+                  )}
+                  {tvInstallation && (
                     <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400">
-                      <span>TV Installation</span><span>{format(tvInstallFee)}</span>
+                      <span>TV Installation</span><span className="text-amber-600 font-semibold">Negotiable</span>
                     </div>
                   )}
                   {couponDiscount > 0 && (
@@ -570,6 +692,15 @@ export default function Checkout() {
                   <div className="flex justify-between text-base font-extrabold text-slate-900 dark:text-slate-100 pt-2 border-t border-slate-100 dark:border-slate-800">
                     <span>{t('total')}</span><span>{format(total)}</span>
                   </div>
+                  {session && loyaltyPts !== null && (
+                    <div className={`mt-3 rounded-xl px-3 py-2.5 text-xs flex items-center gap-2 ${loyaltyPts >= 100 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-400'}`}>
+                      <span className="text-base">⭐</span>
+                      {loyaltyPts >= 100
+                        ? <span><strong>{loyaltyPts} pts</strong> available — redeem for <strong>RWF {Math.floor(loyaltyPts / 100) * 1340 > 0 ? (Math.floor(loyaltyPts / 100) * 1340).toLocaleString() : '1,340'}</strong> off at checkout</span>
+                        : <span>You have <strong>{loyaltyPts} pts</strong> — <strong>{100 - loyaltyPts} more</strong> to unlock your first reward</span>
+                      }
+                    </div>
+                  )}
                 </div>
 
                 <div className="px-5 pb-5">
@@ -618,6 +749,25 @@ export default function Checkout() {
                   <svg viewBox="0 0 32 32" className="h-5 w-5 fill-white flex-shrink-0"><path d="M16.004 2C8.276 2 2 8.268 2 15.986c0 2.458.64 4.866 1.856 6.98L2 30l7.236-1.822A14.022 14.022 0 0016.004 30C23.724 30 30 23.732 30 16.014 30 8.268 23.724 2 16.004 2zm7.414 19.878c-.316.886-1.564 1.622-2.56 1.836-.68.144-1.568.258-4.552-1.004C12.624 21.162 9.98 17.6 9.778 17.338c-.198-.26-1.664-2.21-1.664-4.222 0-2.012 1.048-2.992 1.42-3.402.37-.412.808-.514 1.078-.514.27 0 .542.002.78.014.248.012.584-.096.914.696l1.31 3.184c.13.314.216.682.04 1.098-.174.414-.26.67-.522.99-.258.32-.546.716-.778.962-.258.272-.526.566-.228 1.11.3.544 1.33 2.192 2.858 3.55 1.964 1.75 3.62 2.29 4.13 2.548.512.258.81.216 1.108-.13.298-.344 1.276-1.492 1.616-2.006.34-.512.68-.43 1.146-.258.466.174 2.974 1.4 3.484 1.656.51.258.85.386.974.6.126.214.126 1.104-.19 1.99z"/></svg>
                   Send Payment Proof on WhatsApp
                 </a>
+                {showSaveAddressPrompt && !addressSaved && (
+                  <div className="my-4 rounded-2xl bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 px-4 py-3 text-left">
+                    <p className="text-sm font-semibold text-sky-800 dark:text-sky-300 mb-1">Save your address for next time?</p>
+                    <p className="text-xs text-sky-600 dark:text-sky-400 mb-3">{form.address}</p>
+                    <div className="flex gap-2">
+                      <button onClick={saveCurrentAddress} disabled={addressSaveLoading}
+                        className="flex-1 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-60 text-white text-xs font-bold py-2 transition">
+                        {addressSaveLoading ? 'Saving…' : 'Save Address'}
+                      </button>
+                      <button onClick={() => setAddressSaved(true)}
+                        className="rounded-xl border border-sky-200 dark:border-sky-700 text-xs text-sky-600 dark:text-sky-400 px-3 py-2 hover:bg-sky-100 dark:hover:bg-sky-900/30 transition">
+                        No thanks
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {addressSaved && showSaveAddressPrompt && (
+                  <p className="my-3 text-center text-xs text-emerald-600 dark:text-emerald-400 font-semibold">✓ Address saved!</p>
+                )}
                 <button onClick={handleModalClose} className="w-full rounded-full border border-slate-200 dark:border-slate-700 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
                   View My Order
                 </button>
@@ -685,6 +835,15 @@ export default function Checkout() {
                     </div>
                   </div>
 
+                  {/* USSD Dialer shortcut */}
+                  <a
+                    href={`tel:*182*1*1*${BUSINESS_PHONE}*${Math.round(total)}%23`}
+                    className="flex items-center justify-center gap-2 rounded-2xl bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 py-3 text-sm font-semibold text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/40 transition"
+                  >
+                    <span className="text-lg">📞</span>
+                    Dial to pay: *182*1*1*{BUSINESS_PHONE}*{Math.round(total)}#
+                  </a>
+
                   {/* WhatsApp proof option */}
                   <a
                     href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi KigaliTech! I'm about to pay ${format(total)} for my order. My name is ${form.name}, phone: ${form.phone}.`)}`}
@@ -714,6 +873,33 @@ export default function Checkout() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Upsell: You might also like */}
+      {upsellProducts.length > 0 && (
+        <div className="mx-auto max-w-6xl px-4 pb-12 sm:px-6 lg:px-8">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">You might also like</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {upsellProducts.map(p => {
+              const imgs = (() => { try { return JSON.parse(p.images || '[]'); } catch { return []; } })();
+              const priceRWF = p.price;
+              return (
+                <a key={p.id} href={`/products/${p.id}`} target="_blank" rel="noopener noreferrer"
+                  className="group rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition overflow-hidden flex flex-col no-underline">
+                  {imgs[0] && (
+                    <div className="h-32 bg-slate-50 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
+                      <img src={imgs[0]} alt={p.name} className="h-full w-full object-contain group-hover:scale-105 transition-transform duration-300" />
+                    </div>
+                  )}
+                  <div className="p-3 flex-1 flex flex-col gap-1">
+                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 line-clamp-2 leading-snug">{p.name}</p>
+                    <p className="text-xs font-bold text-sky-600 mt-auto">RWF {priceRWF.toLocaleString()}</p>
+                  </div>
+                </a>
+              );
+            })}
           </div>
         </div>
       )}

@@ -6,7 +6,7 @@ const NAMES = { RWF: 'Rwandan Franc', USD: 'US Dollar', EUR: 'Euro', GBP: 'Briti
 
 const CurrencyContext = createContext({
   currency: 'RWF', setCurrency: () => {},
-  format: (cents) => `RWF ${Math.round((cents / 100) * 1475).toLocaleString()}`,
+  format: (rwf) => `RWF ${Math.round(rwf).toLocaleString()}`,
   symbol: 'RWF ',
 });
 
@@ -38,12 +38,12 @@ export function CurrencyProvider({ children }) {
     localStorage.setItem('currency', c);
   }
 
-  function format(cents) {
+  function format(rwf) {
     const symbol = SYMBOLS[currency] || 'RWF ';
     const rate = rates[currency] || rates.RWF;
-    const value = (cents / 100) * rate;
+    const value = (rwf / 1475) * rate;
     if (currency === 'RWF' || currency === 'UGX' || currency === 'KES') {
-      return `${symbol}${Math.round(value).toLocaleString()}`;
+      return `${symbol}${Math.round(rwf).toLocaleString()}`;
     }
     return `${symbol}${value.toFixed(2)}`;
   }

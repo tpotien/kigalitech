@@ -179,7 +179,7 @@ export default function SiteConfig() {
                 <option value="">— Auto (first matching product) —</option>
                 {products.map(p => (
                   <option key={p.id} value={String(p.id)}>
-                    {p.name} — RWF {Math.round((p.price / 100) * 1475).toLocaleString()}
+                    {p.name} — RWF {Math.round(p.price).toLocaleString()}
                   </option>
                 ))}
               </select>

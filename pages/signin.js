@@ -63,6 +63,8 @@ export default function SignIn() {
     });
   }, []);
 
+  const [showSetPassword, setShowSetPassword] = useState(false);
+
   // Auto-login after magic link click
   useEffect(() => {
     if (magic === 'ok' && queryEmail && otp) {
@@ -72,8 +74,8 @@ export default function SignIn() {
           setError('Magic link failed — it may have expired. Please request a new one.');
           setLoading('');
         } else {
-          // Explicit redirect; do not rely on session effect timing
-          router.replace(callbackUrl || '/');
+          setShowSetPassword(true);
+          setLoading('');
         }
       });
     }
@@ -216,6 +218,30 @@ export default function SignIn() {
     return { score, label: 'Strong', color: 'bg-emerald-500' };
   }
   const strength = mode === 'register' ? passwordStrength(form.password) : null;
+
+  if (showSetPassword) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-sky-900 flex items-center justify-center px-4">
+        <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 shadow-2xl p-8 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-3xl">✅</div>
+          <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-2">Signed in!</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+            Would you like to set a password so you can sign in faster next time without a magic link?
+          </p>
+          <div className="space-y-3">
+            <button onClick={() => router.push('/set-password')}
+              className="w-full rounded-full bg-sky-600 py-3 text-sm font-semibold text-white hover:bg-sky-700 transition">
+              Set a Password
+            </button>
+            <button onClick={() => router.replace(callbackUrl || '/')}
+              className="w-full rounded-full border border-slate-200 dark:border-slate-700 py-3 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+              Skip for now
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-sky-900 flex items-center justify-center px-4 py-10">
