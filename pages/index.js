@@ -23,9 +23,7 @@ function parse(val) { try { return typeof val === 'string' ? JSON.parse(val) : v
 function trimImages(products) {
   return products.map(p => {
     let firstImg = '';
-    try { firstImg = JSON.parse(p.images)?.[0] || ''; } catch {}
-    // Strip base64 data URIs — too large to embed in static HTML (~130 KB each)
-    if (firstImg.startsWith('data:')) firstImg = '';
+    try { firstImg = (JSON.parse(p.images) || []).find(img => img && img.length > 5 && !img.startsWith('data:')) || ''; } catch {}
     return { ...p, images: JSON.stringify([firstImg]) };
   });
 }
@@ -62,7 +60,7 @@ export async function getStaticProps() {
       orderBy: { createdAt: 'desc' },
       take: 6,
       select: {
-        id: true, rating: true, comment: true, createdAt: true,
+        id: true, rating: true, title: true, body: true, createdAt: true,
         user: { select: { name: true } },
         product: { select: { name: true } },
       },
@@ -258,7 +256,7 @@ export default function Home({ products, siteConfig = {}, reviews = [] }) {
             {(reviews.length > 0 ? reviews : FALLBACK_REVIEWS).slice(0, 6).map((r, i) => {
               const name = r.name || r.user?.name || 'Customer';
               const stars = r.stars || r.rating || 5;
-              const text = r.text || r.comment || '';
+              const text = r.text || r.body || r.comment || '';
               const product = r.product || (r.product?.name) || '';
               return (
                 <div key={r.id || r.name || i} className="relative rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 p-3.5 sm:p-6 shadow-sm flex flex-col">
