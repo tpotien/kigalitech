@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
+import ShareButton from '../../components/ShareButton';
 import prisma from '../../lib/prisma';
 
 const CONDITION_LABEL = { like_new: 'Like New', good: 'Good', fair: 'Fair', poor: 'Poor' };
@@ -234,7 +235,12 @@ export default function ListingDetail({ listing }) {
             {/* Price card */}
             <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5">
               <p className="text-xs text-slate-400 uppercase tracking-widest mb-2">Price</p>
-              <p className="text-3xl font-extrabold text-slate-900 dark:text-white">RWF {sellerPrice.toLocaleString()}</p>
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-3xl font-extrabold text-slate-900 dark:text-white">RWF {sellerPrice.toLocaleString()}</p>
+                {listing.negotiable && (
+                  <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-3 py-1 text-xs font-bold uppercase tracking-wide">Negotiable</span>
+                )}
+              </div>
             </div>
 
             {/* Seller */}
@@ -270,6 +276,12 @@ export default function ListingDetail({ listing }) {
                 No contact info provided
               </div>
             )}
+
+            <ShareButton
+              title={`${listing.title} — RWF ${sellerPrice.toLocaleString()} | KigaliTech`}
+              url={`https://kigalitechservices.com/marketplace/${listing.id}`}
+              className="justify-center"
+            />
 
             <Link href="/marketplace" className="flex w-full items-center justify-center rounded-full border border-slate-200 dark:border-slate-700 py-3 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 no-underline transition">
               ← Back to Marketplace

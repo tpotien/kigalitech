@@ -226,9 +226,14 @@ export default function MarketplacePage({ listings: initialListings, total, quer
                     <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mb-3">{listing.description}</p>
 
                     {/* Price */}
-                    <p className="text-lg font-extrabold text-slate-900 dark:text-white mb-3">
-                      RWF {listing.price.toLocaleString()}
-                    </p>
+                    <div className="flex items-center gap-2 mb-3">
+                      <p className="text-lg font-extrabold text-slate-900 dark:text-white">
+                        RWF {listing.price.toLocaleString()}
+                      </p>
+                      {listing.negotiable && (
+                        <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">Negotiable</span>
+                      )}
+                    </div>
 
                     <div className="flex items-center justify-between mb-3">
                       <Link href={`/marketplace/seller/${listing.sellerId}`} className="flex items-center gap-1.5 no-underline hover:underline">

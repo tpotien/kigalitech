@@ -10,6 +10,8 @@ const STATUS_STYLES = {
   pending:  'bg-amber-100 text-amber-700',
   approved: 'bg-emerald-100 text-emerald-700',
   rejected: 'bg-red-100 text-red-600',
+  sold:     'bg-slate-200 text-slate-600',
+  expired:  'bg-slate-100 text-slate-500',
 };
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://kigalitechservices.com';
@@ -20,6 +22,9 @@ export default function MyListings() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(null);
+  const [markingSold, setMarkingSold] = useState(null);
+  const [payingSubscription, setPayingSubscription] = useState(false);
+  const [subPayLoading, setSubPayLoading] = useState(false);
   const [bio, setBio] = useState('');
   const [bioSaving, setBioSaving] = useState(false);
   const [bioSaved, setBioSaved] = useState(false);
@@ -78,6 +83,31 @@ export default function MyListings() {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   }
 
+  async function markAsSold(listingId) {
+    if (!confirm('Mark this listing as sold? It will be removed from the marketplace.')) return;
+    setMarkingSold(listingId);
+    try {
+      const res = await fetch('/api/marketplace/my-listings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: listingId, action: 'mark_sold' }),
+      });
+      if (res.ok) setListings(prev => prev.map(l => l.id === listingId ? { ...l, status: 'sold' } : l));
+    } catch {}
+    setMarkingSold(null);
+  }
+
+  async function paySubscription() {
+    setSubPayLoading(true);
+    try {
+      const res = await fetch('/api/marketplace/pay-subscription', { method: 'POST' });
+      const data = await res.json();
+      if (data.paymentLink) window.location.href = data.paymentLink;
+      else alert(data.error || 'Could not initiate payment');
+    } catch {}
+    setSubPayLoading(false);
+  }
+
   if (loading) return (
     <Layout>
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -114,14 +144,22 @@ export default function MyListings() {
             </p>
           </div>
         )}
-        {sellerStatus && sellerStatus.sellerStatus === 'inactive' && (
+        {sellerStatus && (sellerStatus.sellerStatus === 'inactive' || (sellerStatus.sellerStatus === 'active' && sellerStatus.graceExpired && !sellerStatus.subscriptionActive)) && (
           <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 px-5 py-4">
-            <p className="font-bold text-amber-700 dark:text-amber-400 text-sm flex items-center gap-2">
-              <span>⚠️</span> Your seller account is inactive
-            </p>
-            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-              Your 5-month grace period has ended. Pay the monthly subscription (RWF 10,000) via MoMo to <strong>0786276555</strong> to continue listing.
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-bold text-amber-700 dark:text-amber-400 text-sm flex items-center gap-2">
+                  <span>⚠️</span> Subscription required
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                  Your 5-month grace period has ended. Pay <strong>RWF 10,000/month</strong> to keep listing.
+                </p>
+              </div>
+              <button onClick={paySubscription} disabled={subPayLoading}
+                className="flex-shrink-0 rounded-full bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 disabled:opacity-60 transition">
+                {subPayLoading ? 'Loading...' : 'Pay Now'}
+              </button>
+            </div>
           </div>
         )}
         {sellerStatus && sellerStatus.sellerStatus === 'active' && sellerStatus.graceExpired && sellerStatus.subscriptionActive && sellerStatus.sellerSubscriptionExp && (
@@ -252,17 +290,26 @@ export default function MyListings() {
                     </div>
                   </div>
 
-                  {/* Share actions (only for approved listings) */}
-                  {listing.status === 'approved' && (
-                    <div className="border-t border-slate-50 dark:border-slate-800 px-4 py-3 flex gap-2">
-                      <button onClick={() => copyToClipboard(shareLink(listing.id), listing.id)}
-                        className="rounded-full border border-slate-200 dark:border-slate-700 px-4 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-                        {copied === listing.id ? '✓ Copied!' : '⧉ Copy Link'}
-                      </button>
-                      <button onClick={() => shareWhatsApp(`Check out this listing on KigaliTech! 📱\n${listing.title} — RWF ${sellerEarns.toLocaleString()}\n${shareLink(listing.id)}`)}
-                        className="rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-4 py-1.5 text-xs font-semibold hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition">
-                        Share on WhatsApp
-                      </button>
+                  {/* Actions row */}
+                  {(listing.status === 'approved' || listing.status === 'expired') && (
+                    <div className="border-t border-slate-50 dark:border-slate-800 px-4 py-3 flex flex-wrap gap-2">
+                      {listing.status === 'approved' && (<>
+                        <button onClick={() => copyToClipboard(shareLink(listing.id), listing.id)}
+                          className="rounded-full border border-slate-200 dark:border-slate-700 px-4 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                          {copied === listing.id ? '✓ Copied!' : '⧉ Copy Link'}
+                        </button>
+                        <button onClick={() => shareWhatsApp(`Check out this listing on KigaliTech! 📱\n${listing.title} — RWF ${sellerEarns.toLocaleString()}\n${shareLink(listing.id)}`)}
+                          className="rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-4 py-1.5 text-xs font-semibold hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition">
+                          WhatsApp
+                        </button>
+                        <button onClick={() => markAsSold(listing.id)} disabled={markingSold === listing.id}
+                          className="ml-auto rounded-full bg-slate-800 dark:bg-slate-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-900 disabled:opacity-60 transition">
+                          {markingSold === listing.id ? 'Marking...' : '✓ Mark as Sold'}
+                        </button>
+                      </>)}
+                      {listing.status === 'expired' && (
+                        <p className="text-xs text-slate-400 italic">This listing expired after 60 days. <a href="/marketplace/sell" className="text-violet-600 hover:underline font-semibold">Relist it →</a></p>
+                      )}
                     </div>
                   )}
                 </div>

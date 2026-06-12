@@ -62,7 +62,7 @@ export default async function handler(req, res) {
       }
     }
 
-    const { title, description, price, category, condition, images, phone, location } = req.body;
+    const { title, description, price, category, condition, images, phone, location, negotiable } = req.body;
     if (!title || !price || !category) return res.status(400).json({ error: 'Title, price, and category required' });
     if (!phone?.trim()) return res.status(400).json({ error: 'A contact phone number is required so buyers can reach you' });
 
@@ -84,6 +84,7 @@ export default async function handler(req, res) {
         images: JSON.stringify(images || []),
         phone: phone || '',
         location: location || '',
+        negotiable: Boolean(negotiable),
         status: 'pending',
       },
     });

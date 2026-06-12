@@ -42,6 +42,7 @@ import PreOrderButton from '../../components/PreOrderButton';
 import BundleSection from '../../components/BundleSection';
 import TrendingInTech from '../../components/TrendingInTech';
 import RecentlyViewed, { trackView } from '../../components/RecentlyViewed';
+import ShareButton from '../../components/ShareButton';
 
 export async function getStaticPaths() {
   const products = await prisma.product.findMany({ where: { active: true } });
@@ -922,16 +923,11 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                       {product.subcategory && <span className="text-xs text-slate-400">· {product.subcategory}</span>}
                       {product.brand && <span className="rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-xs font-semibold text-slate-600 dark:text-slate-300">{product.brand}</span>}
                     </div>
-                    {/* Share + QR button */}
-                    <button
-                      onClick={() => setShowQR(true)}
-                      className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors flex-shrink-0"
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                      </svg>
-                      Share
-                    </button>
+                    {/* Share button */}
+                    <ShareButton
+                      title={`${product.name} | KigaliTech`}
+                      url={`https://kigalitechservices.com/products/${product.id}`}
+                    />
                   </div>
                   <h1 className="mt-2 text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-slate-100 leading-tight break-words">
                     <TranslatedText text={product.name} as={null} />

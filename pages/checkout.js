@@ -112,6 +112,7 @@ export default function Checkout() {
   const [upsellProducts, setUpsellProducts] = useState([]);
   const [addons, setAddons] = useState([]);
   const [selectedAddons, setSelectedAddons] = useState({});
+  const [storePickup, setStorePickup] = useState(false);
   const [deliveryZones, setDeliveryZones] = useState([]);
   const [selectedZoneId, setSelectedZoneId] = useState(null);
   const [deliverySlot, setDeliverySlot] = useState({ date: '', slot: '' });
@@ -184,7 +185,7 @@ export default function Checkout() {
   const addonTotal = addons.filter(a => selectedAddons[a.id]).reduce((s, a) => s + a.price, 0);
   const selectedZone = deliveryZones.find(z => z.id === selectedZoneId) || null;
   const freeDeliveryEligible = !freeDeliveries || freeDeliveries.remaining > 0;
-  const shipping = selectedZone ? selectedZone.fee : (freeDeliveryEligible ? 0 : (subtotal + addonTotal) >= 146000 ? 0 : 14730);
+  const shipping = storePickup ? 0 : selectedZone ? selectedZone.fee : (freeDeliveryEligible ? 0 : (subtotal + addonTotal) >= 146000 ? 0 : 14730);
   const tvInstallFee = 0; // negotiable — priced separately after contact
   const couponDiscount = couponApplied?.discount || 0;
   const creditApplied = useStoreCredit ? Math.min(storeCredit, subtotal + addonTotal + shipping - couponDiscount) : 0;
@@ -205,7 +206,7 @@ export default function Checkout() {
       shippingName: form.name,
       shippingEmail: form.email,
       shippingPhone: form.phone,
-      shippingAddress: form.useMpost ? `MPOST:${form.mpostPhone}` : form.address,
+      shippingAddress: storePickup ? 'STORE_PICKUP:KigaliTech Store, Kigali' : form.useMpost ? `MPOST:${form.mpostPhone}` : form.address,
       mpostAddress: form.useMpost ? form.mpostPhone : '',
       paymentMethod: PAYMENT_METHODS.find(m => m.id === form.paymentMethod)?.label || form.paymentMethod,
       notes: form.notes,
@@ -273,7 +274,7 @@ export default function Checkout() {
   // For MoMo — show the payment popup first
   function handleMomoClick(e) {
     e.preventDefault();
-    if (!form.name || !form.email || !form.phone || (!form.useMpost && !form.address)) {
+    if (!form.name || !form.email || !form.phone || (!storePickup && !form.useMpost && !form.address)) {
       setError('Please fill in all required fields above before proceeding to payment.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
@@ -368,6 +369,20 @@ export default function Checkout() {
                 </div>
               )}
 
+              {/* Store pickup toggle */}
+              <div className={`rounded-2xl border p-4 cursor-pointer transition ${storePickup ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900'}`}
+                onClick={() => setStorePickup(p => !p)}>
+                <div className="flex items-center gap-3">
+                  <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${storePickup ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300 dark:border-slate-600'}`}>
+                    {storePickup && <div className="h-2 w-2 rounded-full bg-white" />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">🏪 Pick up at our Kigali store <span className="text-emerald-600 font-bold">(Free)</span></p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">KigaliTech Store, Kigali — pick up at your convenience</p>
+                  </div>
+                </div>
+              </div>
+
               {/* Contact */}
               <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-6">
                 <h2 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">{t('contactInfo')}</h2>
@@ -384,12 +399,13 @@ export default function Checkout() {
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('phone')} *</label>
                     <input required type="tel" autoComplete="tel" value={form.phone} onChange={e => set('phone', e.target.value)} className={inp} placeholder="+250 7XX XXX XXX" />
                   </div>
+                  {!storePickup && (
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       {t('address')} {!form.useMpost && '*'}
                     </label>
                     <input
-                      required={!form.useMpost}
+                      required={!form.useMpost && !storePickup}
                       disabled={form.useMpost}
                       autoComplete="street-address"
                       value={form.address}
@@ -398,6 +414,7 @@ export default function Checkout() {
                       placeholder="Street, City, Country"
                     />
                   </div>
+                  )}
                 </div>
 
                 <div className="mt-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
@@ -419,7 +436,7 @@ export default function Checkout() {
               </div>
 
               {/* Delivery Zone */}
-              {deliveryZones.length > 0 && (
+              {!storePickup && deliveryZones.length > 0 && (
                 <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-6">
                   <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Delivery Zone</label>
                   <div className="space-y-2">

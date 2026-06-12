@@ -24,6 +24,7 @@ export default function SellPage() {
     condition: '',
     phone: session?.user?.phoneNumber || '',
     location: '',
+    negotiable: false,
   });
   const [images, setImages] = useState([]); // array of base64 data URLs
   const [submitting, setSubmitting] = useState(false);
@@ -267,6 +268,16 @@ export default function SellPage() {
                 <input required name="phone" value={form.phone} onChange={handleChange} placeholder="+250 7XX XXX XXX" className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900" />
                 <p className="mt-1 text-xs text-slate-400">Required — buyers contact you directly via WhatsApp</p>
               </div>
+
+              <label className="flex items-center gap-3 cursor-pointer rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3 hover:border-violet-400 transition">
+                <input type="checkbox" name="negotiable" checked={form.negotiable}
+                  onChange={e => setForm(p => ({ ...p, negotiable: e.target.checked }))}
+                  className="accent-violet-600 h-4 w-4" />
+                <div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Price is negotiable</p>
+                  <p className="text-xs text-slate-400 mt-0.5">Shows a "Negotiable" badge on your listing</p>
+                </div>
+              </label>
 
               {error && <p className="rounded-xl bg-red-50 border border-red-100 px-4 py-2.5 text-sm text-red-600">{error}</p>}
 
