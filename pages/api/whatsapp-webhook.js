@@ -251,12 +251,21 @@ async function handleMessage(senderPhone, text) {
   );
 }
 
+export const config = { api: { bodyParser: true } };
+
 export default async function handler(req, res) {
   // Meta webhook verification (GET)
   if (req.method === 'GET') {
-    const { 'hub.mode': mode, 'hub.verify_token': token, 'hub.challenge': challenge } = req.query;
-    if (mode === 'subscribe' && token === VERIFY_TOKEN) return res.status(200).send(challenge);
-    return res.status(403).json({ error: 'Invalid verify token' });
+    const mode      = req.query['hub.mode'];
+    const token     = req.query['hub.verify_token'];
+    const challenge = req.query['hub.challenge'];
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+      res.setHeader('Content-Type', 'text/plain');
+      res.status(200).end(challenge);
+      return;
+    }
+    return res.status(403).end('Forbidden');
   }
 
   if (req.method !== 'POST') return res.status(405).end();
