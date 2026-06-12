@@ -22,6 +22,7 @@ function useCountdown(endDate) {
 import prisma from '../../lib/prisma';
 import SEOMeta from '../../components/SEOMeta';
 import Link from 'next/link';
+import Image from 'next/image';
 import Layout from '../../components/Layout';
 import Footer from '../../components/Footer';
 import ProductCard from '../../components/ProductCard';
@@ -59,7 +60,7 @@ export async function getStaticProps({ params }) {
     const bundledIds = JSON.parse(product.bundledWith || '[]');
     if (bundledIds.length) {
       bundledProducts = await prisma.product.findMany({
-        where: { id: { in: bundledIds.map(Number) }, active: true },
+        where: { id: { in: bundledIds.map(Number).filter(n => !isNaN(n)) }, active: true },
         select: { id: true, name: true, price: true, comparePrice: true, images: true, category: true, brand: true, stock: true, featured: true, description: true, colors: true, storageOptions: true, genuine: true, lowStockThreshold: true },
       });
     }
@@ -456,6 +457,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
   const [showQR, setShowQR] = useState(false);
   const [liveImages, setLiveImages] = useState(null);
   const [liveColorImages, setLiveColorImages] = useState(null);
+  const [imagesLoading, setImagesLoading] = useState(false);
 
   useEffect(() => {
     setWhatsappCtx({ type: 'product', name: product.name, id: product.id });
@@ -468,15 +470,17 @@ export default function ProductPage({ product, bundledProducts = [] }) {
     const imgs = Array.isArray(product.images)
       ? product.images
       : (() => { try { return JSON.parse(product.images || '[]'); } catch { return []; } })();
-    const hasImages = imgs.some(img => img && img.length > 10);
+    const hasImages = imgs.some(img => img && img.trim().length > 10);
     if (!hasImages) {
+      setImagesLoading(true);
       fetch(`/api/products/${product.id}/images`)
         .then(r => r.json())
         .then(d => {
           if (d.images) setLiveImages(d.images);
           if (d.colorImages) setLiveColorImages(d.colorImages);
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => setImagesLoading(false));
     }
   }, [product.id]);
 
@@ -498,7 +502,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
   const baseImages = (() => {
     const src = liveImages || product.images;
     const arr = Array.isArray(src) ? src : (() => { try { return JSON.parse(src || '[]'); } catch { return []; } })();
-    return arr.filter(img => img && img.length > 5);
+    return arr.filter(img => typeof img === 'string' && img.trim().length > 10);
   })();
 
   // Build the image array for a given color selection:
@@ -660,8 +664,8 @@ export default function ProductPage({ product, bundledProducts = [] }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 px-3 py-4 sm:px-6 sm:py-10 lg:px-8">
-        <div className="mx-auto max-w-6xl">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 px-3 py-4 sm:px-6 sm:py-10 lg:px-8 overflow-x-hidden">
+        <div className="mx-auto max-w-6xl w-full">
           {/* Breadcrumb */}
           <nav className="mb-6 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
             <Link href="/" className="hover:text-sky-600">Home</Link>
@@ -671,8 +675,8 @@ export default function ProductPage({ product, bundledProducts = [] }) {
             <span className="text-slate-700 dark:text-slate-300 font-medium">{product.name}</span>
           </nav>
 
-          <div className="rounded-2xl bg-white dark:bg-slate-900 p-3 shadow-sm sm:p-5 lg:p-8">
-            <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr]">
+          <div className="rounded-2xl bg-white dark:bg-slate-900 p-3 shadow-sm sm:p-5 lg:p-8 overflow-hidden">
+            <div className="grid gap-6 lg:gap-8 lg:grid-cols-[1.1fr_1fr]">
               {/* ── Images + Video ── */}
               <div className="lg:sticky lg:top-6 lg:self-start">
 
@@ -705,27 +709,52 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}
                     className="gallery-scroll flex overflow-x-auto lg:overflow-x-hidden cursor-zoom-in"
-                    style={{ scrollSnapType: 'x mandatory', scrollBehavior: 'smooth' }}
+                    style={{ scrollSnapType: 'x mandatory', scrollBehavior: 'smooth', height: 'clamp(260px, 45vw, 460px)' }}
                     onClick={() => { if (!didSwipe.current) setLightbox(true); }}
                   >
                     {images.length === 0 ? (
-                      <div className="flex-shrink-0 w-full" style={{ scrollSnapAlign: 'start' }}>
-                        <div className="h-[340px] sm:h-[460px] w-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 animate-pulse">
-                          <span className="text-6xl opacity-30">📷</span>
+                      <div className="flex-shrink-0 w-full h-full" style={{ scrollSnapAlign: 'start' }}>
+                        <div className="h-full w-full flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800 gap-3">
+                          {imagesLoading ? (
+                            <>
+                              <div className="h-12 w-12 rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-sky-500 animate-spin" />
+                              <span className="text-sm text-slate-400 font-medium">Loading image…</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="h-14 w-14 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <span className="text-sm text-slate-400">No image available</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     ) : images.map((src, i) => (
-                      <div key={i} className="flex-shrink-0 w-full" style={{ scrollSnapAlign: 'start' }}>
+                      <div key={i} className="relative overflow-hidden flex-shrink-0 w-full h-full" style={{ scrollSnapAlign: 'start' }}>
                         {imgErrors[i] ? (
-                          <div className="h-[340px] sm:h-[460px] w-full flex items-center justify-center">
-                            <span className="text-6xl">📷</span>
+                          <div className="h-full w-full flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800 gap-2">
+                            <svg className="h-14 w-14 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span className="text-sm text-slate-400">No image</span>
                           </div>
-                        ) : (
+                        ) : src.startsWith('data:') ? (
                           <img
                             src={src}
                             alt={`${product.name} — view ${i + 1}`}
-                            className="h-[340px] sm:h-[460px] w-full object-contain bg-white dark:bg-slate-900"
+                            className="h-full w-full object-cover scale-[1.08] hover:scale-100 transition-transform duration-500"
                             onError={() => setImgErrors(prev => ({ ...prev, [i]: true }))}
+                          />
+                        ) : (
+                          <Image
+                            src={src}
+                            alt={`${product.name} — view ${i + 1}`}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                            className="object-cover scale-[1.08] hover:scale-100 transition-transform duration-500"
+                            onError={() => setImgErrors(prev => ({ ...prev, [i]: true }))}
+                            priority={i === 0}
                           />
                         )}
                       </div>
@@ -778,17 +807,17 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                       <button
                         key={i}
                         onClick={() => scrollToImg(i)}
-                        className={`flex-shrink-0 h-16 w-16 rounded-xl overflow-hidden border-2 bg-white dark:bg-slate-800 transition-all ${
+                        className={`relative flex-shrink-0 h-16 w-16 rounded-xl overflow-hidden border-2 bg-white dark:bg-slate-800 transition-all ${
                           activeImg === i
                             ? 'border-sky-500 ring-2 ring-sky-200 dark:ring-sky-800 shadow-md'
                             : 'border-slate-200 dark:border-slate-700 hover:border-slate-400 opacity-70 hover:opacity-100'
                         }`}
                       >
-                        <img
-                          src={src}
-                          alt=""
-                          className="h-full w-full object-contain bg-white dark:bg-slate-900"
-                        />
+                        {src.startsWith('data:') ? (
+                          <img src={src} alt="" className="h-full w-full object-contain" />
+                        ) : (
+                          <Image src={src} alt="" fill sizes="64px" className="object-contain" />
+                        )}
                       </button>
                     ))}
                   </div>
@@ -885,7 +914,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
               )}
 
               {/* ── Details ── */}
-              <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-5 min-w-0">
                 <div>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
@@ -904,18 +933,18 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                       Share
                     </button>
                   </div>
-                  <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 leading-tight">
+                  <h1 className="mt-2 text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-slate-100 leading-tight break-words">
                     <TranslatedText text={product.name} as={null} />
                   </h1>
                   <TranslatedText
                     text={product.description}
                     as="p"
-                    className="mt-3 text-slate-600 dark:text-slate-400 leading-relaxed text-[15px]"
+                    className="mt-3 text-slate-600 dark:text-slate-400 leading-relaxed text-sm sm:text-[15px] break-words"
                   />
                 </div>
 
                 {/* Price + stock */}
-                <div className={`rounded-2xl p-4 flex items-center justify-between ${flashActive ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' : 'bg-slate-50 dark:bg-slate-800'}`}>
+                <div className={`rounded-2xl p-4 flex items-start justify-between gap-3 ${flashActive ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' : 'bg-slate-50 dark:bg-slate-800'}`}>
                   <div>
                     {flashActive ? (
                       <>
@@ -1127,8 +1156,8 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                     <div className="divide-y divide-slate-50 dark:divide-slate-800">
                       {Object.entries(specs).map(([key, value], idx) => (
                         <div key={key} className={`flex items-center justify-between px-4 py-3 ${idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/50 dark:bg-slate-800/50'}`}>
-                          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 w-2/5">{key}</span>
-                          <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 text-right flex-1">{value}</span>
+                          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 w-2/5 flex-shrink-0">{key}</span>
+                          <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 text-right flex-1 min-w-0 break-words">{value}</span>
                         </div>
                       ))}
                     </div>

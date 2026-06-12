@@ -46,7 +46,6 @@ export default function ProductCard({ product, onQuickView }) {
   const { data: session } = useSession();
   const [added, setAdded] = useState(false);
   const [heartAnim, setHeartAnim] = useState(false);
-  const { src: imgSrc, onError: onImgError } = useImageFallback(images);
 
   const badge = getBadge(product);
   function parseField(val) {
@@ -55,6 +54,7 @@ export default function ProductCard({ product, onQuickView }) {
     try { const p = JSON.parse(val || '[]'); return Array.isArray(p) ? normalize(p) : []; } catch { return []; }
   }
   const images = parseField(product.images).filter(img => typeof img === 'string' && img.trim().length > 5);
+  const { src: imgSrc, onError: onImgError } = useImageFallback(images);
   const colors = parseField(product.colors);
   const storageOptions = parseField(product.storageOptions);
   const isWished = wishlistIds.has(product.id);
