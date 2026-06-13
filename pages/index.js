@@ -139,7 +139,7 @@ export default function Home({ products = [], siteConfig = {} }) {
 
   /* Product slices */
   const bestSelling = useMemo(() => [...products].sort((a, b) => (b.featured?1:0)-(a.featured?1:0)).slice(0, 4), [products]);
-  const newArrivals = useMemo(() => [...products].sort((a, b) => b.id - a.id).slice(0, 4), [products]);
+  const newArrivals = useMemo(() => [...products].sort((a, b) => b.id - a.id).slice(0, 4).filter(p => firstImage(p)), [products]);
   const flashItems  = useMemo(() => products.filter(p => p.comparePrice && p.comparePrice > p.price).slice(0, 8), [products]);
 
   /* Hero slider */
@@ -457,39 +457,146 @@ export default function Home({ products = [], siteConfig = {} }) {
         {newArrivals.length >= 2 && (
           <section className="py-14 border-b border-ex-border">
             <SectionLabel sub="Featured" title="New Arrival" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ minHeight: 420 }}>
-              {/* Large left card */}
-              <Link href={`/products/${newArrivals[0].id}`}
-                className="group relative rounded-lg overflow-hidden flex items-end p-8 min-h-[420px]"
-                style={{ background: '#1D2026' }}>
+
+            {/*
+              Exclusive grid layout:
+              ┌─────────────────┬──────────────────────┐
+              │                 │   Top-right (wide)   │
+              │   Left (large)  ├───────────┬──────────┤
+              │                 │ Bot-left  │ Bot-right│
+              └─────────────────┴───────────┴──────────┘
+            */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              {/* ── Left large card (dark) ── */}
+              <Link
+                href={`/products/${newArrivals[0].id}`}
+                className="group relative overflow-hidden rounded flex items-end"
+                style={{ background: '#1D2026', minHeight: 560 }}
+              >
                 {firstImage(newArrivals[0]) && (
-                  <img src={firstImage(newArrivals[0])} alt={newArrivals[0].name}
-                    className="absolute inset-0 w-full h-full object-contain p-10 group-hover:scale-105 transition-transform duration-500" />
+                  <img
+                    src={firstImage(newArrivals[0])}
+                    alt={newArrivals[0].name}
+                    className="absolute inset-0 w-full h-full object-contain p-10 group-hover:scale-105 transition-transform duration-500"
+                  />
                 )}
-                <div className="relative z-10 text-white">
-                  <p className="text-xs text-gray-400 mb-1">{newArrivals[0].brand}</p>
-                  <h3 className="font-semibold text-xl mb-2">{newArrivals[0].name}</h3>
-                  <span className="text-sm font-medium underline underline-offset-4 hover:text-primary transition-colors">Shop Now</span>
+                {/* Text overlay */}
+                <div className="relative z-10 p-8 text-white">
+                  <p className="text-xs text-gray-400 mb-2 uppercase tracking-widest">
+                    {newArrivals[0].brand || newArrivals[0].category}
+                  </p>
+                  <h3 className="font-semibold text-2xl mb-3 leading-snug line-clamp-2">
+                    {newArrivals[0].name}
+                  </h3>
+                  <span className="inline-flex items-center gap-1.5 text-sm font-medium border-b border-white pb-0.5 hover:border-primary hover:text-primary transition-colors">
+                    Shop Now
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                  </span>
                 </div>
               </Link>
 
-              {/* Right: 2 stacked */}
-              <div className="grid grid-rows-2 gap-4">
-                {newArrivals.slice(1, 3).map((p, i) => (
-                  <Link key={p.id} href={`/products/${p.id}`}
-                    className="group relative rounded-lg overflow-hidden flex items-end p-6"
-                    style={{ background: i === 0 ? '#F5F5F5' : '#F5F5F5' }}>
-                    {firstImage(p) && (
-                      <img src={firstImage(p)} alt={p.name}
-                        className="absolute inset-0 w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500" />
+              {/* ── Right column: top wide + bottom two ── */}
+              <div className="flex flex-col gap-4">
+
+                {/* Top-right card (light) */}
+                {newArrivals[1] && (
+                  <Link
+                    href={`/products/${newArrivals[1].id}`}
+                    className="group relative overflow-hidden rounded flex items-end flex-1"
+                    style={{ background: '#F5F5F5', minHeight: 272 }}
+                  >
+                    {firstImage(newArrivals[1]) && (
+                      <img
+                        src={firstImage(newArrivals[1])}
+                        alt={newArrivals[1].name}
+                        className="absolute inset-0 w-full h-full object-contain p-6 group-hover:scale-105 transition-transform duration-500"
+                      />
                     )}
-                    <div className="relative z-10">
-                      <p className="text-xs text-ex-muted mb-1">{p.brand}</p>
-                      <h3 className="font-semibold text-ex-text mb-1">{p.name}</h3>
-                      <span className="text-sm font-medium text-ex-text underline underline-offset-4 hover:text-primary transition-colors">Shop Now</span>
+                    <div className="relative z-10 p-6">
+                      <p className="text-xs text-ex-muted mb-1 uppercase tracking-widest">
+                        {newArrivals[1].brand || newArrivals[1].category}
+                      </p>
+                      <h3 className="font-semibold text-lg text-ex-text mb-2 line-clamp-1">
+                        {newArrivals[1].name}
+                      </h3>
+                      <span className="inline-flex items-center gap-1.5 text-sm font-medium text-ex-text border-b border-ex-text pb-0.5 hover:border-primary hover:text-primary transition-colors">
+                        Shop Now
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                      </span>
                     </div>
                   </Link>
-                ))}
+                )}
+
+                {/* Bottom: two side-by-side cards */}
+                <div className="grid grid-cols-2 gap-4 flex-1">
+                  {/* Bot-left (dark) */}
+                  {newArrivals[2] && (
+                    <Link
+                      href={`/products/${newArrivals[2].id}`}
+                      className="group relative overflow-hidden rounded flex items-end"
+                      style={{ background: '#1D2026', minHeight: 272 }}
+                    >
+                      {firstImage(newArrivals[2]) && (
+                        <img
+                          src={firstImage(newArrivals[2])}
+                          alt={newArrivals[2].name}
+                          className="absolute inset-0 w-full h-full object-contain p-5 group-hover:scale-105 transition-transform duration-500"
+                        />
+                      )}
+                      <div className="relative z-10 p-5 text-white">
+                        <p className="text-xs text-gray-400 mb-1 uppercase tracking-widest">
+                          {newArrivals[2].brand || newArrivals[2].category}
+                        </p>
+                        <h3 className="font-semibold text-sm mb-2 line-clamp-2">
+                          {newArrivals[2].name}
+                        </h3>
+                        <span className="inline-flex items-center gap-1 text-xs font-medium border-b border-white pb-0.5 hover:border-primary hover:text-primary transition-colors">
+                          Shop Now
+                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                          </svg>
+                        </span>
+                      </div>
+                    </Link>
+                  )}
+
+                  {/* Bot-right (light) */}
+                  {newArrivals[3] && (
+                    <Link
+                      href={`/products/${newArrivals[3].id}`}
+                      className="group relative overflow-hidden rounded flex items-end"
+                      style={{ background: '#F5F5F5', minHeight: 272 }}
+                    >
+                      {firstImage(newArrivals[3]) && (
+                        <img
+                          src={firstImage(newArrivals[3])}
+                          alt={newArrivals[3].name}
+                          className="absolute inset-0 w-full h-full object-contain p-5 group-hover:scale-105 transition-transform duration-500"
+                        />
+                      )}
+                      <div className="relative z-10 p-5">
+                        <p className="text-xs text-ex-muted mb-1 uppercase tracking-widest">
+                          {newArrivals[3].brand || newArrivals[3].category}
+                        </p>
+                        <h3 className="font-semibold text-sm text-ex-text mb-2 line-clamp-2">
+                          {newArrivals[3].name}
+                        </h3>
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-ex-text border-b border-ex-text pb-0.5 hover:border-primary hover:text-primary transition-colors">
+                          Shop Now
+                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                          </svg>
+                        </span>
+                      </div>
+                    </Link>
+                  )}
+                </div>
+
               </div>
             </div>
           </section>
