@@ -253,7 +253,7 @@ export default function SignIn() {
           <img src="/logo.png" alt="KigaliTECH Services" className="h-10 w-10 object-contain flex-shrink-0" />
           <span className="font-bold tracking-tight leading-none">
             <span className="text-gray-900 text-lg">Kigali</span><span className="text-[#DB4444] text-lg">TECH</span>
-            <span className="block text-[9px] font-semibold text-gray-400 uppercase tracking-[0.2em] -mt-0.5">Services</span>
+            <span className="block text-[9px] font-semibold text-gray-400 uppercase tracking-[0.2em] -mt-0.5 text-center">Services</span>
           </span>
         </a>
 

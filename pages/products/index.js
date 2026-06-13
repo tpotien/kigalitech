@@ -210,7 +210,7 @@ export default function ProductsPage() {
 
             {/* Grid */}
             {loading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {Array.from({ length: 8 }).map((_, i) => (
                   <div key={i} className="skeleton aspect-square rounded"/>
                 ))}
@@ -223,7 +223,7 @@ export default function ProductsPage() {
                 <button onClick={() => selectCategory('All')} className="btn-primary">View All Products</button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {filtered.map(product => <ProductCard key={product.id} product={product} />)}
               </div>
             )}

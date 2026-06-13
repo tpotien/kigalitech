@@ -42,7 +42,7 @@ const FOOTER_COL1 = [
 const FOOTER_COL2 = [
   { label: 'Privacy Policy', href: '/privacy' },
   { label: 'Terms of Use',   href: '/terms' },
-  { label: 'FAQ',            href: '/contact' },
+  { label: 'FAQ',            href: '/faq' },
   { label: 'Contact',        href: '/contact' },
 ];
 const FOOTER_COL3 = [
@@ -110,7 +110,7 @@ export default function Layout({ children }) {
               <img src="/logo.png" alt="KigaliTECH Services" className="h-10 w-10 object-contain flex-shrink-0" />
               <span className="font-bold tracking-tight leading-none hidden sm:block" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 <span className="text-[#1D2026] text-lg">Kigali</span><span className="text-primary text-lg">TECH</span>
-                <span className="block text-[9px] font-semibold text-gray-400 uppercase tracking-[0.2em] -mt-0.5">Services</span>
+                <span className="block text-[9px] font-semibold text-gray-400 uppercase tracking-[0.2em] -mt-0.5 text-center">Services</span>
               </span>
             </Link>
 
@@ -265,7 +265,7 @@ export default function Layout({ children }) {
                 <img src="/logo.png" alt="KigaliTECH Services" className="h-10 w-10 object-contain flex-shrink-0" />
                 <span className="font-bold tracking-tight leading-none">
                   <span className="text-white text-base">Kigali</span><span className="text-primary text-base">TECH</span>
-                  <span className="block text-[8px] font-semibold text-gray-500 uppercase tracking-[0.2em] -mt-0.5">Services</span>
+                  <span className="block text-[8px] font-semibold text-gray-500 uppercase tracking-[0.2em] -mt-0.5 text-center">Services</span>
                 </span>
               </Link>
               <p className="text-sm mb-4">Subscribe for exclusive deals &amp; early access.</p>

@@ -131,10 +131,10 @@ export default function ProductCard({ product, onQuickView }) {
         <Link href={`/products/${product.id}`} className="block text-sm font-medium text-ex-text hover:text-primary transition-colors line-clamp-1 mb-2">
           {product.name}
         </Link>
-        <div className="flex items-center gap-3">
-          <span className="text-primary font-semibold text-sm">{format(product.price)}</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-primary font-semibold text-sm whitespace-nowrap">{format(product.price)}</span>
           {hasDiscount && (
-            <span className="text-ex-muted text-sm line-through">{format(product.comparePrice)}</span>
+            <span className="text-ex-muted text-sm line-through whitespace-nowrap">{format(product.comparePrice)}</span>
           )}
         </div>
         {/* Stars placeholder */}
