@@ -106,8 +106,11 @@ export default function Layout({ children }) {
 
             {/* Logo */}
             <Link href="/" className="flex-shrink-0 flex items-center gap-2">
-              <img src="/logo.png" alt="KigaliTech" className="h-8 w-8 rounded-full object-cover" onError={e => e.target.style.display='none'} />
-              <span className="text-xl font-bold text-ex-text tracking-tight">KigaliTech</span>
+              <img src="/logo.png" alt="KigaliTECH Services" className="h-10 w-10 object-contain flex-shrink-0" />
+              <span className="font-bold tracking-tight leading-none hidden sm:block" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                <span className="text-[#1D2026] text-lg">Kigali</span><span className="text-primary text-lg">TECH</span>
+                <span className="block text-[9px] font-semibold text-gray-400 uppercase tracking-[0.2em] -mt-0.5">Services</span>
+              </span>
             </Link>
 
             {/* Nav links (desktop) */}
@@ -245,8 +248,11 @@ export default function Layout({ children }) {
             {/* Col 1 — Brand + newsletter */}
             <div className="col-span-2 md:col-span-1">
               <Link href="/" className="flex items-center gap-2 mb-5">
-                <img src="/logo.png" alt="KigaliTech" className="h-8 w-8 rounded-full object-cover" onError={e => e.target.style.display='none'} />
-                <span className="text-white text-lg font-bold">KigaliTech</span>
+                <img src="/logo.png" alt="KigaliTECH Services" className="h-10 w-10 object-contain flex-shrink-0" />
+                <span className="font-bold tracking-tight leading-none">
+                  <span className="text-white text-base">Kigali</span><span className="text-primary text-base">TECH</span>
+                  <span className="block text-[8px] font-semibold text-gray-500 uppercase tracking-[0.2em] -mt-0.5">Services</span>
+                </span>
               </Link>
               <p className="text-sm mb-4">Subscribe for exclusive deals &amp; early access.</p>
               <form
@@ -320,7 +326,7 @@ export default function Layout({ children }) {
 
           {/* Bottom bar */}
           <div className="border-t border-gray-700 pt-6 text-center text-xs text-gray-500">
-            © Copyright KigaliTech {new Date().getFullYear()}. All rights reserved.
+            © {new Date().getFullYear()} KigaliTECH Services. All rights reserved.
           </div>
         </div>
       </footer>

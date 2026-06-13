@@ -249,10 +249,14 @@ export default function SignIn() {
       <div className="flex flex-col justify-center flex-1 px-8 sm:px-14 lg:px-20 xl:px-28 py-14 bg-white overflow-y-auto">
 
         {/* Mobile logo */}
-        <Link href="/" className="flex items-center gap-2 mb-10 lg:hidden">
-          <img src="/logo.png" alt="KigaliTech" className="h-8 w-8 rounded-full object-cover" onError={e => e.target.style.display='none'} />
-          <span className="text-lg font-bold text-gray-900">KigaliTech</span>
-        </Link>
+        <a href="/" className="flex items-center gap-2 mb-10 lg:hidden">
+          <img src="/logo.png" alt="KigaliTECH Services" className="h-10 w-10 object-contain flex-shrink-0" />
+          <span className="font-bold tracking-tight leading-none">
+            <span className="text-gray-900 text-lg">Kigali</span><span className="text-[#DB4444] text-lg">TECH</span>
+            <span className="block text-[9px] font-semibold text-gray-400 uppercase tracking-[0.2em] -mt-0.5">Services</span>
+          </span>
+        </a>
+
 
         <div className="max-w-[370px] w-full">
 

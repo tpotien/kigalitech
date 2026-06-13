@@ -75,12 +75,12 @@ export default function AdminLayout({ children, title }) {
     <>
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-white/10">
-        <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-          <span className="text-white font-bold text-sm">KT</span>
-        </div>
-        <div>
-          <p className="font-bold text-white text-sm leading-none">KigaliTech</p>
-          <p className="text-[11px] text-white/50 mt-0.5">Admin Panel</p>
+        <img src="/logo.png" alt="KigaliTECH Services" className="h-10 w-10 object-contain flex-shrink-0" />
+        <div className="leading-none min-w-0">
+          <p className="font-bold text-white text-sm leading-none">
+            <span>Kigali</span><span className="text-primary">TECH</span>
+          </p>
+          <p className="text-[10px] text-white/40 tracking-widest uppercase mt-0.5">Services · Admin</p>
         </div>
       </div>
 
