@@ -2,81 +2,34 @@ import { signIn, useSession, getProviders } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useLang } from '../context/LanguageContext';
-import LanguageSwitcher from '../components/LanguageSwitcher';
-
-const SOCIAL = {
-  google: {
-    label: 'Google',
-    bg: 'bg-white hover:bg-slate-50 border border-slate-200',
-    text: 'text-slate-700',
-    icon: (
-      <svg className="h-5 w-5" viewBox="0 0 24 24">
-        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-      </svg>
-    ),
-  },
-  facebook: {
-    label: 'Facebook',
-    bg: 'bg-[#1877F2] hover:bg-[#166fe5] border border-[#1877F2]',
-    text: 'text-white',
-    icon: (
-      <svg className="h-5 w-5" fill="white" viewBox="0 0 24 24">
-        <path d="M24 12.073C24 5.41 18.627 0 12 0S0 5.41 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
-      </svg>
-    ),
-  },
-  apple: {
-    label: 'Apple',
-    bg: 'bg-black hover:bg-slate-900 border border-black',
-    text: 'text-white',
-    icon: (
-      <svg className="h-5 w-5" fill="white" viewBox="0 0 24 24">
-        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-      </svg>
-    ),
-  },
-};
 
 export default function SignIn() {
   const { data: session } = useSession();
   const router = useRouter();
   const { callbackUrl, verified, magic, email: queryEmail, otp } = router.query;
-  const { t } = useLang();
+
   const [mode, setMode] = useState('login');
   const [loading, setLoading] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [magicSent, setMagicSent] = useState(false);
   const [magicEmail, setMagicEmail] = useState('');
   const [socialProviders, setSocialProviders] = useState([]);
+  const [showSetPassword, setShowSetPassword] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
 
   useEffect(() => {
     getProviders().then(p => {
       if (!p) return;
-      const order = ['google', 'facebook', 'apple'];
-      setSocialProviders(order.filter(id => p[id]));
+      setSocialProviders(['google', 'facebook'].filter(id => p[id]));
     });
   }, []);
 
-  const [showSetPassword, setShowSetPassword] = useState(false);
-
-  // Auto-login after magic link click
   useEffect(() => {
     if (magic === 'ok' && queryEmail && otp) {
       setLoading('magic');
       signIn('credentials', { email: queryEmail, magicOtp: otp, redirect: false }).then(result => {
-        if (result?.error) {
-          setError('Magic link failed — it may have expired. Please request a new one.');
-          setLoading('');
-        } else {
-          setShowSetPassword(true);
-          setLoading('');
-        }
+        if (result?.error) { setError('Magic link failed or expired. Please request a new one.'); setLoading(''); }
+        else { setShowSetPassword(true); setLoading(''); }
       });
     }
     if (magic === 'expired') setError('That magic link has expired. Please request a new one.');
@@ -87,122 +40,63 @@ export default function SignIn() {
     if (!session) return;
     if (session.user.mustChangePassword) { router.push('/set-password'); return; }
     const role = session.user.role;
-    if (role === 'admin' || role === 'staff') router.push(callbackUrl || '/admin');
-    else router.push(callbackUrl || '/');
+    router.push(role === 'admin' || role === 'staff' ? (callbackUrl || '/admin') : (callbackUrl || '/'));
   }, [session]);
 
   async function handleMagicLink(e) {
     e.preventDefault();
     const emailVal = magicEmail.trim().toLowerCase();
-    if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailVal)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-    setLoading('magic-send');
-    setError('');
-    const res = await fetch('/api/auth/send-magic-link', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: emailVal }),
-    });
+    if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailVal)) { setError('Please enter a valid email address'); return; }
+    setLoading('magic-send'); setError('');
+    const res = await fetch('/api/auth/send-magic-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: emailVal }) });
     setLoading('');
-    if (res.ok) {
-      setMagicSent(true);
-    } else {
-      const d = await res.json();
-      setError(d.error || 'Failed to send link');
-    }
+    if (res.ok) setMagicSent(true);
+    else { const d = await res.json(); setError(d.error || 'Failed to send link'); }
   }
 
   async function handleSocial(provider) {
-    setLoading(provider);
-    setError('');
+    setLoading(provider); setError('');
     await signIn(provider, { callbackUrl: callbackUrl || '/' });
   }
 
   async function handleLogin(e) {
     e.preventDefault();
-    setLoading('login');
-    setError('');
-    if (form.email && !isValidEmail(form.email)) {
-      setError('Please enter a valid email address');
-      setLoading('');
-      return;
-    }
+    setLoading('login'); setError('');
     const identifier = form.email || form.phone;
     const result = await signIn('credentials', { email: identifier, password: form.password, redirect: false });
     if (result?.error) {
       if (result.error.startsWith('VERIFY:')) {
         const unverifiedEmail = result.error.slice('VERIFY:'.length);
-        fetch('/api/auth/resend-verification', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: unverifiedEmail }),
-        }).catch(() => {});
+        fetch('/api/auth/resend-verification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: unverifiedEmail }) }).catch(() => {});
         router.push(`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`);
         return;
       }
-      setError('Invalid credentials. Please check your email/phone and password.');
+      setError('Invalid email/phone or password. Please try again.');
       setLoading('');
     }
   }
 
   async function handleRegister(e) {
     e.preventDefault();
-    setLoading('register');
-    setError('');
-    if (form.email && !isValidEmail(form.email)) {
-      setError('Please enter a valid email address');
-      setLoading('');
-      return;
-    }
-    if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match');
-      setLoading('');
-      return;
-    }
-    if (form.password.length < 8) {
-      setError('Password must be at least 8 characters');
-      setLoading('');
-      return;
-    }
-    const str = passwordStrength(form.password);
-    if (str.score < 3) {
-      setError('Password is too weak — add uppercase letters, numbers, or symbols');
-      setLoading('');
-      return;
-    }
+    setLoading('register'); setError('');
+    if (form.password !== form.confirmPassword) { setError('Passwords do not match'); setLoading(''); return; }
+    if (form.password.length < 8) { setError('Password must be at least 8 characters'); setLoading(''); return; }
     const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: form.name, email: form.email, phone: form.phone, password: form.password }),
     });
     const data = await res.json();
-    if (!res.ok) {
-      setError(data.error || 'Registration failed');
-      setLoading('');
-      return;
-    }
+    if (!res.ok) { setError(data.error || 'Registration failed'); setLoading(''); return; }
     if (data.requiresVerification) {
       const refCode = localStorage.getItem('referralCode');
-      if (refCode && data.email) {
-        fetch('/api/referral/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: refCode, newUserEmail: data.email }) }).catch(() => {});
-        localStorage.removeItem('referralCode');
-      }
+      if (refCode && data.email) { fetch('/api/referral/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: refCode, newUserEmail: data.email }) }).catch(() => {}); localStorage.removeItem('referralCode'); }
       router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
       return;
     }
-    const refCode = localStorage.getItem('referralCode');
-    if (refCode && (form.email || form.phone)) {
-      fetch('/api/referral/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: refCode, newUserEmail: form.email || form.phone }) }).catch(() => {});
-      localStorage.removeItem('referralCode');
-    }
-    await signIn('credentials', { email: form.phone, password: form.password, redirect: false });
+    await signIn('credentials', { email: form.email || form.phone, password: form.password, redirect: false });
   }
 
-  const setField = (k) => (e) => setForm({ ...form, [k]: k === 'email' ? e.target.value.toLowerCase() : e.target.value });
-
-  function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email); }
+  const setField = k => e => setForm({ ...form, [k]: e.target.value });
 
   function passwordStrength(pw) {
     if (!pw) return { score: 0, label: '', color: '' };
@@ -219,24 +113,19 @@ export default function SignIn() {
   }
   const strength = mode === 'register' ? passwordStrength(form.password) : null;
 
+  const inp = 'w-full border border-ex-border rounded px-4 py-3 text-sm text-ex-text outline-none focus:border-primary placeholder:text-ex-muted';
+
+  /* Set password after magic link */
   if (showSetPassword) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-sky-900 flex items-center justify-center px-4">
-        <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 shadow-2xl p-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-3xl">✅</div>
-          <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-2">Signed in!</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-            Would you like to set a password so you can sign in faster next time without a magic link?
-          </p>
+      <div className="min-h-screen flex items-center justify-center bg-ex-gray px-4">
+        <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8 text-center">
+          <div className="text-5xl mb-4">✅</div>
+          <h2 className="text-xl font-semibold text-ex-text mb-2">Signed in successfully!</h2>
+          <p className="text-sm text-ex-muted mb-6">Set a password for faster login next time.</p>
           <div className="space-y-3">
-            <button onClick={() => router.push('/set-password')}
-              className="w-full rounded-full bg-primary py-3 text-sm font-semibold text-white hover:bg-primary-hover transition">
-              Set a Password
-            </button>
-            <button onClick={() => router.replace(callbackUrl || '/')}
-              className="w-full rounded-full border border-slate-200 dark:border-slate-700 py-3 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-              Skip for now
-            </button>
+            <button onClick={() => router.push('/set-password')} className="btn-primary w-full">Set a Password</button>
+            <button onClick={() => router.replace(callbackUrl || '/')} className="w-full border border-ex-border rounded py-2.5 text-sm text-ex-text hover:border-primary hover:text-primary transition-colors">Skip for now</button>
           </div>
         </div>
       </div>
@@ -244,207 +133,190 @@ export default function SignIn() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-sky-900 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md">
-        {/* Language + Back */}
-        <div className="flex items-center justify-between mb-6">
-          <Link href="/" className="text-slate-400 hover:text-primary text-sm flex items-center gap-1.5 no-underline transition">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to store
+    <div className="min-h-screen flex">
+
+      {/* ── Left: Brand panel (Exclusive style) ── */}
+      <div className="hidden lg:flex flex-col items-center justify-center flex-1 relative overflow-hidden"
+        style={{ background: '#1D2026' }}>
+        {/* Decorative circles */}
+        <div className="absolute bottom-32 right-32 h-[320px] w-[320px] rounded-full opacity-10 bg-white" />
+        <div className="absolute bottom-44 right-44 h-[220px] w-[220px] rounded-full opacity-10 bg-white" />
+
+        <div className="relative z-10 text-center px-12 max-w-md">
+          <Link href="/" className="flex items-center justify-center gap-3 mb-10">
+            <img src="/logo.png" alt="KigaliTech" className="h-12 w-12 rounded-full object-cover" onError={e=>e.target.style.display='none'} />
+            <span className="text-2xl font-bold text-white tracking-tight">KigaliTech</span>
           </Link>
-          <LanguageSwitcher compact />
-        </div>
 
-        {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <img src="/logo.png" alt="KigaliTech" className="h-20 w-20 rounded-full object-cover border-2 border-orange-400/40 shadow-xl mb-4" />
-          <h1 className="text-2xl font-extrabold text-white">KigaliTech</h1>
-          <p className="text-slate-400 text-sm mt-1">{mode === 'login' ? 'Welcome back' : 'Create your account'}</p>
-        </div>
-
-        <div className="rounded-3xl bg-white dark:bg-slate-900 p-7 shadow-2xl">
-          {verified && (
-            <div className="mb-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
-              <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
-              Email verified! You can now sign in.
-            </div>
-          )}
-          {error && (
-            <div className="mb-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 px-4 py-3 text-sm text-red-600">{error}</div>
-          )}
-          {success && (
-            <div className="mb-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 px-4 py-3 text-sm text-emerald-700">{success}</div>
-          )}
-
-          {/* ── Magic Link — fastest option ── */}
-          {magic === 'ok' && loading === 'magic' ? (
-            <div className="mb-5 rounded-2xl bg-red-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 px-5 py-4 text-center">
-              <div className="flex items-center justify-center gap-2 text-primary dark:text-primary font-semibold text-sm">
-                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-                Signing you in…
-              </div>
-            </div>
-          ) : magicSent ? (
-            <div className="mb-5 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-5 py-5 text-center">
-              <div className="text-3xl mb-2">📬</div>
-              <p className="font-bold text-emerald-800 dark:text-emerald-200 text-sm">Check your inbox!</p>
-              <p className="text-emerald-600 dark:text-emerald-400 text-xs mt-1">We sent a sign-in link to <strong>{magicEmail}</strong></p>
-              <p className="text-emerald-500 text-xs mt-1">Click the link in the email — you'll be logged in instantly.</p>
-              <button onClick={() => { setMagicSent(false); setMagicEmail(''); }} className="mt-3 text-xs text-emerald-600 underline">Use a different email</button>
-            </div>
-          ) : (
-            <div className="mb-5">
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 text-center uppercase tracking-wide">Fastest — no password needed</p>
-              <form onSubmit={handleMagicLink} className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="email"
-                  value={magicEmail}
-                  onChange={e => setMagicEmail(e.target.value.toLowerCase())}
-                  placeholder="your@email.com"
-                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800"
-                />
-                <button
-                  type="submit"
-                  disabled={!!loading}
-                  className="rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:from-sky-600 hover:to-blue-700 disabled:opacity-50 transition-all shadow-lg  whitespace-nowrap"
-                >
-                  {loading === 'magic-send' ? 'Sending…' : '✨ Send Magic Link'}
-                </button>
-              </form>
-              <p className="text-[10px] text-slate-400 text-center mt-1.5">We'll email you a magic sign-in link · Works for new &amp; existing accounts</p>
-            </div>
-          )}
-
-          <div className="relative mb-5">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200 dark:border-slate-700" /></div>
-            <div className="relative flex justify-center"><span className="bg-white dark:bg-slate-900 px-3 text-xs text-slate-400">or use email &amp; password</span></div>
-          </div>
-
-          {/* Mode tabs */}
-          <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden mb-5">
-            <button onClick={() => { setMode('login'); setError(''); }}
-              className={`flex-1 py-2.5 text-sm font-semibold whitespace-nowrap transition ${mode === 'login' ? 'bg-primary text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-              Sign In
-            </button>
-            <button onClick={() => { setMode('register'); setError(''); }}
-              className={`flex-1 py-2.5 text-sm font-semibold whitespace-nowrap transition ${mode === 'register' ? 'bg-primary text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-              Create Account
-            </button>
-          </div>
-
-          {/* Social login buttons — shown on BOTH tabs when providers are configured */}
-          {socialProviders.length > 0 && (
-            <>
-              <div className="space-y-2.5 mb-5">
-                {socialProviders.map(id => {
-                  const p = SOCIAL[id];
-                  return (
-                    <button
-                      key={id}
-                      onClick={() => handleSocial(id)}
-                      disabled={!!loading}
-                      className={`w-full flex items-center justify-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold disabled:opacity-50 transition-all ${p.bg} ${p.text}`}
-                    >
-                      {p.icon}
-                      {loading === id
-                        ? 'Connecting…'
-                        : mode === 'login'
-                          ? `Continue with ${p.label}`
-                          : `Sign up with ${p.label}`}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="relative mb-5">
-                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200 dark:border-slate-700" /></div>
-                <div className="relative flex justify-center"><span className="bg-white dark:bg-slate-900 px-3 text-xs text-slate-400">or continue with email</span></div>
-              </div>
-            </>
-          )}
-
-          {/* Login form */}
-          {mode === 'login' && (
-            <form onSubmit={handleLogin} className="space-y-3" autoComplete="on">
-              <div>
-                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Email / Phone</label>
-                <input
-                  required
-                  value={form.email || form.phone}
-                  onChange={e => {
-                    const val = e.target.value;
-                    const isPhone = val.startsWith('+') || /^[\d\s\-()]{3,}$/.test(val.replace(/^\+/, ''));
-                    setForm({ ...form, email: isPhone ? '' : val.toLowerCase(), phone: isPhone ? val : '' });
-                  }}
-                  placeholder="+250 7XX XXX XXX or email@example.com"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800 focus:border-primary"
-                />
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-medium text-slate-500">Password</label>
-                  <Link href="/forgot-password" className="text-xs font-medium text-primary hover:text-primary no-underline">Forgot password?</Link>
+          <div className="mb-10">
+            <div className="h-56 w-full flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-8xl mb-4">🛍️</div>
+                <div className="flex gap-3 justify-center">
+                  <div className="h-2 w-2 rounded-full bg-primary" />
+                  <div className="h-2 w-2 rounded-full bg-gray-600" />
+                  <div className="h-2 w-2 rounded-full bg-gray-600" />
                 </div>
-                <input required type="password" autoComplete="current-password" value={form.password} onChange={setField('password')} placeholder="••••••••"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800 focus:border-primary" />
               </div>
-              <button type="submit" disabled={!!loading}
-                className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50 transition-all shadow-lg ">
-                {loading === 'login' ? 'Signing in…' : 'Sign In'}
-              </button>
-            </form>
-          )}
+            </div>
+          </div>
 
-          {/* Register form */}
-          {mode === 'register' && (
-            <form onSubmit={handleRegister} className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Full Name *</label>
-                <input required value={form.name} onChange={setField('name')} placeholder="Your full name"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Email (or use phone below)</label>
-                <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value.toLowerCase() })} placeholder="email@example.com"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Phone (any country)</label>
-                <input type="tel" value={form.phone} onChange={setField('phone')} placeholder="+250 7XX XXX XXX"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Password *</label>
-                <input required type="password" value={form.password} onChange={setField('password')} placeholder="Min 8 chars · Uppercase · Number · Symbol"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800" />
-                {form.password && (
-                  <div className="mt-2 space-y-1">
-                    <div className="flex gap-1">
-                      {[1,2,3,4,5].map(i => (
-                        <div key={i} className={`h-1.5 flex-1 rounded-full transition-all ${i <= strength.score ? strength.color : 'bg-slate-200 dark:bg-slate-700'}`} />
-                      ))}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p className={`text-xs font-semibold ${strength.score <= 2 ? 'text-red-500' : strength.score === 3 ? 'text-amber-500' : strength.score === 4 ? 'text-primary' : 'text-emerald-600'}`}>{strength.label}</p>
-                      <p className="text-[10px] text-slate-400">Use A–Z · 0–9 · !@#$ for Strong</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Confirm Password *</label>
-                <input required type="password" value={form.confirmPassword} onChange={setField('confirmPassword')} placeholder="Repeat password"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800" />
-              </div>
-              <p className="text-xs text-slate-400">Enter email, phone, or both — at least one required.</p>
-              <button type="submit" disabled={!!loading}
-                className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50 transition-all shadow-lg ">
-                {loading === 'register' ? 'Creating account…' : 'Create Account'}
-              </button>
-            </form>
-          )}
+          <h2 className="text-3xl font-semibold text-white mb-3 leading-snug">Shop the Latest<br/>Electronics in Rwanda</h2>
+          <p className="text-gray-400 text-sm">100% genuine products · Fast delivery · Full warranty support</p>
         </div>
+      </div>
+
+      {/* ── Right: Form panel ── */}
+      <div className="flex flex-col justify-center w-full lg:w-[480px] flex-shrink-0 px-8 sm:px-14 py-12 bg-white">
+
+        {/* Mobile logo */}
+        <Link href="/" className="flex items-center gap-2 mb-8 lg:hidden">
+          <img src="/logo.png" alt="KigaliTech" className="h-8 w-8 rounded-full" onError={e=>e.target.style.display='none'} />
+          <span className="text-lg font-bold text-ex-text">KigaliTech</span>
+        </Link>
+
+        {/* Mode tabs */}
+        <div className="flex border-b border-ex-border mb-8">
+          <button onClick={() => { setMode('login'); setError(''); }}
+            className={`flex-1 pb-3 text-sm font-semibold border-b-2 transition-colors ${mode === 'login' ? 'border-primary text-primary' : 'border-transparent text-ex-muted'}`}>
+            Sign In
+          </button>
+          <button onClick={() => { setMode('register'); setError(''); }}
+            className={`flex-1 pb-3 text-sm font-semibold border-b-2 transition-colors ${mode === 'register' ? 'border-primary text-primary' : 'border-transparent text-ex-muted'}`}>
+            Create Account
+          </button>
+        </div>
+
+        <h1 className="text-2xl font-semibold text-ex-text mb-1">
+          {mode === 'login' ? 'Log in to Exclusive' : 'Create an Account'}
+        </h1>
+        <p className="text-sm text-ex-muted mb-7">Enter your details below</p>
+
+        {/* Alerts */}
+        {verified && (
+          <div className="mb-5 rounded bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+            ✓ Email verified! You can now sign in.
+          </div>
+        )}
+        {error && (
+          <div className="mb-5 rounded bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600">{error}</div>
+        )}
+
+        {/* Login form */}
+        {mode === 'login' && (
+          <form onSubmit={handleLogin} className="space-y-4">
+            <input required
+              value={form.email || form.phone}
+              onChange={e => {
+                const val = e.target.value;
+                const isPhone = val.startsWith('+') || /^[\d\s\-()]{3,}$/.test(val.replace(/^\+/, ''));
+                setForm({ ...form, email: isPhone ? '' : val.toLowerCase(), phone: isPhone ? val : '' });
+              }}
+              placeholder="Email or Phone"
+              className={inp}
+            />
+            <div>
+              <input required type="password" value={form.password} onChange={setField('password')} placeholder="Password" className={inp} />
+              <div className="flex justify-end mt-1">
+                <Link href="/forgot-password" className="text-xs text-primary hover:underline">Forgot Password?</Link>
+              </div>
+            </div>
+
+            <button type="submit" disabled={!!loading} className="btn-primary w-full py-3 disabled:opacity-60">
+              {loading === 'login' ? 'Signing in…' : 'Log In'}
+            </button>
+
+            {/* Social */}
+            {socialProviders.length > 0 && (
+              <>
+                <div className="flex items-center gap-3 my-2">
+                  <div className="flex-1 border-t border-ex-border" />
+                  <span className="text-xs text-ex-muted">or</span>
+                  <div className="flex-1 border-t border-ex-border" />
+                </div>
+                {socialProviders.includes('google') && (
+                  <button type="button" onClick={() => handleSocial('google')} disabled={!!loading}
+                    className="w-full flex items-center justify-center gap-3 border border-ex-border rounded py-3 text-sm font-medium text-ex-text hover:border-primary transition-colors disabled:opacity-60">
+                    <svg className="h-5 w-5" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    {loading === 'google' ? 'Connecting…' : 'Continue with Google'}
+                  </button>
+                )}
+              </>
+            )}
+
+            {/* Magic link */}
+            <div className="pt-2 border-t border-ex-border">
+              <p className="text-xs text-ex-muted mb-2 text-center">No password? Use a magic link</p>
+              {magicSent ? (
+                <div className="rounded bg-green-50 border border-green-200 px-4 py-3 text-center text-sm text-green-700">
+                  📬 Check your inbox — we sent a link to <strong>{magicEmail}</strong>
+                  <button onClick={() => { setMagicSent(false); setMagicEmail(''); }} className="block mt-1 text-xs underline mx-auto">Use different email</button>
+                </div>
+              ) : (
+                <form onSubmit={handleMagicLink} className="flex gap-2">
+                  <input type="email" value={magicEmail} onChange={e => setMagicEmail(e.target.value.toLowerCase())}
+                    placeholder="your@email.com" className={`${inp} flex-1`} />
+                  <button type="submit" disabled={!!loading}
+                    className="whitespace-nowrap px-4 py-3 rounded border border-primary text-primary text-sm font-medium hover:bg-primary hover:text-white transition-colors disabled:opacity-60">
+                    {loading === 'magic-send' ? '…' : 'Send Link'}
+                  </button>
+                </form>
+              )}
+            </div>
+          </form>
+        )}
+
+        {/* Register form */}
+        {mode === 'register' && (
+          <form onSubmit={handleRegister} className="space-y-4">
+            <input required value={form.name} onChange={setField('name')} placeholder="Full Name" className={inp} />
+            <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value.toLowerCase() })} placeholder="Email Address" className={inp} />
+            <input type="tel" value={form.phone} onChange={setField('phone')} placeholder="Phone (+250 7XX XXX XXX)" className={inp} />
+            <div>
+              <input required type="password" value={form.password} onChange={setField('password')} placeholder="Password (min 8 chars)" className={inp} />
+              {form.password && (
+                <div className="mt-2">
+                  <div className="flex gap-1 mb-1">
+                    {[1,2,3,4,5].map(i => (
+                      <div key={i} className={`h-1 flex-1 rounded-full ${i <= strength.score ? strength.color : 'bg-ex-border'}`} />
+                    ))}
+                  </div>
+                  <p className="text-xs text-ex-muted">{strength.label}</p>
+                </div>
+              )}
+            </div>
+            <input required type="password" value={form.confirmPassword} onChange={setField('confirmPassword')} placeholder="Confirm Password" className={inp} />
+            <p className="text-xs text-ex-muted">Enter email, phone, or both — at least one required.</p>
+            <button type="submit" disabled={!!loading} className="btn-primary w-full py-3 disabled:opacity-60">
+              {loading === 'register' ? 'Creating account…' : 'Create Account'}
+            </button>
+
+            {socialProviders.includes('google') && (
+              <>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 border-t border-ex-border" />
+                  <span className="text-xs text-ex-muted">or</span>
+                  <div className="flex-1 border-t border-ex-border" />
+                </div>
+                <button type="button" onClick={() => handleSocial('google')} disabled={!!loading}
+                  className="w-full flex items-center justify-center gap-3 border border-ex-border rounded py-3 text-sm font-medium text-ex-text hover:border-primary transition-colors disabled:opacity-60">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                  Sign up with Google
+                </button>
+              </>
+            )}
+          </form>
+        )}
       </div>
     </div>
   );

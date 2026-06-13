@@ -4,29 +4,25 @@ import Layout from '../components/Layout';
 export default function NotFound() {
   return (
     <Layout>
-      <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 py-20 text-center bg-white dark:bg-slate-950">
+      <div className="max-w-container mx-auto px-4 lg:px-6 py-10">
         {/* Breadcrumb */}
-        <nav className="mb-12 text-sm text-slate-400 flex gap-2">
+        <nav className="text-sm text-ex-muted flex items-center gap-2 mb-20">
           <Link href="/" className="hover:text-primary transition-colors">Home</Link>
           <span>/</span>
-          <span className="text-slate-600 dark:text-slate-300">404 Error</span>
+          <span className="text-ex-text font-medium">404 Error</span>
         </nav>
 
-        {/* Big 404 */}
-        <h1 className="text-8xl sm:text-9xl font-extrabold text-slate-900 dark:text-white leading-none mb-6">
-          404 Not Found
-        </h1>
-
-        <p className="text-slate-500 dark:text-slate-400 text-base max-w-sm mb-10">
-          Your visited page not found. You may go home page.
-        </p>
-
-        <Link
-          href="/"
-          className="rounded bg-primary hover:bg-primary-hover text-white font-semibold px-12 py-4 text-sm transition-colors"
-        >
-          Back to Home Page
-        </Link>
+        <div className="flex flex-col items-center text-center pb-28">
+          <h1 className="text-[110px] sm:text-[160px] font-semibold text-ex-text leading-none mb-6 tracking-tight">
+            404
+          </h1>
+          <p className="text-ex-text text-base mb-10 max-w-sm">
+            Your visited page not found. You may go home page.
+          </p>
+          <Link href="/" className="btn-primary inline-block px-12 py-4">
+            Back to Home Page
+          </Link>
+        </div>
       </div>
     </Layout>
   );

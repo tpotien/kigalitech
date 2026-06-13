@@ -16,7 +16,7 @@ const STATUS_COLORS = {
   pending: 'bg-amber-100 text-amber-700',
   confirmed: 'bg-blue-100 text-blue-700',
   processing: 'bg-purple-100 text-purple-700',
-  shipped: 'bg-sky-100 text-sky-700',
+  shipped: 'bg-red-50 text-primary',
   delivered: 'bg-emerald-100 text-emerald-700',
   cancelled: 'bg-red-100 text-red-700',
 };
@@ -85,14 +85,14 @@ function ReviewForm({ item, orderId, onDone }) {
 
   return (
     <form onSubmit={submit} className="mt-3 rounded-2xl border border-amber-100 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10 p-4 space-y-3">
-      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Rate <span className="text-sky-700 dark:text-sky-400">{item.name}</span></p>
+      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Rate <span className="text-primary text-primary">{item.name}</span></p>
       <StarRating value={rating} onChange={setRating} />
       <input
         required
         value={title}
         onChange={e => setTitle(e.target.value)}
         placeholder="Review title (e.g. Amazing product!)"
-        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-800"
+        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-sky-800"
       />
       <textarea
         required
@@ -100,7 +100,7 @@ function ReviewForm({ item, orderId, onDone }) {
         value={body}
         onChange={e => setBody(e.target.value)}
         placeholder="Share your experience with this product..."
-        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-3 py-2 text-sm resize-none focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-800"
+        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-3 py-2 text-sm resize-none focus:border-primary focus:outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-sky-800"
       />
       {msg && <p className="text-xs text-red-500">{msg}</p>}
       <div className="flex gap-2">
@@ -118,7 +118,7 @@ function ReviewForm({ item, orderId, onDone }) {
 
 const TRADEIN_STATUS = {
   pending:     { label: 'Under Review',       color: 'bg-slate-100 text-slate-600',     icon: '⏳' },
-  offer_made:  { label: 'Offer Received',     color: 'bg-sky-100 text-sky-700',         icon: '💬' },
+  offer_made:  { label: 'Offer Received',     color: 'bg-red-50 text-primary',         icon: '💬' },
   negotiating: { label: 'Awaiting Response',  color: 'bg-violet-100 text-violet-700',   icon: '🔄' },
   accepted:    { label: 'Deal Accepted',      color: 'bg-emerald-100 text-emerald-700', icon: '✅' },
   rejected:    { label: 'Not Accepted',       color: 'bg-red-100 text-red-700',         icon: '❌' },
@@ -235,7 +235,7 @@ function AddressBook() {
     setAddresses(prev => prev.map(a => ({ ...a, isDefault: a.id === id })));
   }
 
-  const inp = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100';
+  const inp = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-red-100';
 
   return (
     <div className="space-y-6">
@@ -247,9 +247,9 @@ function AddressBook() {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {addresses.map(addr => (
-              <div key={addr.id} className={`rounded-2xl border p-4 ${addr.isDefault ? 'border-sky-400 bg-sky-50 dark:bg-sky-900/20' : 'border-slate-200 dark:border-slate-700'}`}>
+              <div key={addr.id} className={`rounded-2xl border p-4 ${addr.isDefault ? 'border-primary bg-sky-50 bg-red-50' : 'border-slate-200 dark:border-slate-700'}`}>
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <span className="text-xs font-bold text-sky-600 uppercase">{addr.label}</span>
+                  <span className="text-xs font-bold text-primary uppercase">{addr.label}</span>
                   {addr.isDefault && <span className="text-xs font-semibold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">Default</span>}
                 </div>
                 <p className="font-semibold text-sm text-slate-800 dark:text-slate-200">{addr.name}</p>
@@ -257,7 +257,7 @@ function AddressBook() {
                 <p className="text-xs text-slate-400 mt-0.5">{addr.address}</p>
                 <div className="flex gap-2 mt-3">
                   {!addr.isDefault && (
-                    <button onClick={() => setDefault(addr.id)} className="text-xs font-semibold text-sky-600 hover:text-sky-700">Set default</button>
+                    <button onClick={() => setDefault(addr.id)} className="text-xs font-semibold text-primary hover:text-primary">Set default</button>
                   )}
                   <button onClick={() => handleDelete(addr.id)} className="text-xs font-semibold text-red-500 hover:text-red-700 ml-auto">Delete</button>
                 </div>
@@ -296,7 +296,7 @@ function AddressBook() {
             Set as default address
           </label>
           {msg && <p className={`text-sm ${msg.includes('Failed') || msg.includes('error') ? 'text-red-600' : 'text-emerald-600'}`}>{msg}</p>}
-          <button type="submit" disabled={adding} className="rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold px-6 py-2.5 text-sm">
+          <button type="submit" disabled={adding} className="rounded-xl bg-primary hover:bg-primary-hover disabled:opacity-50 text-white font-bold px-6 py-2.5 text-sm">
             {adding ? 'Saving…' : 'Save Address'}
           </button>
         </form>
@@ -575,7 +575,7 @@ export default function AccountPage() {
     return (
       <Layout>
         <div className="flex min-h-screen items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
       </Layout>
     );
@@ -586,7 +586,7 @@ export default function AccountPage() {
     return (
       <Layout>
         <div className="flex min-h-screen items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
       </Layout>
     );
@@ -595,52 +595,73 @@ export default function AccountPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 px-4 py-10 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-4xl">
-          {/* Profile header */}
-          <div className="mb-8 flex items-center gap-5 rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm">
-            {session.user.image
-              ? <img src={session.user.image} alt="" className="h-16 w-16 rounded-full" />
-              : <div className="flex h-16 w-16 items-center justify-center rounded-full bg-sky-600 text-2xl font-bold text-white">{(session.user.name || 'U')[0].toUpperCase()}</div>
-            }
-            <div>
-              <span className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{session.user.name || 'Customer'}</h1>
-                <VerifiedBadge role={badgeInfo.role || session.user.role} verifiedBuyer={badgeInfo.verifiedBuyer} size="md" />
-              </span>
-              <p className="text-slate-500 dark:text-slate-400">{session.user.email}</p>
-              <span className="mt-1 inline-block rounded-full bg-sky-100 px-3 py-0.5 text-xs font-semibold text-sky-700 capitalize">{session.user.role || 'customer'}</span>
-            </div>
-          </div>
+      <div className="max-w-container mx-auto px-4 lg:px-6 py-10">
 
-          {/* Tabs */}
-          <div className="mb-6 flex gap-2 rounded-2xl bg-white dark:bg-slate-900 p-1.5 shadow-sm overflow-x-auto">
-            {[
-              { id: 'orders', label: t('myOrders') },
-              { id: 'wishlist', label: `Wishlist${wishlistIds.size > 0 ? ` (${wishlistIds.size})` : ''}` },
-              { id: 'trade-ins', label: `Trade-Ins${tradeIns.filter(t => t.status === 'offer_made').length > 0 ? ' 🔔' : ''}` },
-              { id: 'repairs', label: t('repairTickets') },
-              { id: 'addresses', label: 'Addresses' },
-              { id: 'profile', label: 'Profile' },
-            ].map(tab_ => (
-              <button
-                key={tab_.id}
-                onClick={() => setTab(tab_.id)}
-                className={`flex-1 whitespace-nowrap rounded-xl py-2.5 text-sm font-semibold transition ${
-                  tab === tab_.id ? 'bg-sky-600 text-white shadow' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
-              >
-                {tab_.label}
+        {/* Breadcrumb */}
+        <nav className="text-sm text-ex-muted flex items-center gap-2 mb-10">
+          <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+          <span>/</span>
+          <span className="text-ex-text font-medium">My Account</span>
+        </nav>
+
+        <div className="flex flex-col lg:flex-row gap-10 items-start">
+
+          {/* ── Exclusive sidebar ── */}
+          <aside className="lg:w-64 flex-shrink-0 w-full">
+            {/* Welcome */}
+            <div className="mb-6">
+              <p className="text-sm text-ex-muted mb-0.5">Hello,</p>
+              <p className="font-semibold text-ex-text text-lg">{session.user.name || 'Customer'}</p>
+            </div>
+
+            {/* Sidebar nav groups */}
+            <nav className="space-y-1">
+              <p className="text-sm font-semibold text-ex-text mb-2">Manage My Account</p>
+              {[
+                { id: 'profile',   label: 'My Profile' },
+                { id: 'addresses', label: 'Address Book' },
+              ].map(item => (
+                <button key={item.id} onClick={() => setTab(item.id)}
+                  className={`block w-full text-left px-3 py-2 text-sm rounded transition-colors ${
+                    tab === item.id ? 'text-primary font-medium' : 'text-ex-muted hover:text-primary'
+                  }`}>
+                  {item.label}
+                </button>
+              ))}
+
+              <p className="text-sm font-semibold text-ex-text mt-5 mb-2 pt-4 border-t border-ex-border">My Orders</p>
+              {[
+                { id: 'orders',   label: 'My Orders' },
+                { id: 'repairs',  label: 'Repair Tickets' },
+                { id: 'trade-ins',label: 'Trade-Ins' },
+              ].map(item => (
+                <button key={item.id} onClick={() => setTab(item.id)}
+                  className={`block w-full text-left px-3 py-2 text-sm rounded transition-colors ${
+                    tab === item.id ? 'text-primary font-medium' : 'text-ex-muted hover:text-primary'
+                  }`}>
+                  {item.label}
+                </button>
+              ))}
+
+              <p className="text-sm font-semibold text-ex-text mt-5 mb-2 pt-4 border-t border-ex-border">Other</p>
+              <button onClick={() => setTab('wishlist')}
+                className={`block w-full text-left px-3 py-2 text-sm rounded transition-colors ${
+                  tab === 'wishlist' ? 'text-primary font-medium' : 'text-ex-muted hover:text-primary'
+                }`}>
+                My Wishlist {wishlistIds.size > 0 ? `(${wishlistIds.size})` : ''}
               </button>
-            ))}
-          </div>
+            </nav>
+          </aside>
+
+          {/* ── Main content ── */}
+          <div className="flex-1 min-w-0">
 
           {/* ── Wishlist Tab ── */}
           {tab === 'wishlist' && (
             <div>
               {loadingWishlist ? (
                 <div className="flex justify-center py-16">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
                 </div>
               ) : wishlistItems.length === 0 ? (
                 <div className="rounded-3xl bg-white dark:bg-slate-900 p-16 text-center shadow-sm">
@@ -648,7 +669,7 @@ export default function AccountPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
                   <p className="mt-4 text-slate-500 dark:text-slate-400">Your wishlist is empty</p>
-                  <Link href="/products" className="mt-4 inline-block rounded-full bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-700">Browse Products</Link>
+                  <Link href="/products" className="mt-4 inline-block rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover">Browse Products</Link>
                 </div>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -665,8 +686,8 @@ export default function AccountPage() {
                         </Link>
                         <div className="flex flex-1 flex-col justify-between min-w-0">
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-wider text-sky-600">{product.category}</p>
-                            <Link href={`/products/${product.id}`} className="font-semibold text-slate-900 dark:text-slate-100 no-underline hover:text-sky-700 line-clamp-2 text-sm mt-0.5 block">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-primary">{product.category}</p>
+                            <Link href={`/products/${product.id}`} className="font-semibold text-slate-900 dark:text-slate-100 no-underline hover:text-primary line-clamp-2 text-sm mt-0.5 block">
                               {product.name}
                             </Link>
                           </div>
@@ -690,7 +711,7 @@ export default function AccountPage() {
                               </button>
                               <Link
                                 href={`/products/${product.id}`}
-                                className="rounded-full bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white no-underline hover:bg-sky-700"
+                                className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-white no-underline hover:bg-primary-hover"
                               >
                                 View
                               </Link>
@@ -710,14 +731,14 @@ export default function AccountPage() {
             <div className="space-y-4">
               {loadingTradeIns ? (
                 <div className="flex justify-center py-16">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
                 </div>
               ) : tradeIns.length === 0 ? (
                 <div className="rounded-3xl bg-white dark:bg-slate-900 p-16 text-center shadow-sm">
                   <div className="mx-auto mb-4 text-5xl">♻️</div>
                   <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">No trade-in requests yet</h3>
                   <p className="mt-2 text-slate-500 dark:text-slate-400">Submit your used device to get a coupon towards your next purchase.</p>
-                  <Link href="/trade-in" className="mt-6 inline-block rounded-full bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 no-underline">
+                  <Link href="/trade-in" className="mt-6 inline-block rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover no-underline">
                     Start a Trade-In
                   </Link>
                 </div>
@@ -753,7 +774,7 @@ export default function AccountPage() {
                             </span>
                           )}
                           {ti.offeredPrice > 0 && (
-                            <span className="rounded-lg bg-sky-50 dark:bg-sky-900/20 px-2.5 py-1 text-sky-700 dark:text-sky-300">
+                            <span className="rounded-lg bg-sky-50 bg-red-50 px-2.5 py-1 text-primary text-primary">
                               Our offer: <span className="font-semibold">{format(ti.offeredPrice)}</span>
                             </span>
                           )}
@@ -771,8 +792,8 @@ export default function AccountPage() {
 
                         {/* Admin message */}
                         {ti.adminNotes && (
-                          <div className="mt-3 rounded-xl bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-800 px-4 py-3">
-                            <p className="text-xs font-semibold text-sky-600 mb-0.5">Message from KigaliTech</p>
+                          <div className="mt-3 rounded-xl bg-sky-50 bg-red-50 border border-sky-100 dark:border-sky-800 px-4 py-3">
+                            <p className="text-xs font-semibold text-primary mb-0.5">Message from KigaliTech</p>
                             <p className="text-sm text-slate-700 dark:text-slate-300">{ti.adminNotes}</p>
                           </div>
                         )}
@@ -789,7 +810,7 @@ export default function AccountPage() {
                       {ti.status === 'offer_made' && !msg?.startsWith('✓') && (
                         <div className="border-t border-sky-100 dark:border-sky-800 bg-sky-50/30 dark:bg-sky-900/10 px-5 pb-5">
                           <div className="pt-4 mb-3">
-                            <p className="font-semibold text-slate-800 dark:text-slate-200">We're offering <span className="text-sky-700 dark:text-sky-400">{format(ti.offeredPrice)}</span> for your {ti.productName}</p>
+                            <p className="font-semibold text-slate-800 dark:text-slate-200">We're offering <span className="text-primary text-primary">{format(ti.offeredPrice)}</span> for your {ti.productName}</p>
                             <p className="text-xs text-slate-400 mt-0.5">Accept to proceed, counter with your price, or decline</p>
                           </div>
 
@@ -829,7 +850,7 @@ export default function AccountPage() {
                                   value={counterAmounts[ti.id] || ''}
                                   onChange={e => setCounterAmounts(prev => ({ ...prev, [ti.id]: e.target.value }))}
                                   placeholder="Your counter amount"
-                                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-800"
+                                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-sky-800"
                                 />
                               </div>
                               <textarea
@@ -837,7 +858,7 @@ export default function AccountPage() {
                                 value={counterNotes[ti.id] || ''}
                                 onChange={e => setCounterNotes(prev => ({ ...prev, [ti.id]: e.target.value }))}
                                 placeholder="Add a note (optional)"
-                                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-3 py-2 text-sm resize-none focus:border-sky-400 focus:outline-none"
+                                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-3 py-2 text-sm resize-none focus:border-primary focus:outline-none"
                               />
                               <div className="flex gap-2">
                                 <button
@@ -905,7 +926,7 @@ export default function AccountPage() {
               <LoyaltyTierCard points={loyaltyPoints || session?.user?.loyaltyPoints || 0} role={session?.user?.role} />
               {loadingOrders ? (
                 <div className="flex justify-center py-16">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
                 </div>
               ) : orders.length === 0 ? (
                 <div className="rounded-3xl bg-white dark:bg-slate-900 p-16 text-center shadow-sm">
@@ -913,7 +934,7 @@ export default function AccountPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                   </svg>
                   <p className="mt-4 text-slate-500 dark:text-slate-400">{t('noOrders')}</p>
-                  <Link href="/products" className="mt-4 inline-block rounded-full bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-700">{t('shopNow')}</Link>
+                  <Link href="/products" className="mt-4 inline-block rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover">{t('shopNow')}</Link>
                 </div>
               ) : (
                 orders.map(order => {
@@ -965,7 +986,7 @@ export default function AccountPage() {
                           <button
                             onClick={() => handleReorder(order)}
                             disabled={reorderingId === order.id}
-                            className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60 flex items-center gap-1.5 transition"
+                            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60 flex items-center gap-1.5 transition"
                           >
                             {reorderingId === order.id ? (
                               <><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" /> Adding…</>
@@ -1095,7 +1116,7 @@ export default function AccountPage() {
                       value={profileName}
                       onChange={e => setProfileName(e.target.value)}
                       placeholder="Your name"
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-800"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-sky-800"
                     />
                   </div>
                   <div>
@@ -1115,7 +1136,7 @@ export default function AccountPage() {
                 </p>
               )}
 
-              <button type="submit" disabled={savingProfile} className="rounded-full bg-sky-600 px-7 py-3 font-semibold text-white hover:bg-sky-700 disabled:opacity-50">
+              <button type="submit" disabled={savingProfile} className="rounded-full bg-primary px-7 py-3 font-semibold text-white hover:bg-primary-hover disabled:opacity-50">
                 {savingProfile ? 'Saving…' : 'Save Profile'}
               </button>
             </form>
@@ -1134,7 +1155,7 @@ export default function AccountPage() {
                   className={`flex-shrink-0 rounded-full px-5 py-2 text-sm font-semibold transition-all disabled:opacity-50 ${
                     push.subscribed
                       ? 'border border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
-                      : 'bg-sky-600 text-white hover:bg-sky-700 shadow-sm'
+                      : 'bg-primary text-white hover:bg-primary-hover shadow-sm'
                   }`}
                 >
                   {push.loading ? '…' : push.subscribed ? 'Turn Off' : 'Enable'}
@@ -1150,8 +1171,8 @@ export default function AccountPage() {
               {/* Submit form */}
               <div className="rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100">
-                    <svg className="h-5 w-5 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50">
+                    <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
                     </svg>
                   </div>
@@ -1165,18 +1186,18 @@ export default function AccountPage() {
                     <div>
                       <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300">{t('productName')} *</label>
                       <input required value={form.productName} onChange={e => setForm({ ...form, productName: e.target.value })} placeholder="e.g. iPhone 15 Pro"
-                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-800" />
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-sky-800" />
                     </div>
                     <div>
                       <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300">{t('issue')} *</label>
                       <input required value={form.issue} onChange={e => setForm({ ...form, issue: e.target.value })} placeholder="e.g. Cracked screen, won't charge"
-                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-800" />
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-sky-800" />
                     </div>
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300">{t('description')}</label>
                     <textarea rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Describe the problem in detail — when it started, what happened, etc."
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-800 resize-none" />
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-sky-800 resize-none" />
                   </div>
 
                   {/* Device photo upload */}
@@ -1197,9 +1218,9 @@ export default function AccountPage() {
                       {repairImages.length < 3 && (
                         <button type="button" onClick={() => repairImgRef.current?.click()}
                           disabled={uploadingImg}
-                          className="flex h-24 w-24 flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:border-sky-400 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-all disabled:opacity-50">
+                          className="flex h-24 w-24 flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:border-primary hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-all disabled:opacity-50">
                           {uploadingImg
-                            ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-sky-400 border-t-transparent" />
+                            ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                             : <>
                                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                 <span className="text-[11px] font-semibold">Add Photo</span>
@@ -1215,7 +1236,7 @@ export default function AccountPage() {
                     <div>
                       <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300">{t('priority')}</label>
                       <select value={form.priority} onChange={e => setForm({ ...form, priority: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-800">
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-sky-800">
                         <option value="low">Low — Not urgent</option>
                         <option value="normal">Normal</option>
                         <option value="high">High — Within a few days</option>
@@ -1225,7 +1246,7 @@ export default function AccountPage() {
                     <div>
                       <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300">Order ID (if purchased from us)</label>
                       <input value={form.orderId} onChange={e => setForm({ ...form, orderId: e.target.value })} placeholder="Optional" type="number"
-                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-800" />
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-sky-800" />
                     </div>
                   </div>
 
@@ -1233,7 +1254,7 @@ export default function AccountPage() {
                     <p className={`rounded-xl px-4 py-3 text-sm font-medium ${submitMsg.includes('submitted') ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>{submitMsg}</p>
                   )}
                   <button type="submit" disabled={submitting || uploadingImg}
-                    className="rounded-full bg-sky-600 px-8 py-3 text-sm font-bold text-white hover:bg-sky-700 disabled:opacity-50 shadow-md shadow-sky-100 transition-all active:scale-95">
+                    className="rounded-full bg-primary px-8 py-3 text-sm font-bold text-white hover:bg-primary-hover disabled:opacity-50 shadow-md shadow-sky-100 transition-all active:scale-95">
                     {submitting ? 'Submitting...' : 'Submit Repair Request'}
                   </button>
                 </form>
@@ -1242,7 +1263,7 @@ export default function AccountPage() {
               {/* Tickets list */}
               {loadingTickets ? (
                 <div className="flex justify-center py-8">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
                 </div>
               ) : tickets.length > 0 && (
                 <div className="space-y-4">
@@ -1322,9 +1343,9 @@ export default function AccountPage() {
 
                         {/* Admin notes */}
                         {ticket.adminNotes && (
-                          <div className="mx-5 mt-3 rounded-xl bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-800 p-3">
-                            <p className="text-xs font-bold text-sky-700 mb-0.5">Message from KigaliTech</p>
-                            <p className="text-sm text-sky-800 dark:text-sky-300">{ticket.adminNotes}</p>
+                          <div className="mx-5 mt-3 rounded-xl bg-sky-50 bg-red-50 border border-sky-100 dark:border-sky-800 p-3">
+                            <p className="text-xs font-bold text-primary mb-0.5">Message from KigaliTech</p>
+                            <p className="text-sm text-sky-800 text-primary">{ticket.adminNotes}</p>
                           </div>
                         )}
 
@@ -1338,7 +1359,8 @@ export default function AccountPage() {
               )}
             </div>
           )}
-        </div>
+          </div>{/* end flex-1 main */}
+        </div>{/* end flex row */}
       </div>
     </Layout>
   );
