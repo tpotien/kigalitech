@@ -9,6 +9,7 @@ import dynamic from 'next/dynamic';
 import SearchAutocomplete from './SearchAutocomplete';
 import NotificationBell from './NotificationBell';
 import BottomNav from './BottomNav';
+import AvatarWithBadge from './AvatarWithBadge';
 
 const CartDrawer = dynamic(() => import('./CartDrawer'), { ssr: false });
 const AIChatWidget = dynamic(() => import('./AIChatWidget'), { ssr: false });
@@ -175,15 +176,28 @@ export default function Layout({ children }) {
               {/* User */}
               {session ? (
                 <div className="relative group">
-                  <button className="flex items-center gap-1.5 text-ex-text hover:text-primary transition-colors">
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                  <button className="flex items-center gap-1.5 hover:opacity-80 transition-opacity">
+                    <AvatarWithBadge
+                      image={session.user.image}
+                      name={session.user.name || session.user.email}
+                      role={session.user.role}
+                      emailVerified={session.user.emailVerified}
+                      size="sm"
+                    />
                   </button>
-                  <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-ex-border rounded shadow-lg py-1 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-50">
-                    <div className="px-4 py-2 border-b border-ex-border">
-                      <p className="text-sm font-semibold text-ex-text truncate">{session.user.name}</p>
-                      <p className="text-xs text-ex-muted truncate">{session.user.email}</p>
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-ex-border rounded shadow-lg py-1 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-50">
+                    <div className="flex items-center gap-3 px-4 py-3 border-b border-ex-border">
+                      <AvatarWithBadge
+                        image={session.user.image}
+                        name={session.user.name || session.user.email}
+                        role={session.user.role}
+                        emailVerified={session.user.emailVerified}
+                        size="md"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-ex-text truncate">{session.user.name}</p>
+                        <p className="text-xs text-ex-muted truncate">{session.user.email}</p>
+                      </div>
                     </div>
                     <Link href="/account" className="flex items-center gap-2 px-4 py-2 text-sm text-ex-text hover:bg-ex-gray">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
