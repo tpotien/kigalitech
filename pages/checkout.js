@@ -180,7 +180,7 @@ export default function Checkout() {
   }
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const inp = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-800';
+  const inp = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-800';
 
   const addonTotal = addons.filter(a => selectedAddons[a.id]).reduce((s, a) => s + a.price, 0);
   const selectedZone = deliveryZones.find(z => z.id === selectedZoneId) || null;
@@ -321,7 +321,7 @@ export default function Checkout() {
         <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-4">
           <div className="text-5xl">🛒</div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Your cart is empty</h1>
-          <Link href="/" className="rounded-full bg-sky-600 px-7 py-3 font-semibold text-white hover:bg-sky-700 no-underline">
+          <Link href="/" className="rounded-full bg-primary px-7 py-3 font-semibold text-white hover:bg-primary-hover no-underline">
             Continue Shopping
           </Link>
         </div>
@@ -358,8 +358,8 @@ export default function Checkout() {
                     {savedAddresses.map(addr => (
                       <button key={addr.id} type="button"
                         onClick={() => setForm(f => ({ ...f, name: addr.name, phone: addr.phone, address: addr.address }))}
-                        className="text-left rounded-xl border border-slate-200 dark:border-slate-700 p-3 hover:border-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-all">
-                        <p className="text-xs font-bold text-sky-600 uppercase mb-0.5">{addr.label}</p>
+                        className="text-left rounded-xl border border-slate-200 dark:border-slate-700 p-3 hover:border-primary hover:bg-red-50 dark:hover:bg-sky-900/20 transition-all">
+                        <p className="text-xs font-bold text-primary uppercase mb-0.5">{addr.label}</p>
                         <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{addr.name}</p>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{addr.phone}</p>
                         <p className="text-xs text-slate-400 truncate mt-0.5">{addr.address}</p>
@@ -445,7 +445,7 @@ export default function Checkout() {
                         key={zone.id}
                         className={`flex items-center justify-between gap-3 rounded-xl border p-3.5 cursor-pointer transition ${
                           selectedZoneId === zone.id
-                            ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20'
+                            ? 'border-sky-500 bg-red-50 dark:bg-sky-900/20'
                             : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-600'
                         }`}
                       >
@@ -498,7 +498,7 @@ export default function Checkout() {
                       key={m.id}
                       className={`relative flex items-center gap-3 rounded-xl border p-4 cursor-pointer transition ${
                         form.paymentMethod === m.id
-                          ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20'
+                          ? 'border-sky-500 bg-red-50 dark:bg-sky-900/20'
                           : m.popular
                             ? 'border-emerald-200 dark:border-emerald-800 hover:border-emerald-400'
                             : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
@@ -535,7 +535,7 @@ export default function Checkout() {
 
                 {/* Installment CTA */}
                 {isInstallment && (
-                  <div className="mt-4 rounded-xl bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 p-4">
+                  <div className="mt-4 rounded-xl bg-red-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 p-4">
                     <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">We'll contact you to arrange a plan</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">Clicking "Request Installment" will open WhatsApp so we can discuss your 3–12 month plan directly.</p>
                   </div>
@@ -561,7 +561,7 @@ export default function Checkout() {
                           key={addon.id} type="button"
                           onClick={() => setSelectedAddons(s => ({ ...s, [addon.id]: !s[addon.id] }))}
                           className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
-                            selected ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20 ring-2 ring-sky-200 dark:ring-sky-800' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                            selected ? 'border-sky-500 bg-red-50 dark:bg-sky-900/20 ring-2 ring-sky-200 dark:ring-sky-800' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
                           }`}
                         >
                           {img ? (
@@ -571,9 +571,9 @@ export default function Checkout() {
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{addon.name}</p>
-                            <p className="text-xs font-bold text-sky-600 mt-0.5">{format(addon.price)}</p>
+                            <p className="text-xs font-bold text-primary mt-0.5">{format(addon.price)}</p>
                           </div>
-                          <div className={`h-5 w-5 flex-shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${selected ? 'border-sky-500 bg-sky-500' : 'border-slate-300'}`}>
+                          <div className={`h-5 w-5 flex-shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${selected ? 'border-sky-500 bg-primary' : 'border-slate-300'}`}>
                             {selected && <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>}
                           </div>
                         </button>
@@ -638,10 +638,10 @@ export default function Checkout() {
                         onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponError(''); }}
                         onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), applyCoupon())}
                         placeholder="Coupon code"
-                        className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none"
+                        className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-3 py-2 text-sm focus:border-primary focus:outline-none"
                       />
                       <button type="button" onClick={applyCoupon} disabled={couponLoading || !couponInput.trim()}
-                        className="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50 transition">
+                        className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50 transition">
                         {couponLoading ? '...' : 'Apply'}
                       </button>
                     </div>
@@ -686,7 +686,7 @@ export default function Checkout() {
                     </p>
                   )}
                   {selectedZone?.estimatedDays && (
-                    <div className="flex items-center gap-1.5 rounded-lg bg-sky-50 dark:bg-sky-900/20 px-3 py-2 text-xs text-sky-700 dark:text-sky-400">
+                    <div className="flex items-center gap-1.5 rounded-lg bg-red-50 dark:bg-sky-900/20 px-3 py-2 text-xs text-primary dark:text-primary">
                       <span>📅</span>
                       <span>Expected delivery: <strong>{selectedZone.estimatedDays === 1 ? 'Today / Tomorrow' : `${selectedZone.estimatedDays} business days`}</strong></span>
                     </div>
@@ -710,7 +710,7 @@ export default function Checkout() {
                     <span>{t('total')}</span><span>{format(total)}</span>
                   </div>
                   {session && loyaltyPts !== null && (
-                    <div className={`mt-3 rounded-xl px-3 py-2.5 text-xs flex items-center gap-2 ${loyaltyPts >= 100 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-400'}`}>
+                    <div className={`mt-3 rounded-xl px-3 py-2.5 text-xs flex items-center gap-2 ${loyaltyPts >= 100 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'bg-red-50 dark:bg-sky-900/20 text-primary dark:text-primary'}`}>
                       <span className="text-base">⭐</span>
                       {loyaltyPts >= 100
                         ? <span><strong>{loyaltyPts} pts</strong> available — redeem for <strong>RWF {Math.floor(loyaltyPts / 100) * 1340 > 0 ? (Math.floor(loyaltyPts / 100) * 1340).toLocaleString() : '1,340'}</strong> off at checkout</span>
@@ -724,7 +724,7 @@ export default function Checkout() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full rounded-full bg-sky-600 py-3.5 font-semibold text-white hover:bg-sky-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                    className="w-full rounded-full bg-primary py-3.5 font-semibold text-white hover:bg-primary-hover disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                   >
                     {submitting ? (
                       <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> Processing…</>
@@ -767,16 +767,16 @@ export default function Checkout() {
                   Send Payment Proof on WhatsApp
                 </a>
                 {showSaveAddressPrompt && !addressSaved && (
-                  <div className="my-4 rounded-2xl bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 px-4 py-3 text-left">
-                    <p className="text-sm font-semibold text-sky-800 dark:text-sky-300 mb-1">Save your address for next time?</p>
-                    <p className="text-xs text-sky-600 dark:text-sky-400 mb-3">{form.address}</p>
+                  <div className="my-4 rounded-2xl bg-red-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 px-4 py-3 text-left">
+                    <p className="text-sm font-semibold text-primary dark:text-primary mb-1">Save your address for next time?</p>
+                    <p className="text-xs text-primary dark:text-primary mb-3">{form.address}</p>
                     <div className="flex gap-2">
                       <button onClick={saveCurrentAddress} disabled={addressSaveLoading}
-                        className="flex-1 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-60 text-white text-xs font-bold py-2 transition">
+                        className="flex-1 rounded-xl bg-primary hover:bg-primary-hover disabled:opacity-60 text-white text-xs font-bold py-2 transition">
                         {addressSaveLoading ? 'Saving…' : 'Save Address'}
                       </button>
                       <button onClick={() => setAddressSaved(true)}
-                        className="rounded-xl border border-sky-200 dark:border-sky-700 text-xs text-sky-600 dark:text-sky-400 px-3 py-2 hover:bg-sky-100 dark:hover:bg-sky-900/30 transition">
+                        className="rounded-xl border border-sky-200 dark:border-sky-700 text-xs text-primary dark:text-primary px-3 py-2 hover:bg-sky-100 dark:hover:bg-sky-900/30 transition">
                         No thanks
                       </button>
                     </div>
@@ -811,7 +811,7 @@ export default function Checkout() {
                       { n: '3', text: 'Come back and tap "I\'ve Sent the Payment"' },
                     ].map(s => (
                       <div key={s.n} className="flex items-center gap-3">
-                        <div className="h-7 w-7 flex-shrink-0 rounded-full bg-sky-600 text-white text-sm font-bold flex items-center justify-center">{s.n}</div>
+                        <div className="h-7 w-7 flex-shrink-0 rounded-full bg-primary text-white text-sm font-bold flex items-center justify-center">{s.n}</div>
                         <p className="text-sm text-slate-700 dark:text-slate-300">{s.text}</p>
                       </div>
                     ))}
@@ -838,7 +838,7 @@ export default function Checkout() {
                           <button
                             type="button"
                             onClick={() => navigator.clipboard?.writeText(BUSINESS_PHONE)}
-                            className="rounded-lg bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs text-slate-500 hover:text-sky-600 transition-colors"
+                            className="rounded-lg bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs text-slate-500 hover:text-primary transition-colors"
                           >
                             Copy
                           </button>
@@ -855,7 +855,7 @@ export default function Checkout() {
                   {/* USSD Dialer shortcut */}
                   <a
                     href={`tel:*182*1*1*${BUSINESS_PHONE}*${Math.round(total)}%23`}
-                    className="flex items-center justify-center gap-2 rounded-2xl bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 py-3 text-sm font-semibold text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/40 transition"
+                    className="flex items-center justify-center gap-2 rounded-2xl bg-red-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 py-3 text-sm font-semibold text-primary dark:text-primary hover:bg-sky-100 dark:hover:bg-sky-900/40 transition"
                   >
                     <span className="text-lg">📞</span>
                     Dial to pay: *182*1*1*{BUSINESS_PHONE}*{Math.round(total)}#
@@ -912,7 +912,7 @@ export default function Checkout() {
                   )}
                   <div className="p-3 flex-1 flex flex-col gap-1">
                     <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 line-clamp-2 leading-snug">{p.name}</p>
-                    <p className="text-xs font-bold text-sky-600 mt-auto">RWF {priceRWF.toLocaleString()}</p>
+                    <p className="text-xs font-bold text-primary mt-auto">RWF {priceRWF.toLocaleString()}</p>
                   </div>
                 </a>
               );

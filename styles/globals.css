@@ -2,161 +2,124 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
 
 body {
-  @apply bg-slate-50 text-slate-900;
-  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  background-color: #fff;
+  color: #1D2026;
+  font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: 'cv01', 'cv02', 'cv03';
 }
 
-/* Dark mode body */
-.dark body {
-  @apply bg-slate-950 text-slate-100;
-}
+a { color: inherit; text-decoration: none; }
+button { transition: opacity 0.15s ease, background-color 0.15s ease; }
 
-/* ── Global dark mode overrides ── */
-.dark .bg-white { background-color: rgb(30 41 59) !important; }
-.dark .bg-slate-50 { background-color: rgb(15 23 42) !important; }
-.dark .bg-slate-100 { background-color: rgb(30 41 59) !important; }
-.dark .text-slate-900 { color: rgb(241 245 249) !important; }
-.dark .text-slate-800 { color: rgb(226 232 240) !important; }
-.dark .text-slate-700 { color: rgb(203 213 225) !important; }
-.dark .text-slate-600 { color: rgb(148 163 184) !important; }
-.dark .text-slate-500 { color: rgb(148 163 184) !important; }
-.dark .border-slate-50 { border-color: rgb(30 41 59) !important; }
-.dark .border-slate-100 { border-color: rgb(51 65 85) !important; }
-.dark .border-slate-200 { border-color: rgb(51 65 85) !important; }
-.dark .divide-slate-100 > * + *, .dark .divide-slate-200 > * + * { border-color: rgb(51 65 85) !important; }
-.dark .hover\:bg-slate-50:hover { background-color: rgb(30 41 59) !important; }
-.dark .hover\:bg-slate-100:hover { background-color: rgb(51 65 85) !important; }
-/* Table rows */
-.dark tr:hover td { background-color: rgb(30 41 59) !important; }
-.dark thead tr { background-color: rgb(15 23 42) !important; }
-/* Inputs without dark: variant */
-.dark input:not([type=checkbox]):not([type=radio]):not([class*="dark"]),
-.dark select:not([class*="dark"]),
-.dark textarea:not([class*="dark"]) {
-  background-color: rgb(30 41 59) !important;
-  border-color: rgb(71 85 105) !important;
-  color: rgb(241 245 249) !important;
-}
-.dark input::placeholder, .dark textarea::placeholder {
-  color: rgb(100 116 139) !important;
-}
+/* ── Progress bar ─────────────────────────────────────────────────────────── */
+#nprogress .bar { background: #DB4444 !important; height: 3px !important; }
+#nprogress .peg { box-shadow: 0 0 10px #DB4444, 0 0 5px #DB4444 !important; }
 
-/* Smooth color transitions everywhere for dark mode toggle */
-*, *::before, *::after {
-  transition-property: background-color, border-color, color, fill, stroke;
-  transition-duration: 200ms;
-  transition-timing-function: ease;
-}
-
-a {
-  @apply text-sky-600 hover:text-sky-800;
-}
-
-button {
-  @apply transition ease-in-out duration-150;
-}
-
-/* ── Toast animations ── */
-@keyframes toast-slide-in {
-  from { opacity: 0; transform: translateX(110%) scale(0.95); }
-  to   { opacity: 1; transform: translateX(0) scale(1); }
-}
-
-@keyframes toast-progress {
-  from { width: 100%; }
-  to   { width: 0%; }
-}
-
-.toast-in {
-  animation: toast-slide-in 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  position: relative;
-  overflow: hidden;
-}
-
-.toast-bar {
-  animation: toast-progress 3.5s linear forwards;
-}
-
-/* ── Mobile notification bottom sheet ── */
-@keyframes slide-up {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
-}
-
-.slide-up {
-  animation: slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
-}
-
-/* ── Dropdown animate-in ── */
-@keyframes dropdown-in {
-  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.notif-anim {
-  animation: dropdown-in 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-/* ── Page progress bar ── */
-#nprogress .bar {
-  background: #0ea5e9 !important;
-  height: 3px !important;
-}
-
-#nprogress .peg {
-  box-shadow: 0 0 10px #0ea5e9, 0 0 5px #0ea5e9 !important;
-}
-
-/* ── Skeleton shimmer ── */
-@keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-.skeleton {
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: 0.5rem;
-}
-
-.dark .skeleton {
-  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
-  background-size: 200% 100%;
-}
-
-/* ── Safe area bottom padding for iOS ── */
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 1rem);
-}
-
-/* ── Smooth scroll ── */
-html {
-  scroll-behavior: smooth;
-}
-
-/* ── Scrollbar styling ── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 100px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-/* ── Hide scrollbar utility ── */
-.scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar            { width: 6px; height: 6px; }
+::-webkit-scrollbar-track      { background: transparent; }
+::-webkit-scrollbar-thumb      { background: #d1d5db; border-radius: 100px; }
+::-webkit-scrollbar-thumb:hover{ background: #9ca3af; }
+.scrollbar-none                { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
 
-/* ── Product image gallery touch ── */
+/* ── Skeleton shimmer ─────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #f5f5f5 25%, #e9e9e9 50%, #f5f5f5 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 4px;
+}
+
+/* ── Toast animations ─────────────────────────────────────────────────────── */
+@keyframes toast-slide-in {
+  from { opacity: 0; transform: translateX(110%) scale(0.95); }
+  to   { opacity: 1; transform: translateX(0)   scale(1);    }
+}
+@keyframes toast-progress {
+  from { width: 100%; }
+  to   { width: 0%;   }
+}
+.toast-in  { animation: toast-slide-in 0.28s cubic-bezier(0.34,1.56,0.64,1) forwards; position: relative; overflow: hidden; }
+.toast-bar { animation: toast-progress 3.5s linear forwards; }
+
+/* ── Slide-up (mobile sheet) ──────────────────────────────────────────────── */
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0);    }
+}
+.slide-up { animation: slide-up 0.3s cubic-bezier(0.32,0.72,0,1) forwards; }
+
+/* ── Dropdown animate-in ──────────────────────────────────────────────────── */
+@keyframes dropdown-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+.notif-anim { animation: dropdown-in 0.18s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+/* ── Product card hover ───────────────────────────────────────────────────── */
+.product-card-atc {
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+}
+.product-card:hover .product-card-atc { transform: translateY(0); }
+
+/* ── Gallery scroll ───────────────────────────────────────────────────────── */
 .gallery-scroll {
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
 .gallery-scroll::-webkit-scrollbar { display: none; }
-.gallery-scroll > * {
-  scroll-snap-align: start;
+.gallery-scroll > * { scroll-snap-align: start; }
+
+/* ── Safe area ────────────────────────────────────────────────────────────── */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 1rem); }
+
+/* ── Section label (red left border + "Today's" style) ───────────────────── */
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
 }
+.section-label::before {
+  content: '';
+  display: block;
+  width: 16px;
+  height: 40px;
+  background: #DB4444;
+  border-radius: 4px;
+}
+
+/* ── Exclusive button variants ────────────────────────────────────────────── */
+.btn-primary {
+  background: #DB4444;
+  color: #fff;
+  padding: 12px 32px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: background 0.15s ease;
+}
+.btn-primary:hover { background: #c73e3e; }
+
+.btn-outline {
+  border: 1px solid #1D2026;
+  color: #1D2026;
+  padding: 12px 32px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.btn-outline:hover { background: #1D2026; color: #fff; }

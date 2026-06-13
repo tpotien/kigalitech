@@ -259,7 +259,7 @@ function ReviewsSection({ productId }) {
   }
 
   return (
-    <div className="mt-8 rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm">
+    <div className="mt-8 rounded-3xl bg-white p-6 shadow-sm">
       {/* Review image lightbox */}
       {lightboxSrc && (
         <div
@@ -280,22 +280,22 @@ function ReviewsSection({ productId }) {
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Customer Reviews</h2>
+          <h2 className="text-xl font-bold text-slate-900">Customer Reviews</h2>
           {data.avg && (
             <div className="mt-1 flex items-center gap-2">
               <StarRating rating={Math.round(Number(data.avg))} size={4} />
-              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{data.avg} out of 5</span>
+              <span className="text-sm font-semibold text-slate-700">{data.avg} out of 5</span>
               <span className="text-sm text-slate-400">({data.count} reviews)</span>
             </div>
           )}
         </div>
         {session && !showForm && (
-          <button onClick={() => setShowForm(true)} className="rounded-full bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-700">
+          <button onClick={() => setShowForm(true)} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover">
             Write a Review
           </button>
         )}
         {!session && (
-          <Link href="/signin" className="rounded-full border border-slate-200 dark:border-slate-700 px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 no-underline">
+          <Link href="/signin" className="rounded-full border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 no-underline">
             Sign in to review
           </Link>
         )}
@@ -306,28 +306,28 @@ function ReviewsSection({ productId }) {
       )}
 
       {showForm && (
-        <form onSubmit={submitReview} className="mt-6 space-y-4 rounded-2xl border border-slate-100 dark:border-slate-800 p-5">
+        <form onSubmit={submitReview} className="mt-6 space-y-4 rounded-2xl border border-slate-100 p-5">
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Your Rating *</label>
+            <label className="mb-2 block text-sm font-medium text-slate-700">Your Rating *</label>
             <StarRating rating={form.rating} onChange={r => setForm({ ...form, rating: r })} />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Review Title *</label>
-            <input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Summarize your experience" className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-800" />
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Review Title *</label>
+            <input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Summarize your experience" className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 dark:text-white px-4 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/100 dark:focus:ring-primary/800" />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Review *</label>
-            <textarea required rows={4} value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} placeholder="Tell other shoppers what you think..." className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-2.5 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-800" />
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Review *</label>
+            <textarea required rows={4} value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} placeholder="Tell other shoppers what you think..." className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 dark:text-white px-4 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/100 dark:focus:ring-primary/800" />
           </div>
 
           {/* Photo upload */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+            <label className="mb-2 block text-sm font-medium text-slate-700">
               Add Photos <span className="font-normal text-slate-400">(optional — up to 3)</span>
             </label>
             <div className="flex flex-wrap gap-3">
               {reviewImages.map((img, i) => (
-                <div key={i} className="group relative h-20 w-20 overflow-hidden rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                <div key={i} className="group relative h-20 w-20 overflow-hidden rounded-xl border-2 border-slate-200 bg-slate-50">
                   <img src={img.dataUrl} alt="" className="h-full w-full object-cover" />
                   <button
                     type="button"
@@ -343,10 +343,10 @@ function ReviewsSection({ productId }) {
                   type="button"
                   onClick={() => reviewImgRef.current?.click()}
                   disabled={uploadingImg}
-                  className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:border-sky-400 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-all disabled:opacity-50"
+                  className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 hover:border-primary hover:text-primary hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-all disabled:opacity-50"
                 >
                   {uploadingImg
-                    ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-sky-400 border-t-transparent" />
+                    ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                     : (
                       <>
                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -370,10 +370,10 @@ function ReviewsSection({ productId }) {
           </div>
 
           <div className="flex gap-3">
-            <button type="submit" disabled={submitting || uploadingImg} className="rounded-full bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50">
+            <button type="submit" disabled={submitting || uploadingImg} className="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50">
               {submitting ? 'Submitting...' : 'Submit Review'}
             </button>
-            <button type="button" onClick={() => { setShowForm(false); setReviewImages([]); }} className="rounded-full border border-slate-200 dark:border-slate-700 px-6 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800">
+            <button type="button" onClick={() => { setShowForm(false); setReviewImages([]); }} className="rounded-full border border-slate-200 px-6 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">
               Cancel
             </button>
           </div>
@@ -393,11 +393,11 @@ function ReviewsSection({ productId }) {
                   <div className="flex items-center gap-3">
                     {review.user?.image
                       ? <img src={review.user.image} alt="" className="h-9 w-9 rounded-full" />
-                      : <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-sky-600">{(review.user?.name || 'A')[0].toUpperCase()}</div>
+                      : <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-primary">{(review.user?.name || 'A')[0].toUpperCase()}</div>
                     }
                     <div>
                       <span className="flex items-center gap-1">
-                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{review.user?.name || 'Anonymous'}</p>
+                        <p className="text-sm font-semibold text-slate-900">{review.user?.name || 'Anonymous'}</p>
                         <VerifiedBadge role={review.user?.role} verifiedBuyer={review.user?.verifiedBuyer} />
                       </span>
                       <div className="flex items-center gap-2">
@@ -408,8 +408,8 @@ function ReviewsSection({ productId }) {
                   </div>
                   <p className="text-xs text-slate-400">{new Date(review.createdAt).toLocaleDateString()}</p>
                 </div>
-                <h4 className="mt-2 font-semibold text-slate-800 dark:text-slate-200">{review.title}</h4>
-                <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{review.body}</p>
+                <h4 className="mt-2 font-semibold text-slate-800">{review.title}</h4>
+                <p className="mt-1 text-sm text-slate-600 leading-relaxed">{review.body}</p>
 
                 {/* Review photos */}
                 {reviewImgs.length > 0 && (
@@ -419,7 +419,7 @@ function ReviewsSection({ productId }) {
                         key={i}
                         type="button"
                         onClick={() => setLightboxSrc(src)}
-                        className="group relative h-16 w-16 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:border-sky-300 transition-all"
+                        className="group relative h-16 w-16 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 hover:border-sky-300 transition-all"
                         aria-label="View photo"
                       >
                         <img src={src} alt={`Review photo ${i + 1}`} className="h-full w-full object-cover group-hover:opacity-90 transition-opacity" />
@@ -665,24 +665,24 @@ export default function ProductPage({ product, bundledProducts = [] }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 px-3 py-4 sm:px-6 sm:py-10 lg:px-8 overflow-x-hidden">
-        <div className="mx-auto max-w-6xl w-full">
+      <div className="min-h-screen bg-white px-4 py-8 lg:px-6 overflow-x-hidden">
+        <div className="max-w-container mx-auto">
           {/* Breadcrumb */}
-          <nav className="mb-6 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-            <Link href="/" className="hover:text-sky-600">Home</Link>
+          <nav className="mb-8 flex items-center gap-2 text-sm text-ex-muted">
+            <Link href="/" className="hover:text-primary transition-colors">Home</Link>
             <span>/</span>
-            <Link href={`/products?category=${product.category}`} className="hover:text-sky-600">{product.category}</Link>
+            <Link href={`/products?category=${product.category}`} className="hover:text-primary transition-colors">{product.category}</Link>
             <span>/</span>
-            <span className="text-slate-700 dark:text-slate-300 font-medium">{product.name}</span>
+            <span className="text-ex-text font-medium">{product.name}</span>
           </nav>
 
-          <div className="rounded-2xl bg-white dark:bg-slate-900 p-3 shadow-sm sm:p-5 lg:p-8 overflow-hidden">
+          <div className="bg-white">
             <div className="grid gap-6 lg:gap-8 lg:grid-cols-[1.1fr_1fr]">
               {/* ── Images + Video ── */}
               <div className="lg:sticky lg:top-6 lg:self-start">
 
                 {/* Main image */}
-                <div className="group relative overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-700 bg-[radial-gradient(ellipse_at_center,#f8fafc_0%,#f1f5f9_100%)] dark:bg-slate-800">
+                <div className="group relative overflow-hidden rounded border border-ex-border bg-ex-gray">
                   {product.genuine !== false && (
                     <span className="absolute top-4 left-4 z-10 flex items-center gap-1 rounded-full bg-emerald-500/90 px-3 py-1 text-xs font-bold text-white backdrop-blur-sm shadow-sm">
                       <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
@@ -695,7 +695,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                   {/* Zoom icon */}
                   <button
                     onClick={() => setLightbox(true)}
-                    className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 dark:bg-slate-700/90 text-slate-500 dark:text-slate-300 shadow-sm hover:bg-white dark:hover:bg-slate-700 hover:text-sky-600 transition-all opacity-0 group-hover:opacity-100"
+                    className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90/90 text-slate-500 shadow-sm hover:bg-white hover:text-primary transition-all opacity-0 group-hover:opacity-100"
                     aria-label="View full size"
                   >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -715,15 +715,15 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                   >
                     {images.length === 0 ? (
                       <div className="flex-shrink-0 w-full h-full" style={{ scrollSnapAlign: 'start' }}>
-                        <div className="h-full w-full flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800 gap-3">
+                        <div className="h-full w-full flex flex-col items-center justify-center bg-slate-100 gap-3">
                           {imagesLoading ? (
                             <>
-                              <div className="h-12 w-12 rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-sky-500 animate-spin" />
+                              <div className="h-12 w-12 rounded-full border-4 border-slate-200 border-t-sky-500 animate-spin" />
                               <span className="text-sm text-slate-400 font-medium">Loading image…</span>
                             </>
                           ) : (
                             <>
-                              <svg className="h-14 w-14 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
+                              <svg className="h-14 w-14 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
                               <span className="text-sm text-slate-400">No image available</span>
@@ -734,8 +734,8 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                     ) : images.map((src, i) => (
                       <div key={i} className="relative overflow-hidden flex-shrink-0 w-full h-full" style={{ scrollSnapAlign: 'start' }}>
                         {imgErrors[i] ? (
-                          <div className="h-full w-full flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800 gap-2">
-                            <svg className="h-14 w-14 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
+                          <div className="h-full w-full flex flex-col items-center justify-center bg-slate-100 gap-2">
+                            <svg className="h-14 w-14 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                             <span className="text-sm text-slate-400">No image</span>
@@ -769,7 +769,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                         <button
                           key={i}
                           onClick={() => scrollToImg(i)}
-                          className={`h-2 rounded-full transition-all ${i === activeImg ? 'w-5 bg-sky-500' : 'w-2 bg-slate-300'}`}
+                          className={`h-2 rounded-full transition-all ${i === activeImg ? 'w-5 bg-primary' : 'w-2 bg-slate-300'}`}
                         />
                       ))}
                     </div>
@@ -780,15 +780,15 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                     <>
                       <button
                         onClick={(e) => { e.stopPropagation(); scrollToImg(Math.max(0, activeImg - 1)); }}
-                        className={`absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-slate-700/90 shadow-md hover:bg-white dark:hover:bg-slate-700 transition ${activeImg === 0 ? 'opacity-30 pointer-events-none' : ''}`}
+                        className={`absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 flex items-center justify-center rounded-full bg-white/90/90 shadow-md hover:bg-white transition ${activeImg === 0 ? 'opacity-30 pointer-events-none' : ''}`}
                       >
-                        <svg className="h-4 w-4 text-slate-700 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                        <svg className="h-4 w-4 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); scrollToImg(Math.min(images.length - 1, activeImg + 1)); }}
-                        className={`absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-slate-700/90 shadow-md hover:bg-white dark:hover:bg-slate-700 transition ${activeImg === images.length - 1 ? 'opacity-30 pointer-events-none' : ''}`}
+                        className={`absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 flex items-center justify-center rounded-full bg-white/90/90 shadow-md hover:bg-white transition ${activeImg === images.length - 1 ? 'opacity-30 pointer-events-none' : ''}`}
                       >
-                        <svg className="h-4 w-4 text-slate-700 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                        <svg className="h-4 w-4 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                       </button>
                     </>
                   )}
@@ -808,10 +808,10 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                       <button
                         key={i}
                         onClick={() => scrollToImg(i)}
-                        className={`relative flex-shrink-0 h-16 w-16 rounded-xl overflow-hidden border-2 bg-white dark:bg-slate-800 transition-all ${
+                        className={`relative flex-shrink-0 h-16 w-16 rounded-xl overflow-hidden border-2 bg-white transition-all ${
                           activeImg === i
-                            ? 'border-sky-500 ring-2 ring-sky-200 dark:ring-sky-800 shadow-md'
-                            : 'border-slate-200 dark:border-slate-700 hover:border-slate-400 opacity-70 hover:opacity-100'
+                            ? 'border-sky-500 ring-2 ring-primary/20 dark:ring-sky-800 shadow-md'
+                            : 'border-slate-200 hover:border-slate-400 opacity-70 hover:opacity-100'
                         }`}
                       >
                         {src.startsWith('data:') ? (
@@ -877,9 +877,9 @@ export default function ProductPage({ product, bundledProducts = [] }) {
               {/* QR Share Modal */}
               {showQR && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setShowQR(false)}>
-                  <div className="bg-white dark:bg-slate-900 rounded-3xl p-7 max-w-xs w-full shadow-2xl text-center" onClick={e => e.stopPropagation()}>
-                    <h3 className="font-extrabold text-slate-900 dark:text-slate-100 text-lg mb-1">Share this product</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">Scan the QR code or copy the link</p>
+                  <div className="bg-white rounded-3xl p-7 max-w-xs w-full shadow-2xl text-center" onClick={e => e.stopPropagation()}>
+                    <h3 className="font-extrabold text-slate-900 text-lg mb-1">Share this product</h3>
+                    <p className="text-xs text-slate-500 mb-5">Scan the QR code or copy the link</p>
                     <div className="flex justify-center mb-5">
                       <div className="rounded-2xl border-4 border-sky-100 dark:border-sky-900 p-2 bg-white shadow">
                         <img
@@ -890,13 +890,13 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                         />
                       </div>
                     </div>
-                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate mb-4 bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2">
+                    <p className="text-xs font-semibold text-slate-700 truncate mb-4 bg-slate-50 rounded-xl px-3 py-2">
                       kigalitechservices.com/products/{product.id}
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => { navigator.clipboard?.writeText(`https://kigalitechservices.com/products/${product.id}`); toast({ type: 'info', title: 'Link copied!', message: 'Share it with friends' }); setShowQR(false); }}
-                        className="rounded-full border border-slate-200 dark:border-slate-700 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                        className="rounded-full border border-slate-200 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
                       >
                         Copy Link
                       </button>
@@ -919,9 +919,9 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                 <div>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <TranslatedText text={product.category} as="p" className="text-xs font-bold uppercase tracking-widest text-sky-600" />
+                      <TranslatedText text={product.category} as="p" className="text-xs font-bold uppercase tracking-widest text-primary" />
                       {product.subcategory && <span className="text-xs text-slate-400">· {product.subcategory}</span>}
-                      {product.brand && <span className="rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-xs font-semibold text-slate-600 dark:text-slate-300">{product.brand}</span>}
+                      {product.brand && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">{product.brand}</span>}
                     </div>
                     {/* Share button */}
                     <ShareButton
@@ -929,18 +929,18 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                       url={`https://kigalitechservices.com/products/${product.id}`}
                     />
                   </div>
-                  <h1 className="mt-2 text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-slate-100 leading-tight break-words">
+                  <h1 className="mt-2 text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 leading-tight break-words">
                     <TranslatedText text={product.name} as={null} />
                   </h1>
                   <TranslatedText
                     text={product.description}
                     as="p"
-                    className="mt-3 text-slate-600 dark:text-slate-400 leading-relaxed text-sm sm:text-[15px] break-words"
+                    className="mt-3 text-slate-600 leading-relaxed text-sm sm:text-[15px] break-words"
                   />
                 </div>
 
                 {/* Price + stock */}
-                <div className={`rounded-2xl p-4 flex items-start justify-between gap-3 ${flashActive ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' : 'bg-slate-50 dark:bg-slate-800'}`}>
+                <div className={`rounded-2xl p-4 flex items-start justify-between gap-3 ${flashActive ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' : 'bg-slate-50'}`}>
                   <div>
                     {flashActive ? (
                       <>
@@ -958,8 +958,8 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                       </>
                     ) : (
                       <>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Price</p>
-                        <p className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">{format(displayPrice)}</p>
+                        <p className="text-sm text-slate-500">Price</p>
+                        <p className="text-3xl font-extrabold text-slate-900">{format(displayPrice)}</p>
                         {product.comparePrice && (
                           <p className="text-sm text-slate-400 line-through">{format(product.comparePrice)}</p>
                         )}
@@ -977,13 +977,13 @@ export default function ProductPage({ product, bundledProducts = [] }) {
 
                 {/* Color */}
                 {colors.length > 0 && (
-                  <div className="rounded-2xl border border-slate-100 dark:border-slate-700 p-4">
+                  <div className="rounded-2xl border border-slate-100 p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                      <p className="text-sm text-slate-500">
                         {t('color')}:{' '}
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">{color}</span>
+                        <span className="font-semibold text-slate-700">{color}</span>
                       </p>
-                      <span className="text-xs text-slate-400 dark:text-slate-500">Tap color to preview</span>
+                      <span className="text-xs text-slate-400">Tap color to preview</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {colors.map((c) => {
@@ -999,10 +999,10 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                             title={!avail ? 'Out of stock' : qty !== undefined ? `${qty} in stock` : 'Click to preview'}
                             className={`relative flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-medium transition-all ${
                               !avail
-                                ? 'border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-300 dark:text-slate-600 cursor-not-allowed opacity-60'
+                                ? 'border-slate-100 bg-slate-50/50 text-slate-300 cursor-not-allowed opacity-60'
                                 : isSelected
                                   ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 shadow-md shadow-sky-100 dark:shadow-sky-900/20 scale-105'
-                                  : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-sky-300 hover:bg-sky-50/50 dark:hover:border-sky-700'
+                                  : 'border-slate-200 text-slate-600 hover:border-sky-300 hover:bg-sky-50/50 dark:hover:border-sky-700'
                             }`}
                           >
                             {/* Color-swatch thumbnail or dot */}
@@ -1014,7 +1014,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                               />
                             ) : (
                               <span
-                                className="h-4 w-4 rounded-full border border-slate-300 dark:border-slate-500 flex-shrink-0"
+                                className="h-4 w-4 rounded-full border border-slate-300 flex-shrink-0"
                                 style={{ background: c.toLowerCase().replace(/\s/g, '') }}
                               />
                             )}
@@ -1037,7 +1037,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                       })}
                     </div>
                     {(Object.keys(colorImages).length > 0 || baseImages.length > 0) && (
-                      <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                      <p className="mt-2 text-[11px] text-slate-400 flex items-center gap-1">
                         <span>🖼</span> Photo updates when you pick a color
                       </p>
                     )}
@@ -1046,8 +1046,8 @@ export default function ProductPage({ product, bundledProducts = [] }) {
 
                 {/* Storage */}
                 {storageOptions.length > 1 && (
-                  <div className="rounded-2xl border border-slate-100 dark:border-slate-700 p-4">
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">{t('storage')}</p>
+                  <div className="rounded-2xl border border-slate-100 p-4">
+                    <p className="text-sm text-slate-500 mb-3">{t('storage')}</p>
                     <div className="flex flex-wrap gap-2">
                       {storageOptions.map((s) => {
                         const avail = storageAvailable(s);
@@ -1062,10 +1062,10 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                             title={!avail ? 'Not available' : qty !== undefined ? `${qty} in stock` : undefined}
                             className={`relative flex flex-col items-center rounded-xl border-2 px-4 py-2 text-sm font-medium transition-all ${
                               !avail
-                                ? 'border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-300 dark:text-slate-600 cursor-not-allowed opacity-60'
+                                ? 'border-slate-100 bg-slate-50/50 text-slate-300 cursor-not-allowed opacity-60'
                                 : storage === s
                                   ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 shadow-md shadow-sky-100 dark:shadow-sky-900/20 scale-105'
-                                  : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-sky-300 hover:bg-sky-50/50 dark:hover:border-sky-700'
+                                  : 'border-slate-200 text-slate-600 hover:border-sky-300 hover:bg-sky-50/50 dark:hover:border-sky-700'
                             }`}
                           >
                             {!avail && (
@@ -1077,11 +1077,11 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                             {!avail ? (
                               <span className="text-[9px] font-semibold text-red-400 leading-tight">Not available</span>
                             ) : priceDiff > 0 ? (
-                              <span className={`text-[10px] font-semibold leading-tight ${storage === s ? 'text-sky-500 dark:text-sky-300' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                              <span className={`text-[10px] font-semibold leading-tight ${storage === s ? 'text-primary dark:text-sky-300' : 'text-emerald-600 dark:text-emerald-400'}`}>
                                 +{format(priceDiff)}
                               </span>
                             ) : (
-                              <span className="text-[10px] font-semibold leading-tight text-slate-400 dark:text-slate-500">
+                              <span className="text-[10px] font-semibold leading-tight text-slate-400">
                                 base
                               </span>
                             )}
@@ -1098,17 +1098,17 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                 )}
 
                 {/* Warranty */}
-                <div className="rounded-2xl border border-slate-100 dark:border-slate-700 p-4">
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
+                <div className="rounded-2xl border border-slate-100 p-4">
+                  <p className="text-sm text-slate-500 mb-3">
                     Warranty
                     {product.brand === 'Apple' && warranty && warranty.toLowerCase().includes('applecare') && (
-                      <a href="https://www.apple.com/support/products/" target="_blank" rel="noopener noreferrer" className="text-xs text-sky-600 hover:underline ml-1">See Apple pricing →</a>
+                      <a href="https://www.apple.com/support/products/" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline ml-1">See Apple pricing →</a>
                     )}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {warrantyOptions.map((w) => (
                       <button key={w} onClick={() => setWarranty(w)}
-                        className={`rounded-full border px-4 py-2 text-sm font-medium transition ${warranty === w ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/30 text-sky-700' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-400'}`}
+                        className={`rounded-full border px-4 py-2 text-sm font-medium transition ${warranty === w ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/30 text-sky-700' : 'border-slate-200 text-slate-600 hover:border-slate-400'}`}
                       >
                         {w}
                       </button>
@@ -1136,24 +1136,24 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                     <span className="text-2xl flex-shrink-0">💳</span>
                     <div>
                       <p className="text-sm font-semibold text-sky-900 dark:text-sky-300">Pay in Installments</p>
-                      <p className="text-xs text-sky-700 dark:text-sky-400 mt-0.5">Split into 3, 6 or 12 monthly payments — choose at checkout.</p>
-                      <p className="text-xs text-sky-600 dark:text-sky-400 mt-1">From <span className="font-bold">{format(Math.ceil(displayPrice / 3))}/mo</span> over 3 months</p>
+                      <p className="text-xs text-sky-700 dark:text-primary mt-0.5">Split into 3, 6 or 12 monthly payments — choose at checkout.</p>
+                      <p className="text-xs text-primary dark:text-primary mt-1">From <span className="font-bold">{format(Math.ceil(displayPrice / 3))}/mo</span> over 3 months</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Specs */}
                 {Object.keys(specs).length > 0 && (
-                  <div className="rounded-2xl border border-slate-100 dark:border-slate-700 overflow-hidden">
-                    <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
+                  <div className="rounded-2xl border border-slate-100 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 border-b border-slate-100">
                       <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                      <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Specifications</p>
+                      <p className="text-sm font-bold text-slate-700">Specifications</p>
                     </div>
                     <div className="divide-y divide-slate-50 dark:divide-slate-800">
                       {Object.entries(specs).map(([key, value], idx) => (
-                        <div key={key} className={`flex items-center justify-between px-4 py-3 ${idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/50 dark:bg-slate-800/50'}`}>
+                        <div key={key} className={`flex items-center justify-between px-4 py-3 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50/50'}`}>
                           <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 w-2/5 flex-shrink-0">{key}</span>
-                          <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 text-right flex-1 min-w-0 break-words">{value}</span>
+                          <span className="text-sm font-semibold text-slate-800 text-right flex-1 min-w-0 break-words">{value}</span>
                         </div>
                       ))}
                     </div>
@@ -1170,7 +1170,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                         <p className="text-xs text-emerald-700 dark:text-emerald-400">Trade it in and get a discount on this product.</p>
                       </div>
                     </div>
-                    <Link href="/trade-in" className="flex-shrink-0 rounded-full border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 px-4 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 no-underline">
+                    <Link href="/trade-in" className="flex-shrink-0 rounded-full border border-emerald-300 dark:border-emerald-700 bg-white px-4 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 no-underline">
                       Trade In →
                     </Link>
                   </div>
@@ -1182,7 +1182,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
                   </span>
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                  <span className="text-sm font-medium text-slate-600">
                     <span className="font-bold text-emerald-600 dark:text-emerald-400">{viewingCount} people</span> viewing this right now
                   </span>
                 </div>
@@ -1197,10 +1197,10 @@ export default function ProductPage({ product, bundledProducts = [] }) {
 
                 {/* Qty + CTA */}
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center rounded-full border border-slate-200 dark:border-slate-700">
-                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">−</button>
-                    <span className="min-w-[3rem] text-center font-semibold dark:text-slate-200">{quantity}</span>
-                    <button onClick={() => setQuantity(quantity + 1)} className="px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">+</button>
+                  <div className="flex items-center rounded-full border border-slate-200">
+                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-4 py-3 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">−</button>
+                    <span className="min-w-[3rem] text-center font-semibold">{quantity}</span>
+                    <button onClick={() => setQuantity(quantity + 1)} className="px-4 py-3 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">+</button>
                   </div>
                   <button
                     onClick={handleAddToCart}
@@ -1208,7 +1208,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                     className={`flex-1 rounded-full py-3.5 font-semibold text-white transition-all ${
                       product.stock === 0 ? 'bg-slate-300 cursor-not-allowed'
                       : added ? 'bg-emerald-500'
-                      : 'bg-sky-600 hover:bg-sky-700 active:scale-[0.98] shadow-lg shadow-sky-200'
+                      : 'bg-primary hover:bg-primary-hover active:scale-[0.98] shadow-lg shadow-primary/20'
                     }`}
                   >
                     {product.stock === 0 ? 'Out of Stock' : added ? '✓ Added to Cart' : 'Add to Cart'}
@@ -1241,7 +1241,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                     className={`w-full flex items-center justify-center gap-2 rounded-full border py-2.5 text-sm font-semibold transition-all ${
                       priceAlertSubscribed
                         ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-700 dark:text-emerald-400'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-sky-300 hover:text-sky-700 hover:bg-sky-50'
+                        : 'border-slate-200 text-slate-600 hover:border-sky-300 hover:text-primary hover:bg-sky-50'
                     }`}
                   >
                     <span>{priceAlertSubscribed ? '🔔' : '🔕'}</span>
@@ -1256,7 +1256,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                     className={`flex flex-1 items-center justify-center gap-2 rounded-full border py-3 text-sm font-semibold transition-all ${
                       isWished
                         ? 'border-red-200 bg-red-50 text-red-500 hover:bg-red-100'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-red-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                        : 'border-slate-200 text-slate-600 hover:border-red-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
                     } ${heartAnim ? 'scale-105' : ''}`}
                   >
                     <svg className="h-4 w-4" fill={isWished ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1269,7 +1269,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                     className={`flex flex-1 items-center justify-center gap-2 rounded-full border py-3 text-sm font-semibold transition-all ${
                       isCompared
                         ? 'border-violet-300 bg-violet-50 text-violet-700'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-violet-300 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-purple-900/20'
+                        : 'border-slate-200 text-slate-600 hover:border-violet-300 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-purple-900/20'
                     }`}
                   >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1284,11 +1284,11 @@ export default function ProductPage({ product, bundledProducts = [] }) {
 
           {/* Bundled / Frequently Bought Together */}
           {bundledProducts.length > 0 && (
-            <div className="mt-8 rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm">
+            <div className="mt-8 rounded-3xl bg-white p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-5">
                 <span className="text-xl">🛍️</span>
                 <div>
-                  <h2 className="font-bold text-slate-900 dark:text-slate-100">Frequently Bought Together</h2>
+                  <h2 className="font-bold text-slate-900">Frequently Bought Together</h2>
                   <p className="text-xs text-slate-400 mt-0.5">Customers who buy this also pick these</p>
                 </div>
               </div>
@@ -1296,15 +1296,15 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                 {bundledProducts.map(bp => {
                   const bImgs = (() => { try { return JSON.parse(bp.images); } catch { return []; } })();
                   return (
-                    <Link key={bp.id} href={`/products/${bp.id}`} className="group flex items-center gap-4 rounded-2xl border border-slate-100 dark:border-slate-700 p-3 no-underline hover:border-sky-200 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-all">
-                      <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
+                    <Link key={bp.id} href={`/products/${bp.id}`} className="group flex items-center gap-4 rounded-2xl border border-slate-100 p-3 no-underline hover:border-sky-200 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-all">
+                      <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100">
                         {bImgs[0] && <img src={bImgs[0]} alt={bp.name} className="h-full w-full object-cover" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 line-clamp-1 group-hover:text-sky-700">{bp.name}</p>
-                        <p className="text-sm font-bold text-sky-600 mt-0.5">{format(bp.price)}</p>
+                        <p className="text-sm font-semibold text-slate-800 line-clamp-1 group-hover:text-primary">{bp.name}</p>
+                        <p className="text-sm font-bold text-primary mt-0.5">{format(bp.price)}</p>
                       </div>
-                      <span className="text-slate-300 group-hover:text-sky-400">→</span>
+                      <span className="text-slate-300 group-hover:text-primary">→</span>
                     </Link>
                   );
                 })}
@@ -1332,10 +1332,10 @@ export default function ProductPage({ product, bundledProducts = [] }) {
             <div className="mt-8">
               <div className="flex items-center justify-between mb-5">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">You Might Also Like</p>
-                  <h2 className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-slate-100">Similar Products</h2>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-primary">You Might Also Like</p>
+                  <h2 className="mt-1 text-2xl font-extrabold text-slate-900">Similar Products</h2>
                 </div>
-                <Link href={`/products?category=${product.category}`} className="text-sm font-medium text-sky-600 hover:text-sky-800 no-underline">
+                <Link href={`/products?category=${product.category}`} className="text-sm font-medium text-primary hover:text-sky-800 no-underline">
                   View all {product.category} →
                 </Link>
               </div>
@@ -1356,10 +1356,10 @@ export default function ProductPage({ product, bundledProducts = [] }) {
 
       {/* ── Sticky mobile Add to Cart bar ── */}
       <div className="lg:hidden fixed bottom-[4.25rem] inset-x-0 z-30 px-3 pb-2">
-        <div className="flex items-center gap-2 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 shadow-2xl backdrop-blur-md px-3 py-2.5">
+        <div className="flex items-center gap-2 rounded-2xl bg-white/95/95 border border-slate-200 shadow-2xl backdrop-blur-md px-3 py-2.5">
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate">{product.name}</p>
-            <p className="text-base font-extrabold text-slate-900 dark:text-slate-100 leading-tight">{format(displayPrice)}</p>
+            <p className="text-[11px] font-semibold text-slate-500 truncate">{product.name}</p>
+            <p className="text-base font-extrabold text-slate-900 leading-tight">{format(displayPrice)}</p>
           </div>
           {/* WhatsApp quick-buy */}
           <a
@@ -1379,7 +1379,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
             className={`flex-shrink-0 rounded-xl px-5 py-2.5 font-bold text-white text-sm transition-all ${
               product.stock === 0 ? 'bg-slate-300 cursor-not-allowed'
               : added ? 'bg-emerald-500 scale-95'
-              : 'bg-sky-600 hover:bg-sky-700 active:scale-95 shadow-lg shadow-sky-200'
+              : 'bg-primary hover:bg-primary-hover active:scale-95 shadow-lg shadow-primary/20'
             }`}
           >
             {product.stock === 0 ? 'Out of Stock' : added ? '✓ Added!' : 'Add to Cart'}

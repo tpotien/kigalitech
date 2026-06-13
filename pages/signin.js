@@ -214,7 +214,7 @@ export default function SignIn() {
     if (/[^A-Za-z0-9]/.test(pw)) score++;
     if (score <= 2) return { score, label: 'Weak', color: 'bg-red-500' };
     if (score === 3) return { score, label: 'Fair', color: 'bg-amber-500' };
-    if (score === 4) return { score, label: 'Good', color: 'bg-sky-500' };
+    if (score === 4) return { score, label: 'Good', color: 'bg-primary' };
     return { score, label: 'Strong', color: 'bg-emerald-500' };
   }
   const strength = mode === 'register' ? passwordStrength(form.password) : null;
@@ -230,7 +230,7 @@ export default function SignIn() {
           </p>
           <div className="space-y-3">
             <button onClick={() => router.push('/set-password')}
-              className="w-full rounded-full bg-sky-600 py-3 text-sm font-semibold text-white hover:bg-sky-700 transition">
+              className="w-full rounded-full bg-primary py-3 text-sm font-semibold text-white hover:bg-primary-hover transition">
               Set a Password
             </button>
             <button onClick={() => router.replace(callbackUrl || '/')}
@@ -248,7 +248,7 @@ export default function SignIn() {
       <div className="w-full max-w-md">
         {/* Language + Back */}
         <div className="flex items-center justify-between mb-6">
-          <Link href="/" className="text-slate-400 hover:text-sky-300 text-sm flex items-center gap-1.5 no-underline transition">
+          <Link href="/" className="text-slate-400 hover:text-primary text-sm flex items-center gap-1.5 no-underline transition">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
@@ -280,8 +280,8 @@ export default function SignIn() {
 
           {/* ── Magic Link — fastest option ── */}
           {magic === 'ok' && loading === 'magic' ? (
-            <div className="mb-5 rounded-2xl bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 px-5 py-4 text-center">
-              <div className="flex items-center justify-center gap-2 text-sky-700 dark:text-sky-300 font-semibold text-sm">
+            <div className="mb-5 rounded-2xl bg-red-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 px-5 py-4 text-center">
+              <div className="flex items-center justify-center gap-2 text-primary dark:text-primary font-semibold text-sm">
                 <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
                 Signing you in…
               </div>
@@ -308,7 +308,7 @@ export default function SignIn() {
                 <button
                   type="submit"
                   disabled={!!loading}
-                  className="rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:from-sky-600 hover:to-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-sky-200 whitespace-nowrap"
+                  className="rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:from-sky-600 hover:to-blue-700 disabled:opacity-50 transition-all shadow-lg  whitespace-nowrap"
                 >
                   {loading === 'magic-send' ? 'Sending…' : '✨ Send Magic Link'}
                 </button>
@@ -325,11 +325,11 @@ export default function SignIn() {
           {/* Mode tabs */}
           <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden mb-5">
             <button onClick={() => { setMode('login'); setError(''); }}
-              className={`flex-1 py-2.5 text-sm font-semibold whitespace-nowrap transition ${mode === 'login' ? 'bg-sky-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+              className={`flex-1 py-2.5 text-sm font-semibold whitespace-nowrap transition ${mode === 'login' ? 'bg-primary text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
               Sign In
             </button>
             <button onClick={() => { setMode('register'); setError(''); }}
-              className={`flex-1 py-2.5 text-sm font-semibold whitespace-nowrap transition ${mode === 'register' ? 'bg-sky-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+              className={`flex-1 py-2.5 text-sm font-semibold whitespace-nowrap transition ${mode === 'register' ? 'bg-primary text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
               Create Account
             </button>
           </div>
@@ -378,19 +378,19 @@ export default function SignIn() {
                     setForm({ ...form, email: isPhone ? '' : val.toLowerCase(), phone: isPhone ? val : '' });
                   }}
                   placeholder="+250 7XX XXX XXX or email@example.com"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800 focus:border-sky-400"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800 focus:border-primary"
                 />
               </div>
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-medium text-slate-500">Password</label>
-                  <Link href="/forgot-password" className="text-xs font-medium text-sky-600 hover:text-sky-700 no-underline">Forgot password?</Link>
+                  <Link href="/forgot-password" className="text-xs font-medium text-primary hover:text-primary no-underline">Forgot password?</Link>
                 </div>
                 <input required type="password" autoComplete="current-password" value={form.password} onChange={setField('password')} placeholder="••••••••"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800 focus:border-sky-400" />
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800 focus:border-primary" />
               </div>
               <button type="submit" disabled={!!loading}
-                className="w-full rounded-xl bg-sky-600 py-3 text-sm font-semibold text-white hover:bg-sky-700 active:scale-[0.98] disabled:opacity-50 transition-all shadow-lg shadow-sky-200">
+                className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50 transition-all shadow-lg ">
                 {loading === 'login' ? 'Signing in…' : 'Sign In'}
               </button>
             </form>
@@ -426,7 +426,7 @@ export default function SignIn() {
                       ))}
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className={`text-xs font-semibold ${strength.score <= 2 ? 'text-red-500' : strength.score === 3 ? 'text-amber-500' : strength.score === 4 ? 'text-sky-600' : 'text-emerald-600'}`}>{strength.label}</p>
+                      <p className={`text-xs font-semibold ${strength.score <= 2 ? 'text-red-500' : strength.score === 3 ? 'text-amber-500' : strength.score === 4 ? 'text-primary' : 'text-emerald-600'}`}>{strength.label}</p>
                       <p className="text-[10px] text-slate-400">Use A–Z · 0–9 · !@#$ for Strong</p>
                     </div>
                   </div>
@@ -439,7 +439,7 @@ export default function SignIn() {
               </div>
               <p className="text-xs text-slate-400">Enter email, phone, or both — at least one required.</p>
               <button type="submit" disabled={!!loading}
-                className="w-full rounded-xl bg-sky-600 py-3 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50 transition-all shadow-lg shadow-sky-200">
+                className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50 transition-all shadow-lg ">
                 {loading === 'register' ? 'Creating account…' : 'Create Account'}
               </button>
             </form>

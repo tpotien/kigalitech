@@ -48,7 +48,7 @@ export default function CartDrawer() {
           <div className="flex items-center gap-3">
             <span className="text-lg font-bold text-slate-900 dark:text-slate-100">Your Cart</span>
             {items.length > 0 && (
-              <span className="rounded-full bg-sky-600 px-2.5 py-0.5 text-xs font-semibold text-white">
+              <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-white">
                 {items.reduce((s, i) => s + i.quantity, 0)}
               </span>
             )}
@@ -108,7 +108,7 @@ export default function CartDrawer() {
               <Link
                 href="/#products"
                 onClick={closeDrawer}
-                className="rounded-full bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 transition-colors"
+                className="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover transition-colors"
               >
                 Browse Products
               </Link>
@@ -190,14 +190,14 @@ export default function CartDrawer() {
             <Link
               href="/checkout"
               onClick={closeDrawer}
-              className="block w-full rounded-full bg-sky-600 py-3.5 text-center font-semibold text-white hover:bg-sky-700 transition-colors"
+              className="block w-full rounded-full bg-primary py-3.5 text-center font-semibold text-white hover:bg-primary-hover transition-colors"
             >
               Checkout
             </Link>
             <div className="flex items-center justify-between">
               <button
                 onClick={closeDrawer}
-                className="text-sm text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"
+                className="text-sm text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-sky-400 transition-colors"
               >
                 ← Continue shopping
               </button>

@@ -1,10 +1,19 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useSession, signOut } from 'next-auth/react';
+import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
+import { useLang } from '../context/LanguageContext';
+import dynamic from 'next/dynamic';
+import SearchAutocomplete from './SearchAutocomplete';
+import NotificationBell from './NotificationBell';
+import BottomNav from './BottomNav';
+
+const CartDrawer = dynamic(() => import('./CartDrawer'), { ssr: false });
+const AIChatWidget = dynamic(() => import('./AIChatWidget'), { ssr: false });
 
 async function doSignOut() {
-  // Clear all client-side state so nothing leaks back
   try {
     localStorage.removeItem('cart');
     localStorage.removeItem('kt_rv');
@@ -13,448 +22,311 @@ async function doSignOut() {
     sessionStorage.clear();
   } catch {}
   await signOut({ redirect: false });
-  // replace() removes this page from browser history — back button skips it
   window.location.replace('/');
 }
-import { useCart } from '../context/CartContext';
-import { useLang } from '../context/LanguageContext';
-import { useCurrency } from '../context/CurrencyContext';
-import { useTheme } from '../context/ThemeContext';
-import dynamic from 'next/dynamic';
-import SearchModal from './SearchModal';
-import SearchAutocomplete from './SearchAutocomplete';
-import NotificationBell from './NotificationBell';
-import CurrencySwitcher from './CurrencySwitcher';
-import LanguageSwitcher from './LanguageSwitcher';
-import BottomNav from './BottomNav';
-import AvatarWithBadge from './AvatarWithBadge';
-const CartDrawer = dynamic(() => import('./CartDrawer'), { ssr: false });
-const AIChatWidget = dynamic(() => import('./AIChatWidget'), { ssr: false });
 
-// Module-level cache: survives re-mounts and route changes within the same tab.
-// Keys are URL strings, values are { data, expiresAt }.
-const _cache = {};
-async function cachedFetch(url, ttlMs) {
-  const now = Date.now();
-  if (_cache[url] && _cache[url].expiresAt > now) return _cache[url].data;
-  const data = await fetch(url).then(r => r.json());
-  _cache[url] = { data, expiresAt: now + ttlMs };
-  return data;
-}
+const NAV_LINKS = [
+  { label: 'Home',     href: '/' },
+  { label: 'Contact',  href: '/contact' },
+  { label: 'About',    href: '/about' },
+];
 
-const ANNOUNCEMENTS = [
-  '🚚 Free delivery on orders over RWF 75,000 — Rwanda-wide',
-  '🔒 Official warranties on every product',
-  '♻️ Trade-in your old device for credit',
-  '📞 Support: +250 786 276 555',
+const FOOTER_COL1 = [
+  { label: 'My Account',      href: '/account' },
+  { label: 'Login / Register', href: '/signin' },
+  { label: 'Cart',             href: '/cart' },
+  { label: 'Wishlist',         href: '/wishlist' },
+  { label: 'Shop',             href: '/products' },
+];
+const FOOTER_COL2 = [
+  { label: 'Privacy Policy', href: '/privacy' },
+  { label: 'Terms of Use',   href: '/terms' },
+  { label: 'FAQ',            href: '/contact' },
+  { label: 'Contact',        href: '/contact' },
+];
+const FOOTER_COL3 = [
+  { label: 'Repairs',    href: '/repairs' },
+  { label: 'Trade-In',   href: '/trade-in' },
+  { label: 'Bulk Order', href: '/bulk-order' },
+  { label: 'Deals',      href: '/deals' },
+  { label: 'Referral',   href: '/referral' },
 ];
 
 export default function Layout({ children }) {
   const { itemCount, toggleDrawer } = useCart();
+  const { ids: wishlistIds } = useWishlist();
   const { data: session } = useSession();
-  const { t } = useLang();
-  const { format } = useCurrency();
-  const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [megaActive, setMegaActive] = useState(null);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [navProducts, setNavProducts] = useState({});
-  const [announcementIdx, setAnnouncementIdx] = useState(0);
-  const [logoUrl, setLogoUrl] = useState('/logo.png');
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    cachedFetch('/api/nav-products', 5 * 60_000).then(setNavProducts).catch(() => {});
-    cachedFetch('/api/hero', 5 * 60_000).then(d => { if (d.logoUrl) setLogoUrl(d.logoUrl); }).catch(() => {});
+    const onScroll = () => setScrolled(window.scrollY > 0);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Rotate announcements
-  useEffect(() => {
-    const t = setInterval(() => setAnnouncementIdx(i => (i + 1) % ANNOUNCEMENTS.length), 4000);
-    return () => clearInterval(t);
-  }, []);
+  useEffect(() => { setMobileOpen(false); }, [router.asPath]);
 
-  const NAV_LINKS = [
-    { label: t('phones'),    href: '/products?category=Phones',     cat: 'Phones' },
-    { label: t('laptops'),   href: '/products?category=Laptops',    cat: 'Laptops' },
-    { label: t('audio'),     href: '/products?category=Headphones', cat: 'Headphones' },
-    { label: t('tvs'),       href: '/products?category=TVs',        cat: 'TVs' },
-    { label: t('wearables'), href: '/products?category=Wearables',  cat: 'Wearables' },
-    { label: 'Gaming',       href: '/products?category=Gaming',     cat: 'Gaming' },
-    { label: t('others'),    href: '/products?category=Others',     cat: 'Others' },
-    { label: t('deals'),     href: '/deals', cat: null, red: true },
-  ];
+  const isActive = (href) => router.pathname === href;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
-      {/* ── Tier 1: Announcement bar ── */}
-      <div className="bg-slate-900 text-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-9 items-center justify-between text-xs font-medium">
-            {/* Rotating announcement (mobile: centered; desktop: left) */}
-            <p className="flex-1 text-center sm:text-left truncate text-slate-300 transition-all">
-              {ANNOUNCEMENTS[announcementIdx]}
-            </p>
-            {/* Right links */}
-            <div className="hidden sm:flex items-center gap-5 flex-shrink-0 ml-4">
-              <Link href="/trade-in" className="text-slate-400 hover:text-white no-underline transition-colors">Trade-In</Link>
-              <Link href="/repairs" className="text-slate-400 hover:text-white no-underline transition-colors">Repairs</Link>
-              <Link href="/bulk-order" className="text-slate-400 hover:text-white no-underline transition-colors">Bulk Order</Link>
-              <div className="text-slate-600">|</div>
-              <CurrencySwitcher compact />
-              <LanguageSwitcher compact />
-            </div>
-          </div>
+    <div className="min-h-screen flex flex-col" style={{ fontFamily: 'Poppins, sans-serif' }}>
+
+      {/* ── Announcement bar ─────────────────────────────────────────────── */}
+      <div style={{ background: '#1D2026' }} className="text-white text-xs py-2.5 px-4">
+        <div className="max-w-container mx-auto flex items-center justify-center gap-2 text-center">
+          <span className="text-gray-300">
+            Summer Sale For All Electronics &amp; Free Express Delivery — OFF 10%!
+          </span>
+          <Link href="/deals" className="font-semibold underline underline-offset-2 text-white hover:text-primary">
+            ShopNow
+          </Link>
         </div>
       </div>
 
-      {/* ── Sticky wrapper ── */}
-      <header className="sticky top-0 z-30 bg-white dark:bg-slate-900 shadow-md">
+      {/* ── Navbar ───────────────────────────────────────────────────────── */}
+      <header className={`sticky top-0 z-30 bg-white ${scrolled ? 'shadow-sm' : ''} transition-shadow`}>
+        <div className="max-w-container mx-auto px-4 lg:px-6">
+          <div className="flex items-center h-[70px] gap-6 lg:gap-10">
 
-        {/* ── Tier 2: Logo + Search + Icons ── */}
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-20 items-center gap-4 lg:gap-6">
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setMobileOpen(v => !v)}
+              className="lg:hidden p-1.5 text-ex-text"
+              aria-label="Menu"
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                {mobileOpen
+                  ? <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  : <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                }
+              </svg>
+            </button>
 
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 no-underline flex-shrink-0">
-              <img src={logoUrl} alt="KigaliTech" className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover shadow-sm" />
-              <div className="min-w-0">
-                <span className="block text-base sm:text-xl font-extrabold text-slate-900 dark:text-white leading-none tracking-tight whitespace-nowrap">KigaliTech</span>
-                <span className="hidden sm:block text-[10px] font-semibold uppercase tracking-widest text-sky-500 dark:text-sky-400 mt-0.5 whitespace-nowrap">Premium Electronics</span>
-              </div>
+            <Link href="/" className="flex-shrink-0 flex items-center gap-2">
+              <img src="/logo.png" alt="KigaliTech" className="h-8 w-8 rounded-full object-cover" onError={e => e.target.style.display='none'} />
+              <span className="text-xl font-bold text-ex-text tracking-tight">KigaliTech</span>
             </Link>
 
-            {/* ── Inline search bar (desktop) ── */}
-            <SearchAutocomplete
-              className="hidden lg:block flex-1 max-w-2xl"
-              placeholder="Search phones, laptops, earbuds, TVs…"
-            />
+            {/* Nav links (desktop) */}
+            <nav className="hidden lg:flex items-center gap-8 flex-1">
+              {NAV_LINKS.map(link => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-sm font-medium transition-colors hover:text-primary ${isActive(link.href) ? 'text-ex-text border-b-2 border-ex-text pb-0.5' : 'text-gray-500'}`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              {!session && (
+                <Link href="/signin" className="text-sm font-medium text-gray-500 hover:text-primary transition-colors">
+                  Sign Up
+                </Link>
+              )}
+            </nav>
 
-            {/* ── Right icons ── */}
-            <div className="flex items-center gap-1 ml-auto lg:ml-0 flex-shrink-0">
+            {/* Search bar */}
+            <div className="hidden lg:flex flex-1 max-w-[350px]">
+              <SearchAutocomplete placeholder="What are you looking for?" />
+            </div>
 
-              {/* Mobile search */}
-              <button
-                onClick={() => setSearchOpen(true)}
-                className="lg:hidden rounded-full p-2.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
-                aria-label="Search"
-              >
+            {/* Icons */}
+            <div className="flex items-center gap-3 ml-auto lg:ml-0">
+
+              {/* Mobile search icon */}
+              <button className="lg:hidden text-ex-text" onClick={() => router.push('/products')}>
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </button>
 
-              {/* Dark mode toggle */}
-              <button
-                onClick={toggleTheme}
-                className="rounded-full p-2.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
-                aria-label="Toggle dark mode"
-              >
-                {theme === 'dark'
-                  ? <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                  : <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
-                }
-              </button>
-
               {session && <NotificationBell />}
 
-              {/* Account */}
-              {session ? (
-                <div className="relative hidden sm:block group">
-                  <button className="flex items-center gap-2 rounded-full px-3 py-2 text-slate-700 hover:bg-slate-100 transition-colors">
-                    <AvatarWithBadge image={session.user.image} name={session.user.name} role={session.user.role} emailVerified={session.user.emailVerified} size="sm" />
-                    <span className="hidden xl:block text-sm font-semibold max-w-[80px] truncate">{session.user.name?.split(' ')[0] || 'Account'}</span>
-                    <svg className="hidden xl:block h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  <div className="absolute right-0 top-full mt-1 w-56 rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 py-2 shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-50">
-                    <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-700">
-                      <p className="text-sm font-bold text-slate-900 truncate">{session.user.name || 'User'}</p>
-                      <p className="text-xs text-slate-400 capitalize mt-0.5">{session.user.email}</p>
-                    </div>
-                    <Link href="/account" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 no-underline">
-                      <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                      {t('myAccount')}
-                    </Link>
-                    <Link href="/account" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 no-underline">
-                      <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
-                      {t('myOrders')}
-                    </Link>
-                    {(session.user.role === 'admin' || session.user.role === 'staff') && (
-                      <Link href="/admin" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-sky-600 hover:bg-sky-50 no-underline font-semibold">
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                        {t('adminPanel')}
-                      </Link>
-                    )}
-                    <hr className="my-1 border-slate-100 dark:border-slate-700" />
-                    <button onClick={doSignOut} className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50">
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                      {t('signOut')}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <Link href="/signin" className="hidden sm:flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 no-underline transition-colors">
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  Sign In
-                </Link>
-              )}
+              {/* Wishlist */}
+              <Link href="/wishlist" className="relative text-ex-text hover:text-primary transition-colors" aria-label="Wishlist">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                {wishlistIds.size > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center">
+                    {wishlistIds.size > 9 ? '9+' : wishlistIds.size}
+                  </span>
+                )}
+              </Link>
 
               {/* Cart */}
-              <button
-                onClick={toggleDrawer}
-                className="relative flex items-center gap-2 rounded-full px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
+              <button onClick={toggleDrawer} className="relative text-ex-text hover:text-primary transition-colors" aria-label="Cart">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
-                <span className="hidden xl:block text-sm font-semibold">Cart</span>
                 {itemCount > 0 && (
-                  <span className="absolute right-1 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-sky-600 text-[10px] font-bold text-white">
+                  <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center">
                     {itemCount > 9 ? '9+' : itemCount}
                   </span>
                 )}
               </button>
 
-              {/* Mobile hamburger */}
-              <button
-                onClick={() => setMobileOpen(!mobileOpen)}
-                className="xl:hidden rounded-full p-2.5 text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  {mobileOpen
-                    ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  }
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Tier 3: Category nav row (desktop) ── */}
-        <div className="hidden xl:block border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <nav className="flex items-center h-12 gap-0.5">
-              {NAV_LINKS.map((link) => {
-                const products = link.cat ? (navProducts[link.cat] || []) : [];
-                const hasMega = !!link.cat;
-                return (
-                  <div
-                    key={link.label}
-                    className="relative h-full flex items-center"
-                    onMouseEnter={() => hasMega && setMegaActive(link.label)}
-                    onMouseLeave={() => setMegaActive(null)}
-                  >
-                    <Link
-                      href={link.href}
-                      className={`px-4 h-full flex items-center gap-1 text-[15px] font-bold no-underline transition-colors border-b-2 ${
-                        link.red
-                          ? 'text-red-500 hover:text-red-600 border-transparent hover:border-red-400'
-                          : 'text-slate-700 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-400 border-transparent hover:border-sky-600'
-                      }`}
-                    >
-                      {link.label}
-                      {hasMega && (
-                        <svg className="h-3 w-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      )}
-                    </Link>
-
-                    {/* Mega menu */}
-                    {hasMega && megaActive === link.label && (() => {
-                      const uniqueBrands = [...new Set(products.map(p => p.brand).filter(Boolean))];
-                      const onSale = products.filter(p => p.comparePrice && p.comparePrice > p.price);
-                      const featured = products.filter(p => p.featured);
-                      const brandColors = ['bg-violet-100 text-violet-700','bg-sky-100 text-sky-700','bg-emerald-100 text-emerald-700','bg-amber-100 text-amber-700','bg-rose-100 text-rose-700','bg-indigo-100 text-indigo-700'];
-                      return (
-                        <div className="absolute left-0 top-full z-50 w-[600px] pt-1.5"
-                          style={{ filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.18))' }}>
-                          <div className="rounded-2xl overflow-hidden border border-slate-200/80 dark:border-slate-700">
-
-                            {/* Header — dark gradient */}
-                            <div className="relative px-5 py-3.5 flex items-center justify-between overflow-hidden"
-                              style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0369a1 100%)' }}>
-                              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, #38bdf8 0%, transparent 60%)' }} />
-                              <div className="relative flex items-center gap-3">
-                                <span className="text-white font-extrabold text-[15px] tracking-tight">{link.label}</span>
-                                {onSale.length > 0 && (
-                                  <span className="flex items-center gap-1 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
-                                    🔥 {onSale.length} on sale
-                                  </span>
-                                )}
-                                {featured.length > 0 && (
-                                  <span className="bg-amber-400 text-slate-900 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                    ⭐ {featured.length} featured
-                                  </span>
-                                )}
-                              </div>
-                              <Link href={link.href} onClick={() => setMegaActive(null)}
-                                className="relative flex items-center gap-1.5 text-sky-300 hover:text-white text-xs font-bold no-underline transition-colors">
-                                See all
-                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
-                              </Link>
-                            </div>
-
-                            {/* Brand pills */}
-                            {uniqueBrands.length > 0 && (
-                              <div className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700 flex-wrap">
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mr-0.5">Brands</span>
-                                {uniqueBrands.slice(0, 6).map((b, i) => (
-                                  <span key={b} className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full cursor-default ${brandColors[i % brandColors.length]}`}>{b}</span>
-                                ))}
-                              </div>
-                            )}
-
-                            {/* Product grid */}
-                            <div className="bg-white dark:bg-slate-900 p-3 grid grid-cols-3 gap-2.5">
-                              {products.slice(0, 6).map(p => {
-                                const discount = p.comparePrice && p.comparePrice > p.price
-                                  ? Math.round((1 - p.price / p.comparePrice) * 100) : 0;
-                                return (
-                                  <Link key={p.id} href={`/products/${p.id}`} onClick={() => setMegaActive(null)}
-                                    className="group relative flex flex-col rounded-xl overflow-hidden border border-slate-100 dark:border-slate-800 hover:border-sky-300 dark:hover:border-sky-600 hover:shadow-lg hover:shadow-sky-100 dark:hover:shadow-sky-900/30 transition-all duration-200 no-underline bg-white dark:bg-slate-900">
-                                    {/* Product image */}
-                                    <div className="relative h-24 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 overflow-hidden">
-                                      {p.image ? (
-                                        <img src={p.image} alt={p.name}
-                                          className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                                      ) : (
-                                        <div className="flex h-full items-center justify-center">
-                                          <svg className="h-10 w-10 text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                          </svg>
-                                        </div>
-                                      )}
-                                      {/* Badges */}
-                                      {discount > 0 && (
-                                        <span className="absolute top-1.5 left-1.5 bg-red-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full leading-none">
-                                          -{discount}%
-                                        </span>
-                                      )}
-                                      {p.featured && !discount && (
-                                        <span className="absolute top-1.5 left-1.5 bg-violet-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-                                          ★
-                                        </span>
-                                      )}
-                                      {/* Hover shine */}
-                                      <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    </div>
-                                    {/* Product info */}
-                                    <div className="px-2.5 py-2 flex-1 flex flex-col gap-0.5">
-                                      {p.brand && (
-                                        <p className="text-[9px] font-extrabold uppercase tracking-widest text-sky-600 dark:text-sky-400 leading-none">{p.brand}</p>
-                                      )}
-                                      <p className="text-[11px] font-semibold text-slate-800 dark:text-slate-200 leading-snug line-clamp-2 group-hover:text-sky-700 dark:group-hover:text-sky-400 transition-colors">{p.name}</p>
-                                    </div>
-                                  </Link>
-                                );
-                              })}
-                            </div>
-
-                            {/* Footer */}
-                            <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-slate-50 to-sky-50 dark:from-slate-800 dark:to-slate-800 border-t border-slate-100 dark:border-slate-700">
-                              <Link href={link.href} onClick={() => setMegaActive(null)}
-                                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-sky-600 hover:bg-sky-700 active:scale-95 py-2.5 text-[13px] font-extrabold text-white no-underline transition-all shadow-md shadow-sky-200 dark:shadow-sky-900">
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                                Browse all {link.label}
-                              </Link>
-                              {onSale.length > 0 && (
-                                <Link href={`${link.href}?sale=1`} onClick={() => setMegaActive(null)}
-                                  className="flex items-center gap-1.5 rounded-xl border-2 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 px-3 py-2 text-[12px] font-bold text-red-600 dark:text-red-400 no-underline transition-colors whitespace-nowrap">
-                                  🏷️ Deals
-                                </Link>
-                              )}
-                            </div>
-
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                );
-              })}
-
-              {/* Extra links */}
-              <div className="ml-auto flex items-center gap-4 h-full text-[13px] font-semibold text-slate-500">
-                <Link href="/trade-in" className="hover:text-sky-600 no-underline transition-colors hidden xl:block">Trade-In</Link>
-                <Link href="/repairs" className="hover:text-sky-600 no-underline transition-colors hidden xl:block">Repairs</Link>
-                <Link href="/bulk-order" className="hover:text-sky-600 no-underline transition-colors hidden xl:block">Bulk Order</Link>
-                <Link href="/marketplace" className="hover:text-sky-600 no-underline transition-colors">Marketplace</Link>
-              </div>
-            </nav>
-          </div>
-        </div>
-
-        {/* ── Mobile Nav drawer ── */}
-        {mobileOpen && (
-          <div className="xl:hidden border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-y-auto max-h-[calc(100svh-5rem)]">
-            {/* Mobile search */}
-            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-10">
-              <SearchAutocomplete
-                placeholder="Search products…"
-                onNavigate={() => setMobileOpen(false)}
-              />
-            </div>
-
-            {/* All nav links */}
-            <div className="px-4 py-1">
-              {NAV_LINKS.map((link) => (
-                <Link key={link.label} href={link.href} onClick={() => setMobileOpen(false)}
-                  className={`flex items-center justify-between py-3.5 text-[15px] font-bold no-underline border-b border-slate-100 dark:border-slate-800 ${link.red ? 'text-red-500' : 'text-slate-800 dark:text-slate-100'}`}>
-                  {link.label}
-                  <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-              ))}
-
-              {/* Extra pages */}
-              {[
-                { href: '/trade-in',    label: 'Trade-In' },
-                { href: '/repairs',     label: 'Repairs' },
-                { href: '/marketplace', label: 'Marketplace' },
-                { href: '/bulk-order',  label: 'Bulk Order' },
-              ].map(({ href, label }) => (
-                <Link key={href} href={href} onClick={() => setMobileOpen(false)}
-                  className="flex items-center justify-between py-3.5 text-[15px] font-bold text-slate-800 dark:text-slate-100 no-underline border-b border-slate-100 dark:border-slate-800">
-                  {label}
-                  <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-              ))}
-            </div>
-
-            {/* Footer actions — extra bottom padding so BottomNav never covers these */}
-            <div className="px-4 pt-3 pb-28 border-t border-slate-100 dark:border-slate-800">
-              <LanguageSwitcher />
+              {/* User */}
               {session ? (
-                <button onClick={() => { setMobileOpen(false); signOut({ callbackUrl: '/' }); }}
-                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 py-3 text-sm font-bold text-white shadow-sm">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                  Sign Out
-                </button>
+                <div className="relative group">
+                  <button className="flex items-center gap-1.5 text-ex-text hover:text-primary transition-colors">
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </button>
+                  <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-ex-border rounded shadow-lg py-1 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-50">
+                    <div className="px-4 py-2 border-b border-ex-border">
+                      <p className="text-sm font-semibold text-ex-text truncate">{session.user.name}</p>
+                      <p className="text-xs text-ex-muted truncate">{session.user.email}</p>
+                    </div>
+                    <Link href="/account" className="flex items-center gap-2 px-4 py-2 text-sm text-ex-text hover:bg-ex-gray">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                      My Account
+                    </Link>
+                    <Link href="/orders" className="flex items-center gap-2 px-4 py-2 text-sm text-ex-text hover:bg-ex-gray">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                      My Orders
+                    </Link>
+                    <Link href="/wishlist" className="flex items-center gap-2 px-4 py-2 text-sm text-ex-text hover:bg-ex-gray">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                      Wishlist
+                    </Link>
+                    {(session.user.role === 'admin' || session.user.role === 'staff') && (
+                      <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-sm text-primary font-semibold hover:bg-ex-gray">
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        Admin Panel
+                      </Link>
+                    )}
+                    <hr className="my-1 border-ex-border" />
+                    <button onClick={doSignOut} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-ex-gray">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
               ) : (
-                <Link href="/signin" onClick={() => setMobileOpen(false)}
-                  className="mt-3 block w-full rounded-xl bg-sky-600 py-3 text-sm font-bold text-white text-center no-underline">
-                  Sign In
+                <Link href="/signin" className="text-ex-text hover:text-primary transition-colors" aria-label="Sign In">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
                 </Link>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile menu */}
+        {mobileOpen && (
+          <div className="lg:hidden border-t border-ex-border bg-white px-4 py-4 space-y-3">
+            {NAV_LINKS.map(link => (
+              <Link key={link.href} href={link.href} className="block text-sm font-medium text-ex-text py-1.5">{link.label}</Link>
+            ))}
+            {!session && <Link href="/signin" className="block text-sm font-medium text-ex-text py-1.5">Sign Up</Link>}
+            <Link href="/products" className="block text-sm font-medium text-ex-text py-1.5">All Products</Link>
+            <Link href="/deals" className="block text-sm font-medium text-primary py-1.5">Deals</Link>
+            <div className="pt-2">
+              <SearchAutocomplete placeholder="Search products…" />
             </div>
           </div>
         )}
       </header>
 
-      <main className="flex-1 pb-16 xl:pb-0">{children}</main>
+      {/* ── Page content ─────────────────────────────────────────────────── */}
+      <main className="flex-1">{children}</main>
 
-      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
-      <CartDrawer />
+      {/* ── Footer ───────────────────────────────────────────────────────── */}
+      <footer style={{ background: '#1D2026' }} className="text-gray-400">
+        <div className="max-w-container mx-auto px-4 lg:px-6 pt-16 pb-8">
+          <div className="grid grid-cols-2 gap-8 md:grid-cols-3 lg:grid-cols-5 mb-12">
+
+            {/* Col 1 — Brand + newsletter */}
+            <div className="col-span-2 md:col-span-1">
+              <Link href="/" className="flex items-center gap-2 mb-5">
+                <img src="/logo.png" alt="KigaliTech" className="h-8 w-8 rounded-full object-cover" onError={e => e.target.style.display='none'} />
+                <span className="text-white text-lg font-bold">KigaliTech</span>
+              </Link>
+              <p className="text-sm mb-4">Subscribe for exclusive deals &amp; early access.</p>
+              <form
+                onSubmit={e => { e.preventDefault(); const em = e.target.querySelector('input').value; if (em) window.alert('Thank you for subscribing!'); }}
+                className="flex gap-0"
+              >
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  className="flex-1 bg-transparent border border-gray-600 rounded-l px-3 py-2 text-xs text-white placeholder-gray-500 outline-none focus:border-primary"
+                />
+                <button type="submit" className="bg-primary hover:bg-primary-hover text-white px-3 py-2 rounded-r text-xs font-medium transition-colors">
+                  →
+                </button>
+              </form>
+            </div>
+
+            {/* Col 2 — Support */}
+            <div>
+              <h4 className="text-white font-semibold mb-4 text-sm">Support</h4>
+              <address className="not-italic text-xs space-y-2 leading-relaxed">
+                <p>KN 74 St, Kigali, Rwanda</p>
+                <p>kigalitechservices@gmail.com</p>
+                <p>+250 786 276 555</p>
+              </address>
+            </div>
+
+            {/* Col 3 — Account */}
+            <div>
+              <h4 className="text-white font-semibold mb-4 text-sm">Account</h4>
+              <ul className="space-y-2.5 text-xs">
+                {FOOTER_COL1.map(l => (
+                  <li key={l.href}><Link href={l.href} className="hover:text-white transition-colors">{l.label}</Link></li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Col 4 — Quick Link */}
+            <div>
+              <h4 className="text-white font-semibold mb-4 text-sm">Quick Link</h4>
+              <ul className="space-y-2.5 text-xs">
+                {FOOTER_COL2.map(l => (
+                  <li key={l.href}><Link href={l.href} className="hover:text-white transition-colors">{l.label}</Link></li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Col 5 — Services */}
+            <div>
+              <h4 className="text-white font-semibold mb-4 text-sm">Services</h4>
+              <ul className="space-y-2.5 text-xs">
+                {FOOTER_COL3.map(l => (
+                  <li key={l.href}><Link href={l.href} className="hover:text-white transition-colors">{l.label}</Link></li>
+                ))}
+              </ul>
+              {/* Socials */}
+              <div className="flex gap-3 mt-6">
+                {[
+                  { href: 'https://www.facebook.com/kigalitechservices/', label: 'FB', path: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z' },
+                  { href: 'https://twitter.com', label: 'TW', path: 'M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z' },
+                  { href: 'https://www.instagram.com/kigalitechservices/', label: 'IG', path: 'M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37zm1.5-4.87h.01M6.5 19.5h11a2 2 0 002-2v-11a2 2 0 00-2-2h-11a2 2 0 00-2 2v11a2 2 0 002 2z' },
+                ].map(s => (
+                  <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
+                    className="h-8 w-8 rounded-full border border-gray-600 flex items-center justify-center text-gray-400 hover:border-white hover:text-white transition-colors">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d={s.path} /></svg>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="border-t border-gray-700 pt-6 text-center text-xs text-gray-500">
+            © Copyright KigaliTech {new Date().getFullYear()}. All rights reserved.
+          </div>
+        </div>
+      </footer>
+
       <BottomNav />
+      <CartDrawer />
       <AIChatWidget />
     </div>
   );

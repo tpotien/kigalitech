@@ -124,7 +124,7 @@ export default function SearchAutocomplete({
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
-      <form onSubmit={submit} className="flex w-full rounded-full border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus-within:border-sky-500 focus-within:bg-white dark:focus-within:bg-slate-700 transition-all overflow-hidden shadow-sm">
+      <form onSubmit={submit} className="flex w-full rounded-full border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus-within:border-primary500 focus-within:bg-white dark:focus-within:bg-slate-700 transition-all overflow-hidden shadow-sm">
         <input
           ref={inputRef}
           type="text"
@@ -151,12 +151,12 @@ export default function SearchAutocomplete({
         )}
         {loading && (
           <div className="flex items-center px-3">
-            <div className="h-4 w-4 rounded-full border-2 border-sky-500 border-t-transparent animate-spin" />
+            <div className="h-4 w-4 rounded-full border-2 border-primary500 border-t-transparent animate-spin" />
           </div>
         )}
         <button
           type="submit"
-          className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 px-5 text-white text-sm font-bold transition-colors flex-shrink-0"
+          className="flex items-center gap-2 bg-primary hover:bg-primary-hover px-5 text-white text-sm font-bold transition-colors flex-shrink-0"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -186,7 +186,7 @@ export default function SearchAutocomplete({
                   <button
                     key={s}
                     onClick={() => { setQuery(s); setOpen(true); }}
-                    className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:border-sky-300 hover:text-sky-700 transition-colors"
+                    className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:border-primary300 hover:text-sky-700 transition-colors"
                   >
                     <svg className="h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -208,7 +208,7 @@ export default function SearchAutocomplete({
                     onMouseDown={() => pickResult(r)}
                     className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
                       i === activeIdx
-                        ? 'bg-sky-50 dark:bg-sky-900/20'
+                        ? 'bg-red-50 dark:bg-sky-900/20'
                         : 'hover:bg-slate-50 dark:hover:bg-slate-800'
                     }`}
                   >
@@ -249,7 +249,7 @@ export default function SearchAutocomplete({
           {/* No results */}
           {query.length >= 2 && !loading && results.length === 0 && (
             <div className="px-5 py-8 text-center">
-              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">No results for &ldquo;<span className="text-sky-600">{query}</span>&rdquo;</p>
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">No results for &ldquo;<span className="text-primary">{query}</span>&rdquo;</p>
               <p className="text-xs text-slate-400 mt-1">Try a different term</p>
             </div>
           )}
@@ -261,7 +261,7 @@ export default function SearchAutocomplete({
               <button
                 type="button"
                 onMouseDown={submit}
-                className="text-xs font-semibold text-sky-600 hover:text-sky-700 dark:hover:text-sky-400 transition-colors"
+                className="text-xs font-semibold text-primary hover:text-sky-700 dark:hover:text-sky-400 transition-colors"
               >
                 See all results for &ldquo;{query}&rdquo; →
               </button>

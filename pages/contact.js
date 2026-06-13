@@ -24,13 +24,13 @@ export default function ContactPage() {
   }
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
-  const inp = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-800';
+  const inp = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-800';
 
   return (
     <Layout>
       <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">Get in Touch</p>
+          <p className="text-sm font-semibold uppercase tracking-widest text-primary">Get in Touch</p>
           <h1 className="mt-2 text-4xl font-extrabold text-slate-900 dark:text-slate-100">Contact Us</h1>
           <p className="mt-3 text-lg text-slate-500 dark:text-slate-400 max-w-md mx-auto">
             Questions, repairs, or bulk orders — our team responds within a few hours.
@@ -102,7 +102,7 @@ export default function ContactPage() {
                   <textarea required rows={5} value={form.message} onChange={set('message')} className={`${inp} resize-none`} placeholder="How can we help you?" />
                 </div>
                 {error && <p className="rounded-xl bg-red-50 border border-red-100 px-4 py-2.5 text-sm text-red-600">{error}</p>}
-                <button type="submit" disabled={loading} className="w-full rounded-full bg-sky-600 py-3 font-semibold text-white hover:bg-sky-700 disabled:opacity-60">
+                <button type="submit" disabled={loading} className="w-full rounded-full bg-primary py-3 font-semibold text-white hover:bg-primary-hover disabled:opacity-60">
                   {loading ? 'Sending…' : 'Send Message'}
                 </button>
               </form>
