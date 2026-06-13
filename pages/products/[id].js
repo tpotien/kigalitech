@@ -119,7 +119,7 @@ function VideoPlayer({ url }) {
   if (!ytId && !url) return null;
 
   return (
-    <div className="mt-4 rounded-2xl overflow-hidden border border-slate-200 bg-slate-900">
+    <div className="mt-4 rounded overflow-hidden border border-slate-200 bg-slate-900">
       {!show ? (
         <button
           onClick={() => setShow(true)}
@@ -259,7 +259,7 @@ function ReviewsSection({ productId }) {
   }
 
   return (
-    <div className="mt-8 rounded-3xl bg-white p-6 shadow-sm">
+    <div className="mt-8 rounded bg-white p-6 shadow-sm">
       {/* Review image lightbox */}
       {lightboxSrc && (
         <div
@@ -267,7 +267,7 @@ function ReviewsSection({ productId }) {
           onClick={() => setLightboxSrc(null)}
         >
           <div className="relative max-w-3xl w-full" onClick={e => e.stopPropagation()}>
-            <img src={lightboxSrc} alt="Review photo" className="w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl" />
+            <img src={lightboxSrc} alt="Review photo" className="w-full max-h-[80vh] object-contain rounded shadow-2xl" />
             <button
               onClick={() => setLightboxSrc(null)}
               className="absolute -top-3 -right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-lg text-slate-700 hover:bg-slate-100 transition-colors"
@@ -295,29 +295,29 @@ function ReviewsSection({ productId }) {
           </button>
         )}
         {!session && (
-          <Link href="/signin" className="rounded-full border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 no-underline">
+          <Link href="/signin" className="border border-ex-border px-5 py-2.5 rounded text-sm font-semibold text-ex-text hover:border-primary hover:text-primary no-underline transition-colors">
             Sign in to review
           </Link>
         )}
       </div>
 
       {msg && (
-        <p className={`mt-4 rounded-xl px-4 py-2.5 text-sm font-medium ${msg.includes('submitted') ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700' : 'bg-red-50 dark:bg-red-900/20 text-red-600'}`}>{msg}</p>
+        <p className={`mt-4 rounded px-4 py-2.5 text-sm font-medium ${msg.includes('submitted') ? 'bg-emerald-50  text-emerald-700' : 'bg-red-50  text-red-600'}`}>{msg}</p>
       )}
 
       {showForm && (
-        <form onSubmit={submitReview} className="mt-6 space-y-4 rounded-2xl border border-slate-100 p-5">
+        <form onSubmit={submitReview} className="mt-6 space-y-4 rounded border border-slate-100 p-5">
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">Your Rating *</label>
             <StarRating rating={form.rating} onChange={r => setForm({ ...form, rating: r })} />
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">Review Title *</label>
-            <input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Summarize your experience" className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 dark:text-white px-4 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/100 dark:focus:ring-primary/800" />
+            <input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Summarize your experience" className="w-full rounded border border-slate-200 bg-white text-slate-900 dark:text-white px-4 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/100 dark:focus:ring-primary/800" />
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">Review *</label>
-            <textarea required rows={4} value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} placeholder="Tell other shoppers what you think..." className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 dark:text-white px-4 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/100 dark:focus:ring-primary/800" />
+            <textarea required rows={4} value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} placeholder="Tell other shoppers what you think..." className="w-full rounded border border-slate-200 bg-white text-slate-900 dark:text-white px-4 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/100 dark:focus:ring-primary/800" />
           </div>
 
           {/* Photo upload */}
@@ -327,7 +327,7 @@ function ReviewsSection({ productId }) {
             </label>
             <div className="flex flex-wrap gap-3">
               {reviewImages.map((img, i) => (
-                <div key={i} className="group relative h-20 w-20 overflow-hidden rounded-xl border-2 border-slate-200 bg-slate-50">
+                <div key={i} className="group relative h-20 w-20 overflow-hidden rounded border-2 border-slate-200 bg-slate-50">
                   <img src={img.dataUrl} alt="" className="h-full w-full object-cover" />
                   <button
                     type="button"
@@ -343,7 +343,7 @@ function ReviewsSection({ productId }) {
                   type="button"
                   onClick={() => reviewImgRef.current?.click()}
                   disabled={uploadingImg}
-                  className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 hover:border-primary hover:text-primary hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-all disabled:opacity-50"
+                  className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 hover:border-primary hover:text-primary hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-all disabled:opacity-50"
                 >
                   {uploadingImg
                     ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -393,7 +393,7 @@ function ReviewsSection({ productId }) {
                   <div className="flex items-center gap-3">
                     {review.user?.image
                       ? <img src={review.user.image} alt="" className="h-9 w-9 rounded-full" />
-                      : <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-primary">{(review.user?.name || 'A')[0].toUpperCase()}</div>
+                      : <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-50 text-sm font-bold text-primary">{(review.user?.name || 'A')[0].toUpperCase()}</div>
                     }
                     <div>
                       <span className="flex items-center gap-1">
@@ -402,7 +402,7 @@ function ReviewsSection({ productId }) {
                       </span>
                       <div className="flex items-center gap-2">
                         <StarRating rating={review.rating} size={4} />
-                        {review.verified && <span className="rounded-full bg-emerald-100 dark:bg-emerald-900/20 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">Verified Purchase</span>}
+                        {review.verified && <span className="rounded-full bg-emerald-100  px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">Verified Purchase</span>}
                       </div>
                     </div>
                   </div>
@@ -419,11 +419,11 @@ function ReviewsSection({ productId }) {
                         key={i}
                         type="button"
                         onClick={() => setLightboxSrc(src)}
-                        className="group relative h-16 w-16 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 hover:border-sky-300 transition-all"
+                        className="group relative h-16 w-16 overflow-hidden rounded border border-slate-200 bg-slate-100 hover:border-sky-300 transition-all"
                         aria-label="View photo"
                       >
                         <img src={src} alt={`Review photo ${i + 1}`} className="h-full w-full object-cover group-hover:opacity-90 transition-opacity" />
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/20 transition-opacity rounded-xl">
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/20 transition-opacity rounded">
                           <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                           </svg>
@@ -808,9 +808,9 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                       <button
                         key={i}
                         onClick={() => scrollToImg(i)}
-                        className={`relative flex-shrink-0 h-16 w-16 rounded-xl overflow-hidden border-2 bg-white transition-all ${
+                        className={`relative flex-shrink-0 h-16 w-16 rounded overflow-hidden border-2 bg-white transition-all ${
                           activeImg === i
-                            ? 'border-sky-500 ring-2 ring-primary/20 dark:ring-sky-800 shadow-md'
+                            ? 'border-primary ring-2 ring-primary/20  shadow-md'
                             : 'border-slate-200 hover:border-slate-400 opacity-70 hover:opacity-100'
                         }`}
                       >
@@ -877,20 +877,20 @@ export default function ProductPage({ product, bundledProducts = [] }) {
               {/* QR Share Modal */}
               {showQR && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setShowQR(false)}>
-                  <div className="bg-white rounded-3xl p-7 max-w-xs w-full shadow-2xl text-center" onClick={e => e.stopPropagation()}>
+                  <div className="bg-white rounded p-7 max-w-xs w-full shadow-2xl text-center" onClick={e => e.stopPropagation()}>
                     <h3 className="font-extrabold text-slate-900 text-lg mb-1">Share this product</h3>
                     <p className="text-xs text-slate-500 mb-5">Scan the QR code or copy the link</p>
                     <div className="flex justify-center mb-5">
-                      <div className="rounded-2xl border-4 border-sky-100 dark:border-sky-900 p-2 bg-white shadow">
+                      <div className="rounded border-4 border-gray-100 p-2 bg-white shadow">
                         <img
                           src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://kigalitechservices.com/products/${product.id}`)}`}
                           alt="QR Code"
                           width={180} height={180}
-                          className="rounded-xl"
+                          className="rounded"
                         />
                       </div>
                     </div>
-                    <p className="text-xs font-semibold text-slate-700 truncate mb-4 bg-slate-50 rounded-xl px-3 py-2">
+                    <p className="text-xs font-semibold text-slate-700 truncate mb-4 bg-slate-50 rounded px-3 py-2">
                       kigalitechservices.com/products/{product.id}
                     </p>
                     <div className="grid grid-cols-2 gap-3">
@@ -940,7 +940,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                 </div>
 
                 {/* Price + stock */}
-                <div className={`rounded-2xl p-4 flex items-start justify-between gap-3 ${flashActive ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' : 'bg-slate-50'}`}>
+                <div className={`rounded p-4 flex items-start justify-between gap-3 ${flashActive ? 'bg-red-50  border border-red-200 ' : 'bg-slate-50'}`}>
                   <div>
                     {flashActive ? (
                       <>
@@ -967,9 +967,9 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                     )}
                   </div>
                   <div className={`rounded-full px-3 py-1.5 text-xs font-bold ${
-                    product.stock === 0 ? 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+                    product.stock === 0 ? 'bg-red-100  text-red-600 dark:text-red-400'
                     : product.stock <= 5 ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300'
-                    : 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300'
+                    : 'bg-emerald-100  text-emerald-700 dark:text-emerald-300'
                   }`}>
                     {product.stock === 0 ? 'Out of Stock' : product.stock <= 5 ? `Only ${product.stock} left` : 'In Stock'}
                   </div>
@@ -977,7 +977,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
 
                 {/* Color */}
                 {colors.length > 0 && (
-                  <div className="rounded-2xl border border-slate-100 p-4">
+                  <div className="rounded border border-slate-100 p-4">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-sm text-slate-500">
                         {t('color')}:{' '}
@@ -997,11 +997,11 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                             onClick={() => handleColorChange(c)}
                             disabled={!avail}
                             title={!avail ? 'Out of stock' : qty !== undefined ? `${qty} in stock` : 'Click to preview'}
-                            className={`relative flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-medium transition-all ${
+                            className={`relative flex items-center gap-2 rounded border-2 px-3 py-2 text-sm font-medium transition-all ${
                               !avail
                                 ? 'border-slate-100 bg-slate-50/50 text-slate-300 cursor-not-allowed opacity-60'
                                 : isSelected
-                                  ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 shadow-md shadow-sky-100 dark:shadow-sky-900/20 scale-105'
+                                  ? 'border-primary bg-sky-50 dark:bg-sky-900/30 text-primary dark:text-sky-300 shadow-md shadow-sky-100 dark:shadow-sky-900/20 scale-105'
                                   : 'border-slate-200 text-slate-600 hover:border-sky-300 hover:bg-sky-50/50 dark:hover:border-sky-700'
                             }`}
                           >
@@ -1046,7 +1046,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
 
                 {/* Storage */}
                 {storageOptions.length > 1 && (
-                  <div className="rounded-2xl border border-slate-100 p-4">
+                  <div className="rounded border border-slate-100 p-4">
                     <p className="text-sm text-slate-500 mb-3">{t('storage')}</p>
                     <div className="flex flex-wrap gap-2">
                       {storageOptions.map((s) => {
@@ -1060,11 +1060,11 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                             onClick={() => avail && setStorage(s)}
                             disabled={!avail}
                             title={!avail ? 'Not available' : qty !== undefined ? `${qty} in stock` : undefined}
-                            className={`relative flex flex-col items-center rounded-xl border-2 px-4 py-2 text-sm font-medium transition-all ${
+                            className={`relative flex flex-col items-center rounded border-2 px-4 py-2 text-sm font-medium transition-all ${
                               !avail
                                 ? 'border-slate-100 bg-slate-50/50 text-slate-300 cursor-not-allowed opacity-60'
                                 : storage === s
-                                  ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 shadow-md shadow-sky-100 dark:shadow-sky-900/20 scale-105'
+                                  ? 'border-primary bg-sky-50 dark:bg-sky-900/30 text-primary dark:text-sky-300 shadow-md shadow-sky-100 dark:shadow-sky-900/20 scale-105'
                                   : 'border-slate-200 text-slate-600 hover:border-sky-300 hover:bg-sky-50/50 dark:hover:border-sky-700'
                             }`}
                           >
@@ -1098,7 +1098,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                 )}
 
                 {/* Warranty */}
-                <div className="rounded-2xl border border-slate-100 p-4">
+                <div className="rounded border border-slate-100 p-4">
                   <p className="text-sm text-slate-500 mb-3">
                     Warranty
                     {product.brand === 'Apple' && warranty && warranty.toLowerCase().includes('applecare') && (
@@ -1108,7 +1108,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                   <div className="flex flex-wrap gap-2">
                     {warrantyOptions.map((w) => (
                       <button key={w} onClick={() => setWarranty(w)}
-                        className={`rounded-full border px-4 py-2 text-sm font-medium transition ${warranty === w ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/30 text-sky-700' : 'border-slate-200 text-slate-600 hover:border-slate-400'}`}
+                        className={`rounded-full border px-4 py-2 text-sm font-medium transition ${warranty === w ? 'border-primary bg-sky-50 dark:bg-sky-900/30 text-primary' : 'border-slate-200 text-slate-600 hover:border-slate-400'}`}
                       >
                         {w}
                       </button>
@@ -1118,7 +1118,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
 
                 {/* TV Installation callout */}
                 {isTV && (
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 p-4">
+                  <div className="rounded border border-amber-200 bg-amber-50 dark:bg-amber-900/20 p-4">
                     <div className="flex items-start gap-3">
                       <span className="text-2xl flex-shrink-0">📺</span>
                       <div>
@@ -1131,20 +1131,20 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                 )}
 
                 {/* Installments callout */}
-                <div className="rounded-2xl border border-sky-100 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/20 p-4">
+                <div className="rounded border border-sky-100  bg-red-50 p-4">
                   <div className="flex items-start gap-3">
                     <span className="text-2xl flex-shrink-0">💳</span>
                     <div>
                       <p className="text-sm font-semibold text-sky-900 dark:text-sky-300">Pay in Installments</p>
-                      <p className="text-xs text-sky-700 dark:text-primary mt-0.5">Split into 3, 6 or 12 monthly payments — choose at checkout.</p>
-                      <p className="text-xs text-primary dark:text-primary mt-1">From <span className="font-bold">{format(Math.ceil(displayPrice / 3))}/mo</span> over 3 months</p>
+                      <p className="text-xs text-primary text-primary mt-0.5">Split into 3, 6 or 12 monthly payments — choose at checkout.</p>
+                      <p className="text-xs text-primary text-primary mt-1">From <span className="font-bold">{format(Math.ceil(displayPrice / 3))}/mo</span> over 3 months</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Specs */}
                 {Object.keys(specs).length > 0 && (
-                  <div className="rounded-2xl border border-slate-100 overflow-hidden">
+                  <div className="rounded border border-slate-100 overflow-hidden">
                     <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 border-b border-slate-100">
                       <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                       <p className="text-sm font-bold text-slate-700">Specifications</p>
@@ -1161,7 +1161,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                 )}
 
                 {/* Trade-in callout */}
-                <div className="rounded-2xl border border-emerald-100 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-4">
+                <div className="rounded border border-emerald-100  bg-emerald-50  p-4">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
                       <span className="text-xl">♻️</span>
@@ -1240,7 +1240,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                     disabled={priceAlertLoading}
                     className={`w-full flex items-center justify-center gap-2 rounded-full border py-2.5 text-sm font-semibold transition-all ${
                       priceAlertSubscribed
-                        ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-700 dark:text-emerald-400'
+                        ? 'border-emerald-300 bg-emerald-50 text-emerald-700  dark:border-emerald-700 dark:text-emerald-400'
                         : 'border-slate-200 text-slate-600 hover:border-sky-300 hover:text-primary hover:bg-sky-50'
                     }`}
                   >
@@ -1284,7 +1284,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
 
           {/* Bundled / Frequently Bought Together */}
           {bundledProducts.length > 0 && (
-            <div className="mt-8 rounded-3xl bg-white p-6 shadow-sm">
+            <div className="mt-8 rounded bg-white p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-5">
                 <span className="text-xl">🛍️</span>
                 <div>
@@ -1296,8 +1296,8 @@ export default function ProductPage({ product, bundledProducts = [] }) {
                 {bundledProducts.map(bp => {
                   const bImgs = (() => { try { return JSON.parse(bp.images); } catch { return []; } })();
                   return (
-                    <Link key={bp.id} href={`/products/${bp.id}`} className="group flex items-center gap-4 rounded-2xl border border-slate-100 p-3 no-underline hover:border-sky-200 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-all">
-                      <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100">
+                    <Link key={bp.id} href={`/products/${bp.id}`} className="group flex items-center gap-4 rounded border border-slate-100 p-3 no-underline hover:border-primary hover:bg-red-50 transition-all">
+                      <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded bg-slate-100">
                         {bImgs[0] && <img src={bImgs[0]} alt={bp.name} className="h-full w-full object-cover" />}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1356,7 +1356,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
 
       {/* ── Sticky mobile Add to Cart bar ── */}
       <div className="lg:hidden fixed bottom-[4.25rem] inset-x-0 z-30 px-3 pb-2">
-        <div className="flex items-center gap-2 rounded-2xl bg-white/95/95 border border-slate-200 shadow-2xl backdrop-blur-md px-3 py-2.5">
+        <div className="flex items-center gap-2 rounded bg-white/95/95 border border-slate-200 shadow-2xl backdrop-blur-md px-3 py-2.5">
           <div className="flex-1 min-w-0">
             <p className="text-[11px] font-semibold text-slate-500 truncate">{product.name}</p>
             <p className="text-base font-extrabold text-slate-900 leading-tight">{format(displayPrice)}</p>
@@ -1366,7 +1366,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
             href={`https://wa.me/250786276555?text=${encodeURIComponent(`Hi KigaliTech! 👋\n\nI'd like to *buy*:\n*${product.name}*\n🔗 https://kigalitechservices.com/products/${product.id}\n\nPlease help me order!`)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-[#25D366] shadow-md shadow-green-200 dark:shadow-green-900/30 transition-all active:scale-95"
+            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded bg-[#25D366] shadow-md shadow-green-200 dark:shadow-green-900/30 transition-all active:scale-95"
             aria-label="Buy via WhatsApp"
           >
             <svg viewBox="0 0 32 32" className="h-5 w-5 fill-white">
@@ -1376,7 +1376,7 @@ export default function ProductPage({ product, bundledProducts = [] }) {
           <button
             onClick={handleAddToCart}
             disabled={product.stock === 0}
-            className={`flex-shrink-0 rounded-xl px-5 py-2.5 font-bold text-white text-sm transition-all ${
+            className={`flex-shrink-0 rounded px-5 py-2.5 font-bold text-white text-sm transition-all ${
               product.stock === 0 ? 'bg-slate-300 cursor-not-allowed'
               : added ? 'bg-emerald-500 scale-95'
               : 'bg-primary hover:bg-primary-hover active:scale-95 shadow-lg shadow-primary/20'

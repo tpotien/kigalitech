@@ -180,7 +180,7 @@ export default function Checkout() {
   }
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const inp = 'w-full rounded border border-ex-border bg-ex-gray text-ex-text dark:text-white placeholder-slate-400 px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-800';
+  const inp = 'w-full bg-transparent border-0 border-b border-gray-300 py-3 text-sm text-ex-text placeholder:text-gray-400 outline-none focus:border-primary transition-colors';
 
   const addonTotal = addons.filter(a => selectedAddons[a.id]).reduce((s, a) => s + a.price, 0);
   const selectedZone = deliveryZones.find(z => z.id === selectedZoneId) || null;
@@ -309,7 +309,7 @@ export default function Checkout() {
     return (
       <Layout>
         <div className="min-h-[60vh] flex items-center justify-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
       </Layout>
     );
@@ -378,7 +378,7 @@ export default function Checkout() {
               )}
 
               {/* Store pickup toggle */}
-              <div className={`rounded border p-4 cursor-pointer transition ${storePickup ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20' : 'border-ex-border bg-white dark:bg-slate-900'}`}
+              <div className={`rounded border p-4 cursor-pointer transition ${storePickup ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20' : 'border-ex-border bg-white '}`}
                 onClick={() => setStorePickup(p => !p)}>
                 <div className="flex items-center gap-3">
                   <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${storePickup ? 'border-emerald-500 bg-emerald-500' : 'border-ex-border'}`}>
@@ -453,7 +453,7 @@ export default function Checkout() {
                         key={zone.id}
                         className={`flex items-center justify-between gap-3 rounded border p-3.5 cursor-pointer transition ${
                           selectedZoneId === zone.id
-                            ? 'border-sky-500 bg-red-50 dark:bg-sky-900/20'
+                            ? 'border-primary bg-red-50 bg-red-50'
                             : 'border-ex-border bg-white hover:border-ex-border dark:hover:border-slate-600'
                         }`}
                       >
@@ -506,7 +506,7 @@ export default function Checkout() {
                       key={m.id}
                       className={`relative flex items-center gap-3 rounded border p-4 cursor-pointer transition ${
                         form.paymentMethod === m.id
-                          ? 'border-sky-500 bg-red-50 dark:bg-sky-900/20'
+                          ? 'border-primary bg-red-50 bg-red-50'
                           : m.popular
                             ? 'border-emerald-200 dark:border-emerald-800 hover:border-emerald-400'
                             : 'border-ex-border hover:border-ex-border'
@@ -543,7 +543,7 @@ export default function Checkout() {
 
                 {/* Installment CTA */}
                 {isInstallment && (
-                  <div className="mt-4 rounded bg-red-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 p-4">
+                  <div className="mt-4 rounded bg-red-50 bg-red-50 border border-sky-200  p-4">
                     <p className="text-sm font-semibold text-ex-text mb-1">We'll contact you to arrange a plan</p>
                     <p className="text-xs text-ex-muted">Clicking "Request Installment" will open WhatsApp so we can discuss your 3–12 month plan directly.</p>
                   </div>
@@ -569,7 +569,7 @@ export default function Checkout() {
                           key={addon.id} type="button"
                           onClick={() => setSelectedAddons(s => ({ ...s, [addon.id]: !s[addon.id] }))}
                           className={`flex items-center gap-3 rounded border p-3 text-left transition-all ${
-                            selected ? 'border-sky-500 bg-red-50 dark:bg-sky-900/20 ring-2 ring-sky-200 dark:ring-sky-800' : 'border-ex-border hover:border-ex-border'
+                            selected ? 'border-primary bg-red-50 bg-red-50 ring-2 ring-primary/20 ' : 'border-ex-border hover:border-ex-border'
                           }`}
                         >
                           {img ? (
@@ -581,7 +581,7 @@ export default function Checkout() {
                             <p className="text-sm font-medium text-ex-text truncate">{addon.name}</p>
                             <p className="text-xs font-bold text-primary mt-0.5">{format(addon.price)}</p>
                           </div>
-                          <div className={`h-5 w-5 flex-shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${selected ? 'border-sky-500 bg-primary' : 'border-ex-border'}`}>
+                          <div className={`h-5 w-5 flex-shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${selected ? 'border-primary bg-primary' : 'border-ex-border'}`}>
                             {selected && <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>}
                           </div>
                         </button>
@@ -646,7 +646,7 @@ export default function Checkout() {
                         onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponError(''); }}
                         onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), applyCoupon())}
                         placeholder="Coupon code"
-                        className="flex-1 rounded border border-ex-border bg-ex-gray text-ex-text dark:text-white placeholder-slate-400 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                        className="flex-1 rounded border border-ex-border bg-ex-gray text-ex-text  placeholder-slate-400 px-3 py-2 text-sm focus:border-primary focus:outline-none"
                       />
                       <button type="button" onClick={applyCoupon} disabled={couponLoading || !couponInput.trim()}
                         className="rounded bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50 transition">
@@ -694,7 +694,7 @@ export default function Checkout() {
                     </p>
                   )}
                   {selectedZone?.estimatedDays && (
-                    <div className="flex items-center gap-1.5 rounded-lg bg-red-50 dark:bg-sky-900/20 px-3 py-2 text-xs text-primary dark:text-primary">
+                    <div className="flex items-center gap-1.5 rounded-lg bg-red-50 bg-red-50 px-3 py-2 text-xs text-primary text-primary">
                       <span>📅</span>
                       <span>Expected delivery: <strong>{selectedZone.estimatedDays === 1 ? 'Today / Tomorrow' : `${selectedZone.estimatedDays} business days`}</strong></span>
                     </div>
@@ -718,7 +718,7 @@ export default function Checkout() {
                     <span>{t('total')}</span><span>{format(total)}</span>
                   </div>
                   {session && loyaltyPts !== null && (
-                    <div className={`mt-3 rounded px-3 py-2.5 text-xs flex items-center gap-2 ${loyaltyPts >= 100 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'bg-red-50 dark:bg-sky-900/20 text-primary dark:text-primary'}`}>
+                    <div className={`mt-3 rounded px-3 py-2.5 text-xs flex items-center gap-2 ${loyaltyPts >= 100 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'bg-red-50 bg-red-50 text-primary text-primary'}`}>
                       <span className="text-base">⭐</span>
                       {loyaltyPts >= 100
                         ? <span><strong>{loyaltyPts} pts</strong> available — redeem for <strong>RWF {Math.floor(loyaltyPts / 100) * 1340 > 0 ? (Math.floor(loyaltyPts / 100) * 1340).toLocaleString() : '1,340'}</strong> off at checkout</span>
@@ -775,16 +775,16 @@ export default function Checkout() {
                   Send Payment Proof on WhatsApp
                 </a>
                 {showSaveAddressPrompt && !addressSaved && (
-                  <div className="my-4 rounded bg-red-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 px-4 py-3 text-left">
-                    <p className="text-sm font-semibold text-primary dark:text-primary mb-1">Save your address for next time?</p>
-                    <p className="text-xs text-primary dark:text-primary mb-3">{form.address}</p>
+                  <div className="my-4 rounded bg-red-50 bg-red-50 border border-sky-200  px-4 py-3 text-left">
+                    <p className="text-sm font-semibold text-primary text-primary mb-1">Save your address for next time?</p>
+                    <p className="text-xs text-primary text-primary mb-3">{form.address}</p>
                     <div className="flex gap-2">
                       <button onClick={saveCurrentAddress} disabled={addressSaveLoading}
                         className="flex-1 rounded bg-primary hover:bg-primary-hover disabled:opacity-60 text-white text-xs font-bold py-2 transition">
                         {addressSaveLoading ? 'Saving…' : 'Save Address'}
                       </button>
                       <button onClick={() => setAddressSaved(true)}
-                        className="rounded border border-sky-200 dark:border-sky-700 text-xs text-primary dark:text-primary px-3 py-2 hover:bg-sky-100 dark:hover:bg-sky-900/30 transition">
+                        className="rounded border border-sky-200 dark:border-sky-700 text-xs text-primary text-primary px-3 py-2 hover:bg-red-50  transition">
                         No thanks
                       </button>
                     </div>
@@ -793,7 +793,7 @@ export default function Checkout() {
                 {addressSaved && showSaveAddressPrompt && (
                   <p className="my-3 text-center text-xs text-emerald-600 dark:text-emerald-400 font-semibold">✓ Address saved!</p>
                 )}
-                <button onClick={handleModalClose} className="w-full rounded-full border border-ex-border py-3 text-sm font-semibold text-ex-text hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                <button onClick={handleModalClose} className="w-full rounded-full border border-ex-border py-3 text-sm font-semibold text-ex-text hover:bg-slate-50  transition-all">
                   View My Order
                 </button>
               </div>
@@ -805,7 +805,7 @@ export default function Checkout() {
                     <h3 className="text-lg font-extrabold text-ex-text">Send Payment</h3>
                     <p className="text-xs text-ex-muted">MTN MoMo or Airtel Money</p>
                   </div>
-                  <button onClick={() => setShowPayModal(false)} className="rounded-full p-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-ex-muted transition-all">
+                  <button onClick={() => setShowPayModal(false)} className="rounded-full p-2 hover:bg-slate-100  text-slate-400 hover:text-ex-muted transition-all">
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                   </button>
                 </div>
@@ -826,7 +826,7 @@ export default function Checkout() {
                   </div>
 
                   {/* Number + QR */}
-                  <div className="rounded bg-gradient-to-br from-sky-50 to-emerald-50 dark:from-sky-900/20 dark:to-emerald-900/20 border border-sky-200 dark:border-sky-800 p-5">
+                  <div className="rounded bg-gradient-to-br from-sky-50 to-emerald-50 dark:from-sky-900/20 dark:to-emerald-900/20 border border-sky-200  p-5">
                     <div className="flex flex-col sm:flex-row items-center gap-5">
                       {/* QR */}
                       <div className="flex-shrink-0 rounded border-4 border-white shadow-md p-1 bg-white">
@@ -863,7 +863,7 @@ export default function Checkout() {
                   {/* USSD Dialer shortcut */}
                   <a
                     href={`tel:*182*1*1*${BUSINESS_PHONE}*${Math.round(total)}%23`}
-                    className="flex items-center justify-center gap-2 rounded bg-red-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 py-3 text-sm font-semibold text-primary dark:text-primary hover:bg-sky-100 dark:hover:bg-sky-900/40 transition"
+                    className="flex items-center justify-center gap-2 rounded bg-red-50 bg-red-50 border border-sky-200  py-3 text-sm font-semibold text-primary text-primary hover:bg-red-50 dark:hover:bg-sky-900/40 transition"
                   >
                     <span className="text-lg">📞</span>
                     Dial to pay: *182*1*1*{BUSINESS_PHONE}*{Math.round(total)}#

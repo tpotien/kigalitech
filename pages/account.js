@@ -750,7 +750,7 @@ export default function AccountPage() {
                   const msg = tradeInMsg[ti.id];
 
                   return (
-                    <div key={ti.id} className={`rounded-3xl bg-white dark:bg-slate-900 shadow-sm overflow-hidden border ${ti.status === 'offer_made' ? 'border-sky-200 dark:border-sky-800' : 'border-transparent dark:border-slate-800'}`}>
+                    <div key={ti.id} className={`rounded-3xl bg-white dark:bg-slate-900 shadow-sm overflow-hidden border ${ti.status === 'offer_made' ? 'border-sky-200 ' : 'border-transparent dark:border-slate-800'}`}>
                       {/* Header */}
                       <div className="p-5">
                         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -792,7 +792,7 @@ export default function AccountPage() {
 
                         {/* Admin message */}
                         {ti.adminNotes && (
-                          <div className="mt-3 rounded-xl bg-sky-50 bg-red-50 border border-sky-100 dark:border-sky-800 px-4 py-3">
+                          <div className="mt-3 rounded-xl bg-sky-50 bg-red-50 border border-sky-100  px-4 py-3">
                             <p className="text-xs font-semibold text-primary mb-0.5">Message from KigaliTech</p>
                             <p className="text-sm text-slate-700 dark:text-slate-300">{ti.adminNotes}</p>
                           </div>
@@ -808,7 +808,7 @@ export default function AccountPage() {
 
                       {/* Offer actions — only when offer is awaiting response */}
                       {ti.status === 'offer_made' && !msg?.startsWith('✓') && (
-                        <div className="border-t border-sky-100 dark:border-sky-800 bg-sky-50/30 dark:bg-sky-900/10 px-5 pb-5">
+                        <div className="border-t border-sky-100  bg-sky-50/30 dark:bg-sky-900/10 px-5 pb-5">
                           <div className="pt-4 mb-3">
                             <p className="font-semibold text-slate-800 dark:text-slate-200">We're offering <span className="text-primary text-primary">{format(ti.offeredPrice)}</span> for your {ti.productName}</p>
                             <p className="text-xs text-slate-400 mt-0.5">Accept to proceed, counter with your price, or decline</p>
@@ -1343,7 +1343,7 @@ export default function AccountPage() {
 
                         {/* Admin notes */}
                         {ticket.adminNotes && (
-                          <div className="mx-5 mt-3 rounded-xl bg-sky-50 bg-red-50 border border-sky-100 dark:border-sky-800 p-3">
+                          <div className="mx-5 mt-3 rounded-xl bg-sky-50 bg-red-50 border border-sky-100  p-3">
                             <p className="text-xs font-bold text-primary mb-0.5">Message from KigaliTech</p>
                             <p className="text-sm text-sky-800 text-primary">{ticket.adminNotes}</p>
                           </div>
